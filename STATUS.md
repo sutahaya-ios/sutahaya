@@ -16,6 +16,7 @@
 
 ## 最新更新(2026年7月12日)
 
+- Claude: **GitHub化**。`saikyo-app-team` 組織にPrivateリポジトリ [HayaosiApp](https://github.com/saikyo-app-team/HayaosiApp) を作成しinitial commitをpush。`.xcodeproj`は引き続きgit管理外(XcodeGenで生成)のため、clone後の手順を`README.md`に追記。もう一人の開発者もこのリポジトリをcloneして参加できる状態
 - Claude: **実機ビルドエラーを修正**。原因は署名チーム未設定(「Signing for "HayaosiApp" requires a development team」)。`project.yml` に `DEVELOPMENT_TEAM: LL98RL72H4`(Buffitoと同じチーム)を追加して再生成し、実機向けビルド(自動署名)成功を確認
 - Claude: **タブバー化・フレンド機能・通信対戦を実装**。
   - **タブ構成**:`RootTabView` を新設し、ホーム(一人練習+成績サマリ)/ルーム/フレンド/復習/設定 の5タブに再編。旧スタブ(`LobbyView`・モック`BattleView`)は削除
