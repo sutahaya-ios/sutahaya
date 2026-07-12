@@ -32,8 +32,27 @@ struct OnlineBattleView: View {
         .padding()
         .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            SoundPlayer.shared.play(.questionStart)
+        }
         .onChange(of: session.state?.game?.questionIndex) { _, _ in
             submittedChoice = nil
+            SoundPlayer.shared.play(.questionStart)
+        }
+        .onChange(of: session.state?.game?.buzzWinner) { _, newWinner in
+            if newWinner != nil {
+                SoundPlayer.shared.play(.buzz)
+            }
+        }
+        .onChange(of: session.state?.game?.failedIDs.count) { oldCount, newCount in
+            if let oldCount, let newCount, newCount > oldCount {
+                SoundPlayer.shared.play(.wrong)
+            }
+        }
+        .onChange(of: session.state?.game?.reveal) { _, newReveal in
+            if let newReveal {
+                SoundPlayer.shared.play(newReveal.byTimeout ? .timeUp : .correct)
+            }
         }
     }
 
@@ -106,6 +125,7 @@ struct OnlineBattleView: View {
 
     private var buzzButton: some View {
         Button {
+            Haptics.impact(.heavy)
             session.buzz()
         } label: {
             Text("押す!")
@@ -126,6 +146,7 @@ struct OnlineBattleView: View {
 
             ForEach(question.choices, id: \.self) { choice in
                 Button {
+                    Haptics.impact(.light)
                     submittedChoice = choice
                     session.submitAnswer(choice)
                 } label: {

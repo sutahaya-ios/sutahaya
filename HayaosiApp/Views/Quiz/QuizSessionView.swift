@@ -54,10 +54,30 @@ struct QuizSessionView: View {
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
         }
+        .onAppear {
+            SoundPlayer.shared.play(.questionStart)
+        }
         .onChange(of: session.phase) { _, newPhase in
-            if newPhase == .finished {
+            switch newPhase {
+            case .answering:
+                SoundPlayer.shared.play(.questionStart)
+            case .feedback:
+                playFeedbackSound()
+            case .finished:
+                SoundPlayer.shared.play(.fanfare)
                 recordIfNeeded()
             }
+        }
+    }
+
+    private func playFeedbackSound() {
+        guard let entry = session.currentEntry else { return }
+        if entry.didTimeout {
+            SoundPlayer.shared.play(.timeUp)
+        } else if entry.isCorrect {
+            SoundPlayer.shared.play(.correct)
+        } else {
+            SoundPlayer.shared.play(.wrong)
         }
     }
 
@@ -86,6 +106,7 @@ struct QuizSessionView: View {
             VStack(spacing: 12) {
                 ForEach(entry.shuffledChoices, id: \.self) { choice in
                     ChoiceButton(choice: choice, entry: entry, phase: session.phase) {
+                        Haptics.impact(.light)
                         session.select(choice)
                     }
                 }

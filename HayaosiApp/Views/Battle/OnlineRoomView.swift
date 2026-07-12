@@ -53,6 +53,7 @@ struct OnlineRoomView: View {
         }
         .onChange(of: session.state?.status) { _, newStatus in
             if newStatus == .finished {
+                SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
             }
         }
