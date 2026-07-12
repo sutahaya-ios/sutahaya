@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct OnlineBattleView: View {
-    let session: OnlineBattleSession
+    let session: any BattleSession
 
     @State private var submittedChoice: String?
 

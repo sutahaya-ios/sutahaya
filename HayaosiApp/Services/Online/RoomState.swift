@@ -63,6 +63,18 @@ struct RoomState {
     let questions: [QuestionPayload]
     let game: Game?
 
+    /// ローカル(ボット対戦)用に直接組み立てるイニシャライザ
+    init(code: String, hostID: String, status: Status, settings: Settings,
+         players: [Player], questions: [QuestionPayload], game: Game?) {
+        self.code = code
+        self.hostID = hostID
+        self.status = status
+        self.settings = settings
+        self.players = players
+        self.questions = questions
+        self.game = game
+    }
+
     init?(code: String, dict: [String: Any]) {
         guard let hostID = dict["hostID"] as? String,
               let statusRaw = dict["status"] as? String,

@@ -21,6 +21,7 @@
 │   ├── App/                  # エントリポイント
 │   ├── Models/               # SwiftDataモデル・enum
 │   ├── Services/             # 出題エンジン・データ投入・結果記録などのロジック
+│   │   ├── Battle/           # 対戦の共通プロトコル(BattleSession)とボット対戦(ローカル)
 │   │   └── Online/           # Firebase層(認証・フレンド・ルーム状態・対戦セッション)
 │   ├── Views/<機能名>/        # 画面(Root=タブ / Home / Practice / Quiz / Review / Room / Battle / Friend / Settings / Components)
 │   ├── Resources/            # 問題データJSON・GoogleService-Info.plist(git管理外)

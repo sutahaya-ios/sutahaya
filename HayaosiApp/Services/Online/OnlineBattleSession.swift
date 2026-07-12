@@ -21,7 +21,7 @@ enum BattleRules {
 /// 進行の権威はホスト端末(OnlineBattleSession+Host.swift)が持つ。
 @MainActor
 @Observable
-final class OnlineBattleSession {
+final class OnlineBattleSession: BattleSession {
     enum SessionError: LocalizedError {
         case databaseUnavailable
         case roomNotFound
@@ -69,6 +69,8 @@ final class OnlineBattleSession {
     var isEvaluatingAnswer = false
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
+
+    var isOnline: Bool { true }
 
     init(myID: String, nickname: String) throws {
         guard OnlineService.isDatabaseAvailable else { throw SessionError.databaseUnavailable }
@@ -223,33 +225,11 @@ final class OnlineBattleSession {
     }
 
     // MARK: - 状態参照ヘルパー
+    // currentQuestion / player(for:) / remainingTime(at:) は BattleSession の共通実装を使う
 
-    var currentGame: RoomState.Game? {
+    private var currentGame: RoomState.Game? {
         guard let state, state.status == .playing else { return nil }
         return state.game
-    }
-
-    var currentQuestion: RoomState.QuestionPayload? {
-        guard let state, let game = state.game,
-              state.questions.indices.contains(game.questionIndex) else { return nil }
-        return state.questions[game.questionIndex]
-    }
-
-    var canBuzz: Bool {
-        guard let game = currentGame else { return false }
-        return game.phase == .question && game.buzzWinner == nil && !game.failedIDs.contains(myID)
-    }
-
-    func player(for uid: String?) -> RoomState.Player? {
-        guard let uid else { return nil }
-        return state?.players.first { $0.id == uid }
-    }
-
-    /// 表示用の残り時間(サーバータイムスタンプ基準の近似値)
-    func remainingTime(at date: Date) -> TimeInterval {
-        guard let state, let game = state.game, game.phase == .question else { return 0 }
-        let elapsed = date.timeIntervalSince1970 - game.startedAtMS / 1000
-        return max(0, state.settings.timeLimit - elapsed)
     }
 
     // MARK: - 観測

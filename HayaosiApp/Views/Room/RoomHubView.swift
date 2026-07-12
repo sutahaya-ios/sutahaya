@@ -86,6 +86,18 @@ struct RoomHubView: View {
                     )
                 }
                 .buttonStyle(.plain)
+
+                NavigationLink {
+                    BotBattleSetupView()
+                } label: {
+                    MenuCard(
+                        title: "ボット対戦",
+                        subtitle: "通信なしでボットと早押し練習",
+                        systemImage: "cpu",
+                        color: .orange
+                    )
+                }
+                .buttonStyle(.plain)
             }
             .padding()
         }
