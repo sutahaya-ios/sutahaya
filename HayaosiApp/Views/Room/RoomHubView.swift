@@ -1,35 +1,64 @@
 import SwiftUI
 
 /// ルームタブ:招待バナー(最上部)+ルーム作成・参加の2大カード(案A)
+/// Firebase未設定時はサンプル招待で同じUIを表示する(操作は無効)
 struct RoomHubView: View {
-    @State private var signInFailed = false
+    /// Firebase未設定時のUI確認用サンプル
+    private static let sampleInvite = RoomInvite(id: "sample", roomCode: "4821", fromNickname: "ときや")
+
+    @State private var showPreviewAlert = false
     @State private var inviteCode: String?
     @State private var showInviteJoin = false
 
     private var friendService: FriendService { .shared }
 
-    var body: some View {
-        Group {
-            if !OnlineService.isConfigured {
-                OnlineSetupRequiredView()
-            } else if !OnlineService.isDatabaseAvailable {
-                OnlineSetupRequiredView(databaseOnly: true)
-            } else {
-                content
-            }
-        }
-        .navigationTitle("ルーム")
+    private var isOnlineReady: Bool {
+        OnlineService.isConfigured && OnlineService.isDatabaseAvailable
     }
 
-    private var content: some View {
+    var body: some View {
+        content(
+            invites: isOnlineReady ? friendService.invites : [Self.sampleInvite],
+            isPreview: !isOnlineReady
+        )
+        .navigationTitle("ルーム")
+        .task {
+            if isOnlineReady {
+                await signIn()
+            }
+        }
+        .navigationDestination(isPresented: $showInviteJoin) {
+            RoomJoinView(initialCode: inviteCode ?? "")
+        }
+        .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
+        } message: {
+            Text("招待への参加はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
+        }
+    }
+
+    private func content(invites: [RoomInvite], isPreview: Bool) -> some View {
         ScrollView {
             VStack(spacing: 14) {
-                ForEach(friendService.invites) { invite in
+                if isPreview {
+                    OnlinePreviewBanner()
+                }
+
+                ForEach(invites) { invite in
                     InviteBanner(
                         invite: invite,
-                        onAccept: { accept(invite) },
+                        onAccept: {
+                            if isPreview {
+                                showPreviewAlert = true
+                            } else {
+                                accept(invite)
+                            }
+                        },
                         onDismiss: {
-                            Task { await friendService.deleteInvite(id: invite.id) }
+                            if isPreview {
+                                showPreviewAlert = true
+                            } else {
+                                Task { await friendService.deleteInvite(id: invite.id) }
+                            }
                         }
                     )
                 }
@@ -60,10 +89,6 @@ struct RoomHubView: View {
             }
             .padding()
         }
-        .task { await signIn() }
-        .navigationDestination(isPresented: $showInviteJoin) {
-            RoomJoinView(initialCode: inviteCode ?? "")
-        }
     }
 
     private func accept(_ invite: RoomInvite) {
@@ -78,7 +103,6 @@ struct RoomHubView: View {
             friendService.startListening(uid: uid)
         } catch {
             print("サインインに失敗: \(error)")
-            signInFailed = true
         }
     }
 }

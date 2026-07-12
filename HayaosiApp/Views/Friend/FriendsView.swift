@@ -1,9 +1,18 @@
 import SwiftUI
 
 /// フレンドタブ:プロフィールカード+フレンドのアバターグリッド(案B)
+/// Firebase未設定時はサンプルデータで同じUIを表示する(操作は無効)
 struct FriendsView: View {
+    /// Firebase未設定時のUI確認用サンプル
+    private static let sampleFriends = [
+        Friend(id: "sample-tokiya", nickname: "ときや", friendCode: "9GH2MN"),
+        Friend(id: "sample-hanako", nickname: "はなこ", friendCode: "7PQ4RS")
+    ]
+    private static let sampleCode = "SAMPLE"
+
     @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var showAddSheet = false
+    @State private var showPreviewAlert = false
     @State private var signInFailed = false
 
     private var auth: AuthService { .shared }
@@ -12,9 +21,9 @@ struct FriendsView: View {
     var body: some View {
         Group {
             if !OnlineService.isConfigured {
-                OnlineSetupRequiredView()
+                friendContent(friends: Self.sampleFriends, code: Self.sampleCode, isPreview: true)
             } else if auth.uid != nil {
-                content
+                friendContent(friends: friendService.friends, code: auth.friendCode ?? "------", isPreview: false)
             } else if signInFailed {
                 ContentUnavailableView {
                     Label("サインインできません", systemImage: "wifi.slash")
@@ -30,35 +39,47 @@ struct FriendsView: View {
         .sheet(isPresented: $showAddSheet) {
             AddFriendSheet()
         }
+        .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
+        } message: {
+            Text("フレンドの追加・削除はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
+        }
     }
 
-    private var content: some View {
+    private func friendContent(friends: [Friend], code: String, isPreview: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                FriendProfileCard(nickname: nickname, friendCode: auth.friendCode ?? "------")
+                if isPreview {
+                    OnlinePreviewBanner()
+                }
 
-                friendGrid
+                FriendProfileCard(nickname: nickname, friendCode: code)
+
+                friendGrid(friends: friends, isPreview: isPreview)
             }
             .padding()
         }
     }
 
-    private var friendGrid: some View {
+    private func friendGrid(friends: [Friend], isPreview: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("フレンド(\(friendService.friends.count))")
+            Text("フレンド(\(friends.count))")
                 .font(.headline)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 12) {
-                ForEach(friendService.friends) { friend in
+                ForEach(friends) { friend in
                     FriendTile(friend: friend)
                         .contextMenu {
                             Button("フレンドから削除", systemImage: "trash", role: .destructive) {
-                                Task { await friendService.removeFriend(id: friend.id) }
+                                if isPreview {
+                                    showPreviewAlert = true
+                                } else {
+                                    Task { await friendService.removeFriend(id: friend.id) }
+                                }
                             }
                         }
                 }
 
-                addTile
+                addTile(isPreview: isPreview)
             }
 
             Text("フレンドは片方向です(追加した相手が自分のリストに表示されます)。削除は長押しから。")
@@ -67,9 +88,13 @@ struct FriendsView: View {
         }
     }
 
-    private var addTile: some View {
+    private func addTile(isPreview: Bool) -> some View {
         Button {
-            showAddSheet = true
+            if isPreview {
+                showPreviewAlert = true
+            } else {
+                showAddSheet = true
+            }
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: "plus")
