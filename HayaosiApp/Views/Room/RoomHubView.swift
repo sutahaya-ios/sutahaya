@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// ルームタブ:ルーム作成・参加への導線と、フレンドからの招待一覧
+/// ルームタブ:招待バナー(最上部)+ルーム作成・参加の2大カード(案A)
 struct RoomHubView: View {
     @State private var signInFailed = false
     @State private var inviteCode: String?
@@ -24,6 +24,16 @@ struct RoomHubView: View {
     private var content: some View {
         ScrollView {
             VStack(spacing: 14) {
+                ForEach(friendService.invites) { invite in
+                    InviteBanner(
+                        invite: invite,
+                        onAccept: { accept(invite) },
+                        onDismiss: {
+                            Task { await friendService.deleteInvite(id: invite.id) }
+                        }
+                    )
+                }
+
                 NavigationLink {
                     RoomCreateView()
                 } label: {
@@ -47,10 +57,6 @@ struct RoomHubView: View {
                     )
                 }
                 .buttonStyle(.plain)
-
-                if !friendService.invites.isEmpty {
-                    invitesSection
-                }
             }
             .padding()
         }
@@ -58,40 +64,6 @@ struct RoomHubView: View {
         .navigationDestination(isPresented: $showInviteJoin) {
             RoomJoinView(initialCode: inviteCode ?? "")
         }
-    }
-
-    private var invitesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("届いている招待")
-                .font(.headline)
-
-            ForEach(friendService.invites) { invite in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(invite.fromNickname)から招待")
-                            .font(.subheadline)
-                        Text("ルーム \(invite.roomCode)")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("参加") {
-                        accept(invite)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button {
-                        Task { await friendService.deleteInvite(id: invite.id) }
-                    } label: {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func accept(_ invite: RoomInvite) {
@@ -108,6 +80,42 @@ struct RoomHubView: View {
             print("サインインに失敗: \(error)")
             signInFailed = true
         }
+    }
+}
+
+/// フレンドからのルーム招待バナー
+private struct InviteBanner: View {
+    let invite: RoomInvite
+    let onAccept: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "bell.fill")
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(invite.fromNickname)から招待")
+                    .font(.subheadline.bold())
+                Text("ルーム \(invite.roomCode)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button("参加", action: onAccept)
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tertiary)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange.opacity(0.12)))
     }
 }
 

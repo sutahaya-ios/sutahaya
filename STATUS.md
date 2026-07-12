@@ -16,6 +16,10 @@
 
 ## 最新更新(2026年7月12日)
 
+- Claude(たける側): **フレンド・ルームタブのUI刷新**(UI構想3案から選定:フレンド=プロフィールカード型、ルーム=2大カード+招待バナー型)。
+  - フレンドタブ:自分の「会員証」風プロフィールカード(アバター・ニックネーム・コード・コピー/シェアボタン)+フレンドのアバターグリッド(色はuidから決定的に選択)+破線「追加」タイル→コード入力シート。削除は長押しコンテキストメニュー
+  - ルームタブ:フレンドからの招待をオレンジのバナーとして最上部に表示(参加/却下ボタン付き)。作成・参加カードは従来どおり
+  - 新規ファイル:`Views/Components/AvatarCircle.swift` / `Views/Friend/FriendProfileCard.swift` / `Views/Friend/AddFriendSheet.swift`。Simulatorビルド成功。※Firebase未設定のため実表示確認はXcodeプレビュー(`#Preview`)または設定後に実施
 - Claude: **GitHub化**。`saikyo-app-team` 組織にPrivateリポジトリ [HayaosiApp](https://github.com/saikyo-app-team/HayaosiApp) を作成しinitial commitをpush。`.xcodeproj`は引き続きgit管理外(XcodeGenで生成)のため、clone後の手順を`README.md`に追記。もう一人の開発者もこのリポジトリをcloneして参加できる状態
 - Claude: **実機ビルドエラーを修正**。原因は署名チーム未設定(「Signing for "HayaosiApp" requires a development team」)。`project.yml` に `DEVELOPMENT_TEAM: LL98RL72H4`(Buffitoと同じチーム)を追加して再生成し、実機向けビルド(自動署名)成功を確認
 - Claude: **タブバー化・フレンド機能・通信対戦を実装**。
