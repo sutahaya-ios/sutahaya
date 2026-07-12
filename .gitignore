@@ -1,0 +1,16 @@
+# Xcode
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+build/
+
+# XcodeGenで.xcodeprojは再生成できるため管理外(xcodegen generateで生成)
+
+# macOS
+.DS_Store
+
+# Firebase(v1.0で導入時。秘密情報を含むため管理外)
+GoogleService-Info.plist
+
+# Claude Code ローカル設定
+.claude/settings.local.json
