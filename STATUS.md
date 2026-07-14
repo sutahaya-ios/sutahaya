@@ -1,8 +1,8 @@
 # HayaosiApp 開発ステータス
 
-最終更新:2026年7月12日
+最終更新:2026年7月14日
 
-現在フェーズ:**v1.0(通信対戦)クライアント実装済み・バックエンド未着手** — TOKIYA-YAMAMOTO氏がFirebaseバックエンド一式(コンソール設定→セキュリティルール→Cloud Functions)を担当
+現在フェーズ:**v1.0(通信対戦)クライアント実装・Firebase基本セットアップ済み、実機2台検証待ち** — 暫定セキュリティルールは公開済み。本格セキュリティルールはApp Store公開前に対応する
 
 ---
 
@@ -14,7 +14,16 @@
 
 ---
 
-## 最新更新(2026年7月12日)
+## 最新更新(2026年7月14日)
+
+- 人間: GitHubのPrivateリポジトリをMacへcloneし、`xcodegen generate` 実行後にSimulatorでアプリがクラッシュせず起動することを確認
+- 人間: **Firebase基本セットアップを完了**。Firebaseプロジェクト `hayaosiapp` を作成し、Bundle ID `com.n.HayaosiApp` でiOSアプリを登録。Google Analyticsは無効、Sparkプランを使用。匿名Authentication、asia-southeast1のRealtime Database、Cloud Firestoreの`(default)`データベースを有効化し、`FIREBASE_SETUP.md` 記載の暫定セキュリティルールを公開
+- 人間: Realtime Database作成後の `GoogleService-Info.plist` を `HayaosiApp/Resources/` に配置。BUNDLE_IDが `com.n.HayaosiApp` であり、DATABASE_URLとGOOGLE_APP_IDが存在すること、およびplistがGit管理外であることを確認
+- 人間: **SimulatorでFirebase疎通を確認**。Firebase未設定案内の消失、6桁のマイコード表示、匿名ユーザー作成、Firestoreの `users/{uid}` ドキュメント作成、Realtime Databaseの `rooms/{4桁コード}` 作成を確認
+- **実機2台でのルーム参加・通信対戦は未実施**。早押しの体感遅延、同時押し判定、誤答後の回答権移行、切断・再入室、ホスト切断時の挙動は未確認
+- App Store公開用の本格セキュリティルールは未対応
+
+## 過去の更新(2026年7月12日・GitHub化／通信対戦実装)
 
 - Claude: **GitHub化**。`saikyo-app-team` 組織にPrivateリポジトリ [HayaosiApp](https://github.com/saikyo-app-team/HayaosiApp) を作成しinitial commitをpush。`.xcodeproj`は引き続きgit管理外(XcodeGenで生成)のため、clone後の手順を`README.md`に追記。もう一人の開発者もこのリポジトリをcloneして参加できる状態
 - Claude: **実機ビルドエラーを修正**。原因は署名チーム未設定(「Signing for "HayaosiApp" requires a development team」)。`project.yml` に `DEVELOPMENT_TEAM: LL98RL72H4`(Buffitoと同じチーム)を追加して再生成し、実機向けビルド(自動署名)成功を確認
@@ -32,13 +41,12 @@
 
 ## 次のタスク(優先順)
 
-### 担当:TOKIYA-YAMAMOTO — オンライン機能バックエンド一式
+### 担当:TOKIYA-YAMAMOTO — 実機検証・オンライン機能の本番対応
 
 現状、iOSアプリ側(Swiftクライアント)からのFirebase連携コードは実装済み(`HayaosiApp/Services/Online/`)。
-バックエンド側(Firebaseプロジェクト本体の設定・運用)が未着手のため、以下を担当してほしい。
+Firebaseプロジェクトの基本セットアップとSimulatorでの疎通確認まで完了しているため、以下を担当してほしい。
 
-1. **Firebaseコンソール設定(最優先)**:`FIREBASE_SETUP.md` の手順どおりに、プロジェクト作成〜匿名Auth/Realtime Database/Firestoreの有効化〜`GoogleService-Info.plist`の配置まで。これが終わらないとオンライン機能(ルーム対戦・フレンド)が一切動かない
-   - 完了後、実機2台で早押しの体感遅延を検証(要件 §11-1 技術検証スパイク。目標:押下→判定反映 概ね500ms以内)
+1. **実機2台での通信対戦検証(最優先)**:ルーム参加からリザルトまで通しで動かし、早押しの体感遅延(目標:押下→判定反映 概ね500ms以内)、同時押し判定、誤答後の回答権移行、切断・再入室、ホスト切断時の挙動を確認する
 2. **セキュリティルールの本格設計**:`FIREBASE_SETUP.md` に暫定ルール(認証済みなら誰でも読み書き可)を置いてあるが、v1.0リリース前に以下へ強化する
    - `rooms/{roomId}`:ルーム参加者(`players`に自分のuidがある人)のみ書き込み可にする
    - `users/{uid}/friends`・`users/{uid}/invites`:バリデーション追加(不正なfriendCode書き込み防止など)
