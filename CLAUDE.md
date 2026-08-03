@@ -40,6 +40,7 @@
 ## XcodeGen運用(重要)
 - `.xcodeproj` は生成物。**pbxprojを直接編集しない**
 - .swiftファイルやリソースを追加・削除したら `xcodegen generate` を実行(フォルダ内のファイルは自動で取り込まれる)
+- **`git pull` で相手が .swift やリソースを増減させていた場合も `xcodegen generate` が必要**。忘れると「相手が追加したファイルがXcodeに現れない」「ビルドが落ちる」になる
 - ターゲット設定の変更は `project.yml` を編集 → `xcodegen generate`
 - **署名(`DEVELOPMENT_TEAM`)は `project.yml` に書かない**。開発者ごとに違うため `Config/local.xcconfig`(git管理外)で与える。手順は `README.md`。Simulatorビルドは署名不要なのでこのファイルが無くても動く
 
@@ -69,7 +70,7 @@
 5. `Models/` と `project.yml` は影響範囲が広いので、特に事前宣言を徹底する
 
 ### ブランチ・コミット
-- `main` に直接コミットしてよい(2人・小規模のため)。ただし**作業開始前に必ず `git pull --rebase` する**
+- `main` に直接コミットしてよい(2人・小規模のため)。ただし**作業開始前に必ず `git pull --rebase && xcodegen generate` する**(自動では降りてこないので手で取る)
 - 1コミット=1つの意味のある変更。コミットメッセージは `feat:` / `fix:` / `docs:` / `refactor:` / `test:` + 日本語の要約(例:`feat: 対戦画面に問題文の逐次表示を追加`)
 - 相手の作業と衝突しそうな大きめの変更だけ `feat/<内容>` ブランチを切る
 

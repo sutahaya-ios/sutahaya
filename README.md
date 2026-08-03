@@ -33,6 +33,30 @@ cp Config/local.xcconfig.sample Config/local.xcconfig
 
 通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・ボット対戦はオフラインで動作する)。
 
+## 日々の作業(相手の変更を取り込む)
+
+**自動では降りてこない。** 作業を始める前に自分で取り込む:
+
+```bash
+git pull --rebase && xcodegen generate
+```
+
+`.xcodeproj` はgit管理外なので、相手が `.swift` やリソースを追加・削除していた場合は `xcodegen generate` まで必要(忘れると「追加されたファイルがXcodeに出てこない」「ビルドが落ちる」)。
+
+相手が何を変えたかは次のコマンドで見る:
+
+```bash
+git fetch && git log --oneline --stat HEAD..origin/main
+```
+
+pushの通知が欲しい場合は、GitHubのリポジトリページ右上 Watch → **All Activity** にしておく。変更の意図・次のタスクは [STATUS.md](STATUS.md) に書く運用。
+
+なお `git pull` を常にrebaseにしておくと、無駄なマージコミットが増えない(1回だけ設定):
+
+```bash
+git config pull.rebase true
+```
+
 ## ビルド・テスト(Simulator)
 
 ```bash
