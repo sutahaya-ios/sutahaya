@@ -21,6 +21,7 @@ struct OnlineLobbyView: View {
                             .frame(maxWidth: .infinity)
                     }
                     LabeledContent("ジャンル", value: state.settings.genre.displayName)
+                    LabeledContent("出題形式", value: state.settings.style.displayName)
                     LabeledContent("問題数", value: "\(state.settings.questionCount)問")
                     LabeledContent("制限時間", value: "\(Int(state.settings.timeLimit))秒 / 問")
                 } header: {
@@ -114,7 +115,9 @@ struct OnlineLobbyView: View {
     }
 
     private func start(state: RoomState) async {
-        let pool = allQuestions.filter { $0.genre == state.settings.genre }
+        let pool = allQuestions.filter {
+            $0.genre == state.settings.genre && $0.style == state.settings.style
+        }
         let questions = Array(pool.shuffled().prefix(state.settings.questionCount))
         guard !questions.isEmpty else { return }
         await session.startGame(questions: questions)

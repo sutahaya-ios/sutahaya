@@ -1,102 +1,602 @@
 [
-  { "word": "abandon", "pos": "動詞", "meaning": "〜を捨てる、断念する" },
-  { "word": "accomplish", "pos": "動詞", "meaning": "〜を成し遂げる" },
-  { "word": "acquire", "pos": "動詞", "meaning": "〜を習得する、身につける" },
-  { "word": "adopt", "pos": "動詞", "meaning": "〜を採用する" },
-  { "word": "analyze", "pos": "動詞", "meaning": "〜を分析する" },
-  { "word": "anticipate", "pos": "動詞", "meaning": "〜を予期する" },
-  { "word": "assume", "pos": "動詞", "meaning": "〜を仮定する、当然と思う" },
-  { "word": "attribute", "pos": "動詞", "meaning": "〜のせいにする、〜に帰する" },
-  { "word": "compensate", "pos": "動詞", "meaning": "〜を補償する、埋め合わせる" },
-  { "word": "conclude", "pos": "動詞", "meaning": "〜と結論づける" },
-  { "word": "confirm", "pos": "動詞", "meaning": "〜を確認する、裏付ける" },
-  { "word": "criticize", "pos": "動詞", "meaning": "〜を批判する" },
-  { "word": "decline", "pos": "動詞", "meaning": "減少する、断る" },
-  { "word": "demonstrate", "pos": "動詞", "meaning": "〜を実証する、証明してみせる" },
-  { "word": "derive", "pos": "動詞", "meaning": "〜を引き出す、〜に由来する" },
-  { "word": "determine", "pos": "動詞", "meaning": "〜を決定する" },
-  { "word": "devote", "pos": "動詞", "meaning": "〜を捧げる" },
-  { "word": "eliminate", "pos": "動詞", "meaning": "〜を取り除く" },
-  { "word": "emphasize", "pos": "動詞", "meaning": "〜を強調する" },
-  { "word": "establish", "pos": "動詞", "meaning": "〜を設立する、確立する" },
-  { "word": "estimate", "pos": "動詞", "meaning": "〜を見積もる" },
-  { "word": "evaluate", "pos": "動詞", "meaning": "〜を評価する" },
-  { "word": "expand", "pos": "動詞", "meaning": "〜を拡大する" },
-  { "word": "facilitate", "pos": "動詞", "meaning": "〜を容易にする、促進する" },
-  { "word": "imply", "pos": "動詞", "meaning": "〜を暗に意味する" },
-  { "word": "impose", "pos": "動詞", "meaning": "〜を課す、押しつける" },
-  { "word": "indicate", "pos": "動詞", "meaning": "〜を示す" },
-  { "word": "interpret", "pos": "動詞", "meaning": "〜を解釈する" },
-  { "word": "investigate", "pos": "動詞", "meaning": "〜を調査する" },
-  { "word": "justify", "pos": "動詞", "meaning": "〜を正当化する" },
-  { "word": "maintain", "pos": "動詞", "meaning": "〜を維持する、主張する" },
-  { "word": "negotiate", "pos": "動詞", "meaning": "交渉する" },
-  { "word": "obtain", "pos": "動詞", "meaning": "〜を手に入れる" },
-  { "word": "occupy", "pos": "動詞", "meaning": "〜を占める" },
-  { "word": "persuade", "pos": "動詞", "meaning": "〜を説得する" },
-  { "word": "postpone", "pos": "動詞", "meaning": "〜を延期する" },
-  { "word": "preserve", "pos": "動詞", "meaning": "〜を保存する、保護する" },
-  { "word": "prohibit", "pos": "動詞", "meaning": "〜を禁止する" },
-  { "word": "pursue", "pos": "動詞", "meaning": "〜を追求する" },
-  { "word": "restrict", "pos": "動詞", "meaning": "〜を制限する" },
-  { "word": "agriculture", "pos": "名詞", "meaning": "農業" },
-  { "word": "atmosphere", "pos": "名詞", "meaning": "大気、雰囲気" },
-  { "word": "authority", "pos": "名詞", "meaning": "権威、当局" },
-  { "word": "benefit", "pos": "名詞", "meaning": "恩恵" },
-  { "word": "circumstance", "pos": "名詞", "meaning": "状況、事情" },
-  { "word": "colleague", "pos": "名詞", "meaning": "同僚" },
-  { "word": "commerce", "pos": "名詞", "meaning": "商業" },
-  { "word": "consequence", "pos": "名詞", "meaning": "結果、影響" },
-  { "word": "controversy", "pos": "名詞", "meaning": "論争" },
-  { "word": "criteria", "pos": "名詞", "meaning": "基準" },
-  { "word": "democracy", "pos": "名詞", "meaning": "民主主義" },
-  { "word": "dimension", "pos": "名詞", "meaning": "次元、寸法" },
-  { "word": "economy", "pos": "名詞", "meaning": "経済" },
-  { "word": "emergency", "pos": "名詞", "meaning": "緊急事態" },
-  { "word": "evidence", "pos": "名詞", "meaning": "証拠" },
-  { "word": "expenditure", "pos": "名詞", "meaning": "支出、経費" },
-  { "word": "hypothesis", "pos": "名詞", "meaning": "仮説" },
-  { "word": "industry", "pos": "名詞", "meaning": "産業、工業" },
-  { "word": "institution", "pos": "名詞", "meaning": "機関、制度" },
-  { "word": "insurance", "pos": "名詞", "meaning": "保険" },
-  { "word": "labor", "pos": "名詞", "meaning": "労働" },
-  { "word": "legislation", "pos": "名詞", "meaning": "法律の制定、法令" },
-  { "word": "luxury", "pos": "名詞", "meaning": "贅沢(品)" },
-  { "word": "obstacle", "pos": "名詞", "meaning": "障害物" },
-  { "word": "occupation", "pos": "名詞", "meaning": "職業" },
-  { "word": "opportunity", "pos": "名詞", "meaning": "機会" },
-  { "word": "phenomenon", "pos": "名詞", "meaning": "現象" },
-  { "word": "poverty", "pos": "名詞", "meaning": "貧困" },
-  { "word": "priority", "pos": "名詞", "meaning": "優先事項" },
-  { "word": "profit", "pos": "名詞", "meaning": "利益、もうけ" },
-  { "word": "reputation", "pos": "名詞", "meaning": "評判" },
-  { "word": "resource", "pos": "名詞", "meaning": "資源" },
-  { "word": "revenue", "pos": "名詞", "meaning": "歳入、収益" },
-  { "word": "strategy", "pos": "名詞", "meaning": "戦略" },
-  { "word": "welfare", "pos": "名詞", "meaning": "福祉" },
-  { "word": "abstract", "pos": "形容詞", "meaning": "抽象的な" },
-  { "word": "accurate", "pos": "形容詞", "meaning": "正確な" },
-  { "word": "adequate", "pos": "形容詞", "meaning": "十分な、適切な" },
-  { "word": "ambiguous", "pos": "形容詞", "meaning": "あいまいな" },
-  { "word": "annual", "pos": "形容詞", "meaning": "年に1度の" },
-  { "word": "artificial", "pos": "形容詞", "meaning": "人工的な" },
-  { "word": "crucial", "pos": "形容詞", "meaning": "極めて重要な" },
-  { "word": "deliberate", "pos": "形容詞", "meaning": "意図的な" },
-  { "word": "domestic", "pos": "形容詞", "meaning": "国内の、家庭の" },
-  { "word": "efficient", "pos": "形容詞", "meaning": "効率的な" },
-  { "word": "essential", "pos": "形容詞", "meaning": "不可欠な" },
-  { "word": "evident", "pos": "形容詞", "meaning": "明白な" },
-  { "word": "flexible", "pos": "形容詞", "meaning": "柔軟な" },
-  { "word": "genuine", "pos": "形容詞", "meaning": "本物の" },
-  { "word": "inevitable", "pos": "形容詞", "meaning": "避けられない" },
-  { "word": "moderate", "pos": "形容詞", "meaning": "適度な、穏やかな" },
-  { "word": "permanent", "pos": "形容詞", "meaning": "永続的な" },
-  { "word": "profound", "pos": "形容詞", "meaning": "深遠な、深い" },
-  { "word": "rational", "pos": "形容詞", "meaning": "合理的な" },
-  { "word": "reluctant", "pos": "形容詞", "meaning": "気が進まない" },
-  { "word": "rigid", "pos": "形容詞", "meaning": "硬直した、厳格な" },
-  { "word": "subtle", "pos": "形容詞", "meaning": "微妙な、繊細な" },
-  { "word": "tremendous", "pos": "形容詞", "meaning": "途方もない、莫大な" },
-  { "word": "urgent", "pos": "形容詞", "meaning": "緊急の" },
-  { "word": "visible", "pos": "形容詞", "meaning": "目に見える" }
+  {
+    "word": "abandon",
+    "pos": "動詞",
+    "meaning": "〜を捨てる、断念する",
+    "definition": "それまで続けてきたことややり方を、途中でやめて手放してしまう"
+  },
+  {
+    "word": "accomplish",
+    "pos": "動詞",
+    "meaning": "〜を成し遂げる",
+    "definition": "目標にしていた難しいことを、最後までやりきって形にする"
+  },
+  {
+    "word": "acquire",
+    "pos": "動詞",
+    "meaning": "〜を習得する、身につける",
+    "definition": "知識や技術を、時間をかけた努力によって自分のものにする"
+  },
+  {
+    "word": "adopt",
+    "pos": "動詞",
+    "meaning": "〜を採用する",
+    "definition": "提案や方法をよいものとして選び、これから使うことに決める"
+  },
+  {
+    "word": "analyze",
+    "pos": "動詞",
+    "meaning": "〜を分析する",
+    "definition": "全体をいくつかの要素に分けて、その仕組みや原因を細かく調べる"
+  },
+  {
+    "word": "anticipate",
+    "pos": "動詞",
+    "meaning": "〜を予期する",
+    "definition": "これから起こりそうなことを前もって見込み、心の準備をする"
+  },
+  {
+    "word": "assume",
+    "pos": "動詞",
+    "meaning": "〜を仮定する、当然と思う",
+    "definition": "確かな証拠はないが、たぶんそうだろうと考えて話を進める"
+  },
+  {
+    "word": "attribute",
+    "pos": "動詞",
+    "meaning": "〜のせいにする、〜に帰する",
+    "definition": "ある結果が起きた原因を、特定の物事のせいだと考える"
+  },
+  {
+    "word": "compensate",
+    "pos": "動詞",
+    "meaning": "〜を補償する、埋め合わせる",
+    "definition": "相手に与えた損害や不足を、お金や別のもので埋め合わせる"
+  },
+  {
+    "word": "conclude",
+    "pos": "動詞",
+    "meaning": "〜と結論づける",
+    "definition": "検討を重ねたうえで、最後にこうだと判断を下す"
+  },
+  {
+    "word": "confirm",
+    "pos": "動詞",
+    "meaning": "〜を確認する、裏付ける",
+    "definition": "本当にそうかを調べて、間違いないとはっきりさせる"
+  },
+  {
+    "word": "criticize",
+    "pos": "動詞",
+    "meaning": "〜を批判する",
+    "definition": "相手のよくない点を取り上げて、悪いとはっきり言う"
+  },
+  {
+    "word": "decline",
+    "pos": "動詞",
+    "meaning": "減少する、断る",
+    "definition": "勢いや数量が下がっていく。また、申し出をていねいに断る"
+  },
+  {
+    "word": "demonstrate",
+    "pos": "動詞",
+    "meaning": "〜を実証する、証明してみせる",
+    "definition": "実際にやって見せたり証拠を挙げたりして、正しいと示す"
+  },
+  {
+    "word": "derive",
+    "pos": "動詞",
+    "meaning": "〜を引き出す、〜に由来する",
+    "definition": "あるものを元にして引き出す。また、そこから生まれてくる"
+  },
+  {
+    "word": "determine",
+    "pos": "動詞",
+    "meaning": "〜を決定する",
+    "definition": "いくつかの可能性の中から、これにすると最終的に決める"
+  },
+  {
+    "word": "devote",
+    "pos": "動詞",
+    "meaning": "〜を捧げる",
+    "definition": "時間や力のすべてを、一つのことのために注ぎ込む"
+  },
+  {
+    "word": "eliminate",
+    "pos": "動詞",
+    "meaning": "〜を取り除く",
+    "definition": "不要なものや邪魔なものを、そこから完全になくす"
+  },
+  {
+    "word": "emphasize",
+    "pos": "動詞",
+    "meaning": "〜を強調する",
+    "definition": "特に大事な点を、目立つように強く言ったり示したりする"
+  },
+  {
+    "word": "establish",
+    "pos": "動詞",
+    "meaning": "〜を設立する、確立する",
+    "definition": "会社や制度などを新しくつくって、続いていく形にする"
+  },
+  {
+    "word": "estimate",
+    "pos": "動詞",
+    "meaning": "〜を見積もる",
+    "definition": "正確には分からない数量を、だいたいこれくらいと計算する"
+  },
+  {
+    "word": "evaluate",
+    "pos": "動詞",
+    "meaning": "〜を評価する",
+    "definition": "価値や能力がどれくらいかを調べて、判断を付ける"
+  },
+  {
+    "word": "expand",
+    "pos": "動詞",
+    "meaning": "〜を拡大する",
+    "definition": "大きさや範囲、規模をより大きく広げる"
+  },
+  {
+    "word": "facilitate",
+    "pos": "動詞",
+    "meaning": "〜を容易にする、促進する",
+    "definition": "物事がうまく運ぶように手助けして、進みやすくする"
+  },
+  {
+    "word": "imply",
+    "pos": "動詞",
+    "meaning": "〜を暗に意味する",
+    "definition": "直接は口に出さず、言葉の裏でそれとなく示す"
+  },
+  {
+    "word": "impose",
+    "pos": "動詞",
+    "meaning": "〜を課す、押しつける",
+    "definition": "税や規則、負担などを相手に有無を言わせず負わせる"
+  },
+  {
+    "word": "indicate",
+    "pos": "動詞",
+    "meaning": "〜を示す",
+    "definition": "それだと分かるように、指し示したり表したりする"
+  },
+  {
+    "word": "interpret",
+    "pos": "動詞",
+    "meaning": "〜を解釈する",
+    "definition": "言葉や出来事の意味を、自分なりに読み取って説明する"
+  },
+  {
+    "word": "investigate",
+    "pos": "動詞",
+    "meaning": "〜を調査する",
+    "definition": "事件や問題の真相を、詳しく調べて明らかにしようとする"
+  },
+  {
+    "word": "justify",
+    "pos": "動詞",
+    "meaning": "〜を正当化する",
+    "definition": "自分の行いが正しかった理由を挙げて、当然だと示す"
+  },
+  {
+    "word": "maintain",
+    "pos": "動詞",
+    "meaning": "〜を維持する、主張する",
+    "definition": "今の状態をそのまま保ち続ける。また、自分の考えを言い張る"
+  },
+  {
+    "word": "negotiate",
+    "pos": "動詞",
+    "meaning": "交渉する",
+    "definition": "立場の違う相手と話し合い、条件の折り合いをつける"
+  },
+  {
+    "word": "obtain",
+    "pos": "動詞",
+    "meaning": "〜を手に入れる",
+    "definition": "欲しかったものを、手続きや努力を経て手に入れる"
+  },
+  {
+    "word": "occupy",
+    "pos": "動詞",
+    "meaning": "〜を占める",
+    "definition": "場所や時間、地位をふさぐようにして自分のものとする"
+  },
+  {
+    "word": "persuade",
+    "pos": "動詞",
+    "meaning": "〜を説得する",
+    "definition": "話して相手の気持ちを変え、こちらの望む行動をとらせる"
+  },
+  {
+    "word": "postpone",
+    "pos": "動詞",
+    "meaning": "〜を延期する",
+    "definition": "予定していたことを、後の日時にずらして先に延ばす"
+  },
+  {
+    "word": "preserve",
+    "pos": "動詞",
+    "meaning": "〜を保存する、保護する",
+    "definition": "傷んだり失われたりしないように、そのままの状態で守る"
+  },
+  {
+    "word": "prohibit",
+    "pos": "動詞",
+    "meaning": "〜を禁止する",
+    "definition": "規則や法律で、してはいけないと決めて許さない"
+  },
+  {
+    "word": "pursue",
+    "pos": "動詞",
+    "meaning": "〜を追求する",
+    "definition": "目標や理想を、あきらめずに追いかけ続ける"
+  },
+  {
+    "word": "restrict",
+    "pos": "動詞",
+    "meaning": "〜を制限する",
+    "definition": "使える範囲や量に枠をはめて、それ以上は認めない"
+  },
+  {
+    "word": "agriculture",
+    "pos": "名詞",
+    "meaning": "農業",
+    "definition": "土地を耕して作物を育て、家畜を飼う仕事の全体"
+  },
+  {
+    "word": "atmosphere",
+    "pos": "名詞",
+    "meaning": "大気、雰囲気",
+    "definition": "地球を包んでいる空気の層。また、その場に漂う感じ"
+  },
+  {
+    "word": "authority",
+    "pos": "名詞",
+    "meaning": "権威、当局",
+    "definition": "人を従わせる力。また、その力を持つ役所や機関"
+  },
+  {
+    "word": "benefit",
+    "pos": "名詞",
+    "meaning": "恩恵",
+    "definition": "そのおかげで受け取る、ためになるものや良い効果"
+  },
+  {
+    "word": "circumstance",
+    "pos": "名詞",
+    "meaning": "状況、事情",
+    "definition": "そのとき人を取り巻いていた、まわりの事情や成り行き"
+  },
+  {
+    "word": "colleague",
+    "pos": "名詞",
+    "meaning": "同僚",
+    "definition": "同じ職場や研究の場で一緒に働いている相手"
+  },
+  {
+    "word": "commerce",
+    "pos": "名詞",
+    "meaning": "商業",
+    "definition": "品物を売り買いして利益を得る営みの全体"
+  },
+  {
+    "word": "consequence",
+    "pos": "名詞",
+    "meaning": "結果、影響",
+    "definition": "ある行いのあとに、その結果として生じてくること"
+  },
+  {
+    "word": "controversy",
+    "pos": "名詞",
+    "meaning": "論争",
+    "definition": "意見が真っ向から分かれ、長く言い争いが続くこと"
+  },
+  {
+    "word": "criteria",
+    "pos": "名詞",
+    "meaning": "基準",
+    "definition": "良いか悪いかを判断するときのよりどころとなる目安"
+  },
+  {
+    "word": "democracy",
+    "pos": "名詞",
+    "meaning": "民主主義",
+    "definition": "国のことを、国民が選んだ代表によって決める仕組み"
+  },
+  {
+    "word": "dimension",
+    "pos": "名詞",
+    "meaning": "次元、寸法",
+    "definition": "縦・横・高さといった広がりの方向。また、物事の側面"
+  },
+  {
+    "word": "economy",
+    "pos": "名詞",
+    "meaning": "経済",
+    "definition": "お金や物が世の中を回っていく仕組みの全体"
+  },
+  {
+    "word": "emergency",
+    "pos": "名詞",
+    "meaning": "緊急事態",
+    "definition": "すぐに手を打たなければならない、思いがけない事態"
+  },
+  {
+    "word": "evidence",
+    "pos": "名詞",
+    "meaning": "証拠",
+    "definition": "それが本当だと裏づける、目に見える手がかり"
+  },
+  {
+    "word": "expenditure",
+    "pos": "名詞",
+    "meaning": "支出、経費",
+    "definition": "ある目的のために支払われて出ていくお金"
+  },
+  {
+    "word": "hypothesis",
+    "pos": "名詞",
+    "meaning": "仮説",
+    "definition": "まだ確かめられていないが、説明のために立てた仮の考え"
+  },
+  {
+    "word": "industry",
+    "pos": "名詞",
+    "meaning": "産業、工業",
+    "definition": "原料から製品をつくり出す仕事の分野"
+  },
+  {
+    "word": "institution",
+    "pos": "名詞",
+    "meaning": "機関、制度",
+    "definition": "社会の役割を担う組織。また、長く続いてきた決まり"
+  },
+  {
+    "word": "insurance",
+    "pos": "名詞",
+    "meaning": "保険",
+    "definition": "万一の損害に備えて、掛け金を出し合っておく仕組み"
+  },
+  {
+    "word": "labor",
+    "pos": "名詞",
+    "meaning": "労働",
+    "definition": "体や頭を使って働くこと。またその働き手"
+  },
+  {
+    "word": "legislation",
+    "pos": "名詞",
+    "meaning": "法律の制定、法令",
+    "definition": "議会が法律をつくること。またつくられた法律"
+  },
+  {
+    "word": "luxury",
+    "pos": "名詞",
+    "meaning": "贅沢(品)",
+    "definition": "生活に必要ではないが、豊かで心地よい高価なもの"
+  },
+  {
+    "word": "obstacle",
+    "pos": "名詞",
+    "meaning": "障害物",
+    "definition": "進もうとする道の途中で、行く手をふさいでいるもの"
+  },
+  {
+    "word": "occupation",
+    "pos": "名詞",
+    "meaning": "職業",
+    "definition": "生活のために就いている仕事"
+  },
+  {
+    "word": "opportunity",
+    "pos": "名詞",
+    "meaning": "機会",
+    "definition": "何かをするのにちょうど都合のよい、めぐり合わせ"
+  },
+  {
+    "word": "phenomenon",
+    "pos": "名詞",
+    "meaning": "現象",
+    "definition": "実際に目に見える形で現れた出来事"
+  },
+  {
+    "word": "poverty",
+    "pos": "名詞",
+    "meaning": "貧困",
+    "definition": "暮らしていくのに必要なものが足りない状態"
+  },
+  {
+    "word": "priority",
+    "pos": "名詞",
+    "meaning": "優先事項",
+    "definition": "ほかより先に扱うべきだと決めた物事"
+  },
+  {
+    "word": "profit",
+    "pos": "名詞",
+    "meaning": "利益、もうけ",
+    "definition": "売り上げから費用を引いて残る、もうけの分"
+  },
+  {
+    "word": "reputation",
+    "pos": "名詞",
+    "meaning": "評判",
+    "definition": "その人や物について、世間で言われている評価"
+  },
+  {
+    "word": "resource",
+    "pos": "名詞",
+    "meaning": "資源",
+    "definition": "役に立つもとになる、自然の産物や人の力"
+  },
+  {
+    "word": "revenue",
+    "pos": "名詞",
+    "meaning": "歳入、収益",
+    "definition": "国や会社に入ってくるお金の総額"
+  },
+  {
+    "word": "strategy",
+    "pos": "名詞",
+    "meaning": "戦略",
+    "definition": "目的を達するために前もって立てた、大きな筋道"
+  },
+  {
+    "word": "welfare",
+    "pos": "名詞",
+    "meaning": "福祉",
+    "definition": "人々が安心して暮らせるようにする、社会の仕組み"
+  },
+  {
+    "word": "abstract",
+    "pos": "形容詞",
+    "meaning": "抽象的な",
+    "definition": "形がなく、頭の中だけで考える性質の"
+  },
+  {
+    "word": "accurate",
+    "pos": "形容詞",
+    "meaning": "正確な",
+    "definition": "ずれや誤りがなく、事実とぴったり合っている"
+  },
+  {
+    "word": "adequate",
+    "pos": "形容詞",
+    "meaning": "十分な、適切な",
+    "definition": "目的を満たすのに足りていて、不足がない"
+  },
+  {
+    "word": "ambiguous",
+    "pos": "形容詞",
+    "meaning": "あいまいな",
+    "definition": "意味が二通りに取れて、どちらとも決めきれない"
+  },
+  {
+    "word": "annual",
+    "pos": "形容詞",
+    "meaning": "年に1度の",
+    "definition": "1年に1度めぐってくる"
+  },
+  {
+    "word": "artificial",
+    "pos": "形容詞",
+    "meaning": "人工的な",
+    "definition": "自然のものではなく、人の手で作り出された"
+  },
+  {
+    "word": "crucial",
+    "pos": "形容詞",
+    "meaning": "極めて重要な",
+    "definition": "そこで決まるかどうかが分かれるほど、決定的に大事な"
+  },
+  {
+    "word": "deliberate",
+    "pos": "形容詞",
+    "meaning": "意図的な",
+    "definition": "うっかりではなく、わざとそうした"
+  },
+  {
+    "word": "domestic",
+    "pos": "形容詞",
+    "meaning": "国内の、家庭の",
+    "definition": "外国ではなく自分の国の中の。また、家の中の"
+  },
+  {
+    "word": "efficient",
+    "pos": "形容詞",
+    "meaning": "効率的な",
+    "definition": "少ない手間や時間で、無駄なく成果を出せる"
+  },
+  {
+    "word": "essential",
+    "pos": "形容詞",
+    "meaning": "不可欠な",
+    "definition": "それを欠くと全体が成り立たない、根本にかかわる"
+  },
+  {
+    "word": "evident",
+    "pos": "形容詞",
+    "meaning": "明白な",
+    "definition": "誰の目にもはっきりしていて、疑う余地がない"
+  },
+  {
+    "word": "flexible",
+    "pos": "形容詞",
+    "meaning": "柔軟な",
+    "definition": "状況に合わせて、形ややり方を変えられる"
+  },
+  {
+    "word": "genuine",
+    "pos": "形容詞",
+    "meaning": "本物の",
+    "definition": "見せかけや偽物ではなく、正真正銘の"
+  },
+  {
+    "word": "inevitable",
+    "pos": "形容詞",
+    "meaning": "避けられない",
+    "definition": "どうしても避けようがなく、必ずそうなる"
+  },
+  {
+    "word": "moderate",
+    "pos": "形容詞",
+    "meaning": "適度な、穏やかな",
+    "definition": "多すぎず少なすぎず、行きすぎのない"
+  },
+  {
+    "word": "permanent",
+    "pos": "形容詞",
+    "meaning": "永続的な",
+    "definition": "一時的ではなく、そのままずっと続く"
+  },
+  {
+    "word": "profound",
+    "pos": "形容詞",
+    "meaning": "深遠な、深い",
+    "definition": "表面的ではなく、非常に深いところまで及ぶ"
+  },
+  {
+    "word": "rational",
+    "pos": "形容詞",
+    "meaning": "合理的な",
+    "definition": "感情ではなく理屈に沿って、筋道が通っている"
+  },
+  {
+    "word": "reluctant",
+    "pos": "形容詞",
+    "meaning": "気が進まない",
+    "definition": "やりたくない気持ちがあって、乗り気でない"
+  },
+  {
+    "word": "rigid",
+    "pos": "形容詞",
+    "meaning": "硬直した、厳格な",
+    "definition": "曲がらないほど硬い。また、少しも融通がきかない"
+  },
+  {
+    "word": "subtle",
+    "pos": "形容詞",
+    "meaning": "微妙な、繊細な",
+    "definition": "ごくわずかな違いで、気づきにくい"
+  },
+  {
+    "word": "tremendous",
+    "pos": "形容詞",
+    "meaning": "途方もない、莫大な",
+    "definition": "程度や量が並外れて大きい"
+  },
+  {
+    "word": "urgent",
+    "pos": "形容詞",
+    "meaning": "緊急の",
+    "definition": "今すぐ対応しなければならないほど差し迫った"
+  },
+  {
+    "word": "visible",
+    "pos": "形容詞",
+    "meaning": "目に見える",
+    "definition": "目で見て確かめられる"
+  }
 ]

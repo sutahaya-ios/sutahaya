@@ -3,19 +3,6 @@ import Observation
 import SwiftData
 import FirebaseDatabase
 
-/// 対戦ルールの定数(要件 §5.1)。MainActor外からも参照できるよう独立させている
-enum BattleRules {
-    static let maxPlayers = 8
-    static let minPlayersToStart = 2
-    static let correctPoint = 1
-    static let wrongPoint = -1
-    /// 回答権を得てから回答するまでの制限時間
-    static let answerTimeLimit: TimeInterval = 10
-    static let revealDuration: TimeInterval = 3
-    static let codeDigits = 4
-    static let createAttempts = 5
-}
-
 /// 通信対戦セッション(要件 §5.1)
 /// ルームの作成・入室・観測と、プレイヤー操作(早押し・回答)を担当する。
 /// 進行の権威はホスト端末(OnlineBattleSession+Host.swift)が持つ。
@@ -94,7 +81,8 @@ final class OnlineBattleSession: BattleSession {
                 "settings": [
                     "questionCount": settings.questionCount,
                     "timeLimit": settings.timeLimit,
-                    "genre": settings.genre.rawValue
+                    "genre": settings.genre.rawValue,
+                    "style": settings.style.rawValue
                 ],
                 "players": [
                     myID: ["nickname": nickname, "score": 0, "joinedAt": ServerValue.timestamp()]

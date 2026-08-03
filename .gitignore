@@ -12,5 +12,8 @@ build/
 # Firebase(v1.0で導入時。秘密情報を含むため管理外)
 GoogleService-Info.plist
 
+# 署名設定(開発者ごとに違うため管理外。local.xcconfig.sample をコピーして作る)
+Config/local.xcconfig
+
 # Claude Code ローカル設定
 .claude/settings.local.json

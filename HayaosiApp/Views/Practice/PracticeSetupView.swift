@@ -7,6 +7,7 @@ struct PracticeSetupView: View {
     @State private var genre: Genre = .englishWord
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
+    @State private var style = QuizDefaults.style
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
 
@@ -31,12 +32,18 @@ struct PracticeSetupView: View {
             }
 
             Section {
+                QuizStylePicker(style: $style)
+            } footer: {
+                Text(style.detail)
+            }
+
+            Section {
                 Button("スタート") {
                     start()
                 }
-                .disabled(genreQuestions.isEmpty)
+                .disabled(availableQuestions.isEmpty)
             } footer: {
-                Text("収録問題数:\(genreQuestions.count)問")
+                Text("収録問題数:\(availableQuestions.count)問")
             }
         }
         .navigationTitle("一人練習")
@@ -45,12 +52,12 @@ struct PracticeSetupView: View {
         }
     }
 
-    private var genreQuestions: [Question] {
-        allQuestions.filter { $0.genre == genre }
+    private var availableQuestions: [Question] {
+        allQuestions.filter { $0.genre == genre && $0.style == style }
     }
 
     private func start() {
-        quizQuestions = Array(genreQuestions.shuffled().prefix(questionCount))
+        quizQuestions = Array(availableQuestions.shuffled().prefix(questionCount))
         isPlaying = true
     }
 }

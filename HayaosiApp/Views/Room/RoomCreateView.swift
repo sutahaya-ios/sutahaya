@@ -5,6 +5,7 @@ struct RoomCreateView: View {
     @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
+    @State private var style = QuizDefaults.style
     @State private var session: OnlineBattleSession?
     @State private var isCreating = false
     @State private var showRoom = false
@@ -28,6 +29,12 @@ struct RoomCreateView: View {
                         Text("\(Int(seconds))秒 / 問").tag(seconds)
                     }
                 }
+            }
+
+            Section {
+                QuizStylePicker(style: $style)
+            } footer: {
+                Text(style.detail)
             }
 
             Section {
@@ -76,7 +83,8 @@ struct RoomCreateView: View {
             try await newSession.createRoom(settings: .init(
                 questionCount: questionCount,
                 timeLimit: timeLimit,
-                genre: .englishWord
+                genre: .englishWord,
+                style: style
             ))
             session = newSession
             showRoom = true

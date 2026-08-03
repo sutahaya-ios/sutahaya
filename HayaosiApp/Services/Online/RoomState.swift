@@ -52,6 +52,8 @@ struct RoomState {
         let questionCount: Int
         let timeLimit: TimeInterval
         let genre: Genre
+        /// 出題形式(速答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
+        var style: QuizStyle = QuizDefaults.style
     }
 
     let code: String
@@ -88,7 +90,8 @@ struct RoomState {
         self.settings = Settings(
             questionCount: Self.int(settingsDict["questionCount"]) ?? QuizDefaults.questionCount,
             timeLimit: Self.double(settingsDict["timeLimit"]) ?? QuizDefaults.timeLimit,
-            genre: Genre(rawValue: settingsDict["genre"] as? String ?? "") ?? .englishWord
+            genre: Genre(rawValue: settingsDict["genre"] as? String ?? "") ?? .englishWord,
+            style: QuizStyle(rawValue: settingsDict["style"] as? String ?? "") ?? QuizDefaults.style
         )
 
         let playersDict = dict["players"] as? [String: [String: Any]] ?? [:]

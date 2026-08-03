@@ -7,6 +7,7 @@ struct BotBattleSetupView: View {
     @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
+    @State private var style = QuizDefaults.style
     @State private var botCount = 2
     @State private var session: BotBattleSession?
     @State private var showRoom = false
@@ -30,6 +31,12 @@ struct BotBattleSetupView: View {
                     }
                 }
                 Stepper("ボット \(botCount)体", value: $botCount, in: Self.botCountRange)
+            }
+
+            Section {
+                QuizStylePicker(style: $style)
+            } footer: {
+                Text(style.detail)
             }
 
             Section {
@@ -57,7 +64,12 @@ struct BotBattleSetupView: View {
     private func start() {
         session = BotBattleSession(
             nickname: nickname,
-            settings: .init(questionCount: questionCount, timeLimit: timeLimit, genre: .englishWord),
+            settings: .init(
+                questionCount: questionCount,
+                timeLimit: timeLimit,
+                genre: .englishWord,
+                style: style
+            ),
             botCount: botCount
         )
         showRoom = true

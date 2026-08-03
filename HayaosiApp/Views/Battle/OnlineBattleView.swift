@@ -16,9 +16,11 @@ struct OnlineBattleView: View {
 
                 Spacer()
 
-                Text(question.text)
-                    .font(.system(size: 36, weight: .bold))
-                    .multilineTextAlignment(.center)
+                BattleQuestionText(
+                    text: question.text,
+                    style: state.settings.style,
+                    mode: revealMode(state: state, game: game)
+                )
 
                 Spacer()
 
@@ -54,6 +56,15 @@ struct OnlineBattleView: View {
                 SoundPlayer.shared.play(newReveal.byTimeout ? .timeUp : .correct)
             }
         }
+    }
+
+    /// 文字送りは「まだ誰も押していない間」だけ進める。
+    /// 誰かが押した後は全文を出す(回答者が読めないと答えられず、
+    /// 回答権が移った人も問題文を読み直せる必要があるため)
+    private func revealMode(state: RoomState, game: RoomState.Game) -> BattleQuestionText.Mode {
+        let hasBuzzed = game.buzzWinner != nil || !game.failedIDs.isEmpty
+        guard game.phase == .question, !hasBuzzed else { return .full }
+        return .progressing(startedAtMS: game.startedAtMS, timeLimit: state.settings.timeLimit)
     }
 
     // MARK: - スコア・進行表示
