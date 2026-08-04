@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/notify-behind.sh\"",
+            "timeout": 20,
+            "statusMessage": "リモートの更新を確認中…"
+          }
+        ]
+      }
+    ]
+  }
+}
