@@ -14,15 +14,21 @@ final class BotBattleSession: BattleSession {
         let buzzProbability: Double
         /// 回答が正解になる確率
         let correctProbability: Double
-        /// 早押しするまでの待ち時間(秒)
+        /// 問題文が全部見えている場合に、早押しするまでの待ち時間(秒)
         let buzzDelay: ClosedRange<Double>
+        /// 文字送り型で、問題文がどこまで表示されたら押すか(0〜1)。
+        /// 秒で固定すると表示量に関係なく押してしまい、人間が読む前に取られてしまうため割合で持つ
+        let buzzRevealFraction: ClosedRange<Double>
     }
 
     /// 先頭から botCount 体が参加する(1体なら「中」だけ)
     private static let botProfiles = [
-        BotProfile(id: "bot-normal", nickname: "ボット(中)", buzzProbability: 0.9, correctProbability: 0.55, buzzDelay: 2.0...7.0),
-        BotProfile(id: "bot-strong", nickname: "ボット(強)", buzzProbability: 0.95, correctProbability: 0.75, buzzDelay: 1.2...5.0),
-        BotProfile(id: "bot-weak", nickname: "ボット(弱)", buzzProbability: 0.7, correctProbability: 0.35, buzzDelay: 3.0...9.0)
+        BotProfile(id: "bot-normal", nickname: "ボット(中)", buzzProbability: 0.9, correctProbability: 0.55,
+                   buzzDelay: 2.0...7.0, buzzRevealFraction: 0.5...0.85),
+        BotProfile(id: "bot-strong", nickname: "ボット(強)", buzzProbability: 0.95, correctProbability: 0.75,
+                   buzzDelay: 1.2...5.0, buzzRevealFraction: 0.35...0.7),
+        BotProfile(id: "bot-weak", nickname: "ボット(弱)", buzzProbability: 0.7, correctProbability: 0.35,
+                   buzzDelay: 3.0...9.0, buzzRevealFraction: 0.7...1.0)
     ]
     private static let botAnswerDelay: ClosedRange<Double> = 1.0...2.5
     /// 制限時間ぎりぎりの押下は不自然なので、ボットは制限時間の8割までに押す
@@ -130,14 +136,35 @@ final class BotBattleSession: BattleSession {
     private func openBuzzing() {
         let round = buzzRound
         for bot in bots where !failedIDs.contains(bot.id) && Double.random(in: 0...1) < bot.buzzProbability {
-            let delay = min(Double.random(in: bot.buzzDelay), settings.timeLimit * Self.botBuzzDeadlineRatio)
-            schedule(after: delay) { [weak self] in
+            schedule(after: buzzDelay(for: bot)) { [weak self] in
                 self?.attemptBuzz(as: bot.id, round: round)
             }
         }
         schedule(after: settings.timeLimit) { [weak self] in
             self?.timeoutQuestion(round: round)
         }
+    }
+
+    /// ボットが押すまでの待ち時間。
+    /// 文字送り中は「問題文をどこまで読んだか」を基準にし、全文が見えている場合は反射勝負として秒で決める
+    private func buzzDelay(for bot: BotProfile) -> TimeInterval {
+        let base: TimeInterval
+        if isQuestionFullyRevealed {
+            base = Double.random(in: bot.buzzDelay)
+        } else {
+            base = ProgressiveReveal.time(
+                forVisibleFraction: Double.random(in: bot.buzzRevealFraction),
+                timeLimit: settings.timeLimit
+            )
+        }
+        // 制限時間ぎりぎりの押下は不自然なので上限を設ける
+        return min(base, settings.timeLimit * Self.botBuzzDeadlineRatio)
+    }
+
+    /// 問題文が最初から全部見えているか。
+    /// 速答型は常に全文。文字送り型でも誰かが一度押した後は全文表示になる(`OnlineBattleView` と同じ判定)
+    private var isQuestionFullyRevealed: Bool {
+        !settings.style.revealsProgressively || !failedIDs.isEmpty
     }
 
     /// 最初に押した1人に回答権を与える

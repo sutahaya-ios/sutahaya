@@ -66,6 +66,31 @@ final class ProgressiveRevealTests: XCTestCase {
         XCTAssertEqual(count, 0)
     }
 
+    // MARK: - ボットの押下タイミング算出(表示割合 → 秒)
+
+    func test_表示割合から押下までの時間を求める() {
+        // 20秒設定は12秒で全文 → 半分見えるのは6秒後
+        let half = ProgressiveReveal.time(forVisibleFraction: 0.5, timeLimit: timeLimit)
+
+        XCTAssertEqual(half, revealDuration / 2, accuracy: 0.001)
+    }
+
+    func test_割合が範囲外でも表示時間の内側に収める() {
+        XCTAssertEqual(ProgressiveReveal.time(forVisibleFraction: 1.5, timeLimit: timeLimit), revealDuration)
+        XCTAssertEqual(ProgressiveReveal.time(forVisibleFraction: -1, timeLimit: timeLimit), 0)
+    }
+
+    func test_押下時間の計算と表示量の計算が一致する() {
+        // 60%の位置で押すと決めたボットは、その時刻に約60%が見えているはず
+        let total = 100
+        let fraction = 0.6
+        let at = ProgressiveReveal.time(forVisibleFraction: fraction, timeLimit: timeLimit)
+
+        let visible = ProgressiveReveal.visibleCount(totalCharacters: total, elapsed: at, timeLimit: timeLimit)
+
+        XCTAssertEqual(Double(visible), Double(total) * fraction, accuracy: 1.5)
+    }
+
     func test_制限時間が0なら全文を出す() {
         let count = ProgressiveReveal.visibleCount(totalCharacters: 20, elapsed: 1, timeLimit: 0)
 

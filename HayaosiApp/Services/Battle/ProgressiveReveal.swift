@@ -8,6 +8,14 @@ enum ProgressiveReveal {
     /// 開始直後に見せる文字数(0文字だと何も判断できないため)
     static let initialCharacters = 1
 
+    /// 問題文の指定割合が表示されるまでにかかる時間。
+    /// ボットが「説明文をどこまで読んだら押すか」を決めるのに使う
+    static func time(forVisibleFraction fraction: Double, timeLimit: TimeInterval) -> TimeInterval {
+        guard timeLimit > 0 else { return 0 }
+        let clamped = min(max(fraction, 0), 1)
+        return timeLimit * revealRatio * clamped
+    }
+
     static func visibleCount(totalCharacters: Int, elapsed: TimeInterval, timeLimit: TimeInterval) -> Int {
         guard totalCharacters > initialCharacters else { return max(0, totalCharacters) }
         guard timeLimit > 0, elapsed.isFinite else { return totalCharacters }
