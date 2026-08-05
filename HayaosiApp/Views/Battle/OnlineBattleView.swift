@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct OnlineBattleView: View {
-    let session: OnlineBattleSession
+    let session: any BattleSession
 
     @State private var submittedChoice: String?
 
@@ -16,9 +16,11 @@ struct OnlineBattleView: View {
 
                 Spacer()
 
-                Text(question.text)
-                    .font(.system(size: 36, weight: .bold))
-                    .multilineTextAlignment(.center)
+                BattleQuestionText(
+                    text: question.text,
+                    style: state.settings.style,
+                    mode: revealMode(state: state, game: game)
+                )
 
                 Spacer()
 
@@ -32,9 +34,37 @@ struct OnlineBattleView: View {
         .padding()
         .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            SoundPlayer.shared.play(.questionStart)
+        }
         .onChange(of: session.state?.game?.questionIndex) { _, _ in
             submittedChoice = nil
+            SoundPlayer.shared.play(.questionStart)
         }
+        .onChange(of: session.state?.game?.buzzWinner) { _, newWinner in
+            if newWinner != nil {
+                SoundPlayer.shared.play(.buzz)
+            }
+        }
+        .onChange(of: session.state?.game?.failedIDs.count) { oldCount, newCount in
+            if let oldCount, let newCount, newCount > oldCount {
+                SoundPlayer.shared.play(.wrong)
+            }
+        }
+        .onChange(of: session.state?.game?.reveal) { _, newReveal in
+            if let newReveal {
+                SoundPlayer.shared.play(newReveal.byTimeout ? .timeUp : .correct)
+            }
+        }
+    }
+
+    /// 文字送りは「まだ誰も押していない間」だけ進める。
+    /// 誰かが押した後は全文を出す(回答者が読めないと答えられず、
+    /// 回答権が移った人も問題文を読み直せる必要があるため)
+    private func revealMode(state: RoomState, game: RoomState.Game) -> BattleQuestionText.Mode {
+        let hasBuzzed = game.buzzWinner != nil || !game.failedIDs.isEmpty
+        guard game.phase == .question, !hasBuzzed else { return .full }
+        return .progressing(startedAtMS: game.startedAtMS, timeLimit: state.settings.timeLimit)
     }
 
     // MARK: - スコア・進行表示
@@ -106,6 +136,7 @@ struct OnlineBattleView: View {
 
     private var buzzButton: some View {
         Button {
+            Haptics.impact(.heavy)
             session.buzz()
         } label: {
             Text("押す!")
@@ -126,6 +157,7 @@ struct OnlineBattleView: View {
 
             ForEach(question.choices, id: \.self) { choice in
                 Button {
+                    Haptics.impact(.light)
                     submittedChoice = choice
                     session.submitAnswer(choice)
                 } label: {

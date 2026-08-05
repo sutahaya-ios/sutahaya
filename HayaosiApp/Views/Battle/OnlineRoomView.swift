@@ -1,9 +1,9 @@
 import SwiftUI
 import SwiftData
 
-/// オンライン対戦のコンテナ。ルーム状態(待機/対戦中/リザルト/解散)で画面を切り替える
+/// 対戦のコンテナ(オンライン・ボット共通)。ルーム状態(待機/対戦中/リザルト/解散)で画面を切り替える
 struct OnlineRoomView: View {
-    let session: OnlineBattleSession
+    let session: any BattleSession
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -21,11 +21,7 @@ struct OnlineRoomView: View {
             case .closed:
                 closedView(message: "ホストが退出したため、ルームは解散しました")
             case nil:
-                if session.state == nil && session.roomCode.isEmpty {
-                    ProgressView()
-                } else {
-                    closedView(message: "ルームへの接続が切れました")
-                }
+                ProgressView()
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -47,10 +43,17 @@ struct OnlineRoomView: View {
                 leaveAndDismiss()
             }
         } message: {
-            Text(session.isHost ? "ホストが退出するとルームは解散されます" : "対戦の途中で抜けます")
+            if !session.isOnline {
+                Text("対戦を終了します")
+            } else if session.isHost {
+                Text("ホストが退出するとルームは解散されます")
+            } else {
+                Text("対戦の途中で抜けます")
+            }
         }
         .onChange(of: session.state?.status) { _, newStatus in
             if newStatus == .finished {
+                SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
             }
         }

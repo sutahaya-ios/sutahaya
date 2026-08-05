@@ -8,7 +8,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                Text("勉強×早押し対戦(仮称)")
+                Text("友達と早押し勉強対戦")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -29,7 +29,7 @@ struct HomeView: View {
             }
             .padding()
         }
-        .navigationTitle("HayaosiApp")
+        .navigationTitle("マナビート")
     }
 
     private var totalCount: Int { records.count }

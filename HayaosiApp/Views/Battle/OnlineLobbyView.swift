@@ -2,8 +2,9 @@ import SwiftUI
 import SwiftData
 
 /// 待機ロビー:参加者一覧・設定確認・フレンド招待。ホストが開始する(要件 §9-4)
+/// ボット対戦時は参加コード・招待などオンライン専用UIを出さない
 struct OnlineLobbyView: View {
-    let session: OnlineBattleSession
+    let session: any BattleSession
 
     @Query private var allQuestions: [Question]
     @State private var invitedFriendIDs: Set<String> = []
@@ -14,23 +15,31 @@ struct OnlineLobbyView: View {
         List {
             if let state = session.state {
                 Section {
-                    Text(state.code)
-                        .font(.system(size: 40, weight: .bold, design: .monospaced))
-                        .frame(maxWidth: .infinity)
+                    if session.isOnline {
+                        Text(state.code)
+                            .font(.system(size: 40, weight: .bold, design: .monospaced))
+                            .frame(maxWidth: .infinity)
+                    }
                     LabeledContent("ジャンル", value: state.settings.genre.displayName)
+                    LabeledContent("出題形式", value: state.settings.style.displayName)
                     LabeledContent("問題数", value: "\(state.settings.questionCount)問")
                     LabeledContent("制限時間", value: "\(Int(state.settings.timeLimit))秒 / 問")
                 } header: {
-                    Text("参加コード")
+                    Text(session.isOnline ? "参加コード" : "対戦設定")
                 } footer: {
-                    Text("友達にこのコードを伝えて入室してもらいます")
+                    Text(session.isOnline
+                         ? "友達にこのコードを伝えて入室してもらいます"
+                         : "通信なしのボット対戦です")
                 }
 
                 Section("参加者(\(state.players.count)/\(BattleRules.maxPlayers))") {
                     ForEach(state.players) { player in
                         HStack {
-                            Label(player.nickname, systemImage: "person.fill")
-                            if player.id == state.hostID {
+                            Label(
+                                player.nickname,
+                                systemImage: player.id.hasPrefix("bot-") ? "desktopcomputer" : "person.fill"
+                            )
+                            if player.id == state.hostID && session.isOnline {
                                 Image(systemName: "crown.fill")
                                     .foregroundStyle(.yellow)
                                     .font(.caption)
@@ -44,7 +53,7 @@ struct OnlineLobbyView: View {
                     }
                 }
 
-                if !friendService.friends.isEmpty {
+                if session.isOnline && !friendService.friends.isEmpty {
                     inviteSection(roomCode: state.code)
                 }
 
@@ -106,7 +115,9 @@ struct OnlineLobbyView: View {
     }
 
     private func start(state: RoomState) async {
-        let pool = allQuestions.filter { $0.genre == state.settings.genre }
+        let pool = allQuestions.filter {
+            $0.genre == state.settings.genre && $0.style == state.settings.style
+        }
         let questions = Array(pool.shuffled().prefix(state.settings.questionCount))
         guard !questions.isEmpty else { return }
         await session.startGame(questions: questions)

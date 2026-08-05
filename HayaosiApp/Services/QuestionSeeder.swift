@@ -4,7 +4,7 @@ import SwiftData
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 1
+    static let dataVersion = 3
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -14,6 +14,9 @@ enum QuestionSeeder {
         let word: String
         let pos: String
         let meaning: String
+        /// 文字送り型で出す説明文(任意)。無ければ meaning を使う。
+        /// 長い文ほど「どこまで読んで押すか」の駆け引きが効くので、データ拡充時はここを充実させる
+        let definition: String?
     }
 
     static func seedIfNeeded(context: ModelContext) {
@@ -39,31 +42,49 @@ enum QuestionSeeder {
         return try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
     }
 
-    /// 同じ品詞の他単語の意味から誤答を決定的に選び、4択問題を組み立てる
+    /// 1単語につき出題形式ごとの問題を作る(速答型=単語→意味 / 文字送り型=意味→単語)。
+    /// 誤答は同じ品詞の他単語から決定的に選ぶ
     private static func makeQuestions(from entries: [WordEntry]) -> [Question] {
         let groups = Dictionary(grouping: entries, by: \.pos)
         var questions: [Question] = []
         for (index, entry) in entries.enumerated() {
             guard let group = groups[entry.pos] else { continue }
-            let id = String(format: "en_%04d", index + 1)
+            let number = index + 1
+
             questions.append(Question(
-                id: id,
+                id: String(format: "en_%04d", number),
                 genre: .englishWord,
                 type: .multipleChoice,
+                style: .speed,
                 text: entry.word,
-                choices: [entry.meaning] + distractors(for: entry, in: group),
+                choices: [entry.meaning] + distractors(for: entry, in: group, using: \.meaning),
                 answer: entry.meaning
+            ))
+
+            questions.append(Question(
+                id: String(format: "pw_%04d", number),
+                genre: .englishWord,
+                type: .multipleChoice,
+                style: .progressive,
+                text: entry.definition ?? entry.meaning,
+                choices: [entry.word] + distractors(for: entry, in: group, using: \.word),
+                answer: entry.word
             ))
         }
         return questions
     }
 
-    private static func distractors(for entry: WordEntry, in group: [WordEntry]) -> [String] {
+    private static func distractors(
+        for entry: WordEntry,
+        in group: [WordEntry],
+        using key: KeyPath<WordEntry, String>
+    ) -> [String] {
         guard let base = group.firstIndex(where: { $0.word == entry.word }) else { return [] }
+        let correct = entry[keyPath: key]
         var result: [String] = []
         for step in 1..<group.count where result.count < distractorCount {
-            let candidate = group[(base + step * distractorStride) % group.count].meaning
-            if candidate != entry.meaning && !result.contains(candidate) {
+            let candidate = group[(base + step * distractorStride) % group.count][keyPath: key]
+            if candidate != correct && !result.contains(candidate) {
                 result.append(candidate)
             }
         }

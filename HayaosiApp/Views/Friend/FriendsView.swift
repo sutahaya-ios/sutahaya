@@ -1,13 +1,19 @@
 import SwiftUI
 
-/// フレンドタブ:マイコード表示・コードでフレンド追加・フレンド一覧
+/// フレンドタブ:プロフィールカード+フレンドのアバターグリッド(案B)
+/// Firebase未設定時はサンプルデータで同じUIを表示する(操作は無効)
 struct FriendsView: View {
-    private static let friendCodeLength = 6
+    /// Firebase未設定時のUI確認用サンプル
+    private static let sampleFriends = [
+        Friend(id: "sample-tokiya", nickname: "ときや", friendCode: "9GH2MN"),
+        Friend(id: "sample-hanako", nickname: "はなこ", friendCode: "7PQ4RS")
+    ]
+    private static let sampleCode = "SAMPLE"
 
-    @State private var codeInput = ""
-    @State private var isWorking = false
+    @AppStorage("nickname") private var nickname = "ゲスト"
+    @State private var showAddSheet = false
+    @State private var showPreviewAlert = false
     @State private var signInFailed = false
-    @State private var errorMessage: String?
 
     private var auth: AuthService { .shared }
     private var friendService: FriendService { .shared }
@@ -15,9 +21,9 @@ struct FriendsView: View {
     var body: some View {
         Group {
             if !OnlineService.isConfigured {
-                OnlineSetupRequiredView()
+                friendContent(friends: Self.sampleFriends, code: Self.sampleCode, isPreview: true)
             } else if auth.uid != nil {
-                friendList
+                friendContent(friends: friendService.friends, code: auth.friendCode ?? "------", isPreview: false)
             } else if signInFailed {
                 ContentUnavailableView {
                     Label("サインインできません", systemImage: "wifi.slash")
@@ -30,73 +36,91 @@ struct FriendsView: View {
             }
         }
         .navigationTitle("フレンド")
-        .alert("エラー", isPresented: .init(
-            get: { errorMessage != nil },
-            set: { if !$0 { errorMessage = nil } }
-        )) {
+        .sheet(isPresented: $showAddSheet) {
+            AddFriendSheet()
+        }
+        .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
         } message: {
-            Text(errorMessage ?? "")
+            Text("フレンドの追加・削除はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
         }
     }
 
-    private var friendList: some View {
-        List {
-            Section {
-                HStack {
-                    Text(auth.friendCode ?? "------")
-                        .font(.title.bold().monospaced())
-                    Spacer()
-                    Button {
-                        UIPasteboard.general.string = auth.friendCode
-                    } label: {
-                        Label("コピー", systemImage: "doc.on.doc")
-                    }
-                    .buttonStyle(.bordered)
+    private func friendContent(friends: [Friend], code: String, isPreview: Bool) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                if isPreview {
+                    OnlinePreviewBanner()
                 }
-            } header: {
-                Text("マイコード")
-            } footer: {
-                Text("このコードを友達に伝えると、フレンドに追加してもらえます")
-            }
 
-            Section("フレンドを追加") {
-                HStack {
-                    TextField("フレンドコード(6桁)", text: $codeInput)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .font(.body.monospaced())
-                    Button("追加") {
-                        Task { await addFriend() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(codeInput.count != Self.friendCodeLength || isWorking)
-                }
-            }
+                FriendProfileCard(nickname: nickname, friendCode: code)
 
-            Section {
-                if friendService.friends.isEmpty {
-                    Text("まだフレンドがいません")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(friendService.friends) { friend in
-                        HStack {
-                            Label(friend.nickname, systemImage: "person.fill")
-                            Spacer()
-                            Text(friend.friendCode)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        Task { await removeFriends(at: indexSet) }
-                    }
-                }
-            } header: {
-                Text("フレンド(\(friendService.friends.count))")
-            } footer: {
-                Text("フレンドは片方向です(追加した相手が自分のリストに表示されます)")
+                friendGrid(friends: friends, isPreview: isPreview)
             }
+            .padding()
         }
+    }
+
+    private func friendGrid(friends: [Friend], isPreview: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("フレンド(\(friends.count))")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 12) {
+                ForEach(friends) { friend in
+                    FriendTile(friend: friend)
+                        .contextMenu {
+                            Button("フレンドから削除", systemImage: "trash", role: .destructive) {
+                                if isPreview {
+                                    showPreviewAlert = true
+                                } else {
+                                    Task { await friendService.removeFriend(id: friend.id) }
+                                }
+                            }
+                        }
+                }
+
+                addTile(isPreview: isPreview)
+            }
+
+            Text("フレンドは片方向です(追加した相手が自分のリストに表示されます)。削除は長押しから。")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func addTile(isPreview: Bool) -> some View {
+        Button {
+            if isPreview {
+                showPreviewAlert = true
+            } else {
+                showAddSheet = true
+            }
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        Circle().strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                            .foregroundStyle(.secondary)
+                    )
+                Text("追加")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                Text("コード入力")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
+                    .foregroundStyle(.quaternary)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private func signIn() async {
@@ -108,23 +132,25 @@ struct FriendsView: View {
             signInFailed = true
         }
     }
+}
 
-    private func addFriend() async {
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            try await friendService.addFriend(code: codeInput)
-            codeInput = ""
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
+/// フレンド1人分のタイル(アバター・名前・コード)
+private struct FriendTile: View {
+    let friend: Friend
 
-    private func removeFriends(at indexSet: IndexSet) async {
-        for index in indexSet {
-            guard friendService.friends.indices.contains(index) else { continue }
-            await friendService.removeFriend(id: friendService.friends[index].id)
+    var body: some View {
+        VStack(spacing: 6) {
+            AvatarCircle(name: friend.nickname, size: 48, color: AvatarCircle.stableColor(for: friend.id))
+            Text(friend.nickname)
+                .font(.caption)
+                .lineLimit(1)
+            Text(friend.friendCode)
+                .font(.caption2.monospaced())
+                .foregroundStyle(.tertiary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
     }
 }
 

@@ -7,6 +7,8 @@ struct SettingsView: View {
     private static let nicknameSyncDelay: TimeInterval = 1.0
 
     @AppStorage("nickname") private var nickname = "ゲスト"
+    @AppStorage(SoundPlayer.enabledKey) private var soundEnabled = true
+    @AppStorage(Haptics.enabledKey) private var hapticsEnabled = true
     @Environment(\.modelContext) private var modelContext
     @State private var showDeleteDialog = false
     @State private var nicknameSyncTask: Task<Void, Never>?
@@ -19,6 +21,15 @@ struct SettingsView: View {
                 Text("プロフィール")
             } footer: {
                 Text("対戦時に他の参加者へ表示される名前です")
+            }
+
+            Section {
+                Toggle("効果音", isOn: $soundEnabled)
+                Toggle("振動(ハプティクス)", isOn: $hapticsEnabled)
+            } header: {
+                Text("サウンド")
+            } footer: {
+                Text("効果音はマナーモード中は鳴りません")
             }
 
             Section("学習データ") {

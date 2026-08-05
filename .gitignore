@@ -9,8 +9,13 @@ build/
 # macOS
 .DS_Store
 
-# Firebase(v1.0で導入時。秘密情報を含むため管理外)
+# Firebase の設定ファイル(管理外)
+# git では渡せないので、受け渡しはファイルを直接送る。手順は FIREBASE_SETUP.md §3
+# add しても «ignored by one of your .gitignore files» となりステージに乗らない(エラーには見えない)
 GoogleService-Info.plist
+
+# 署名設定(開発者ごとに違うため管理外。local.xcconfig.sample をコピーして作る)
+Config/local.xcconfig
 
 # Claude Code ローカル設定
 .claude/settings.local.json

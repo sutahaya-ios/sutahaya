@@ -1,29 +1,68 @@
 import SwiftUI
 
-/// ルームタブ:ルーム作成・参加への導線と、フレンドからの招待一覧
+/// ルームタブ:招待バナー(最上部)+ルーム作成・参加の2大カード(案A)
+/// Firebase未設定時はサンプル招待で同じUIを表示する(操作は無効)
 struct RoomHubView: View {
-    @State private var signInFailed = false
+    /// Firebase未設定時のUI確認用サンプル
+    private static let sampleInvite = RoomInvite(id: "sample", roomCode: "4821", fromNickname: "ときや")
+
+    @State private var showPreviewAlert = false
     @State private var inviteCode: String?
     @State private var showInviteJoin = false
 
     private var friendService: FriendService { .shared }
 
-    var body: some View {
-        Group {
-            if !OnlineService.isConfigured {
-                OnlineSetupRequiredView()
-            } else if !OnlineService.isDatabaseAvailable {
-                OnlineSetupRequiredView(databaseOnly: true)
-            } else {
-                content
-            }
-        }
-        .navigationTitle("ルーム")
+    private var isOnlineReady: Bool {
+        OnlineService.isConfigured && OnlineService.isDatabaseAvailable
     }
 
-    private var content: some View {
+    var body: some View {
+        content(
+            invites: isOnlineReady ? friendService.invites : [Self.sampleInvite],
+            isPreview: !isOnlineReady
+        )
+        .navigationTitle("ルーム")
+        .task {
+            if isOnlineReady {
+                await signIn()
+            }
+        }
+        .navigationDestination(isPresented: $showInviteJoin) {
+            RoomJoinView(initialCode: inviteCode ?? "")
+        }
+        .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
+        } message: {
+            Text("招待への参加はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
+        }
+    }
+
+    private func content(invites: [RoomInvite], isPreview: Bool) -> some View {
         ScrollView {
             VStack(spacing: 14) {
+                if isPreview {
+                    OnlinePreviewBanner()
+                }
+
+                ForEach(invites) { invite in
+                    InviteBanner(
+                        invite: invite,
+                        onAccept: {
+                            if isPreview {
+                                showPreviewAlert = true
+                            } else {
+                                accept(invite)
+                            }
+                        },
+                        onDismiss: {
+                            if isPreview {
+                                showPreviewAlert = true
+                            } else {
+                                Task { await friendService.deleteInvite(id: invite.id) }
+                            }
+                        }
+                    )
+                }
+
                 NavigationLink {
                     RoomCreateView()
                 } label: {
@@ -48,50 +87,20 @@ struct RoomHubView: View {
                 }
                 .buttonStyle(.plain)
 
-                if !friendService.invites.isEmpty {
-                    invitesSection
+                NavigationLink {
+                    BotBattleSetupView()
+                } label: {
+                    MenuCard(
+                        title: "ボット対戦",
+                        subtitle: "通信なしでボットと早押し練習",
+                        systemImage: "cpu",
+                        color: .orange
+                    )
                 }
+                .buttonStyle(.plain)
             }
             .padding()
         }
-        .task { await signIn() }
-        .navigationDestination(isPresented: $showInviteJoin) {
-            RoomJoinView(initialCode: inviteCode ?? "")
-        }
-    }
-
-    private var invitesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("届いている招待")
-                .font(.headline)
-
-            ForEach(friendService.invites) { invite in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(invite.fromNickname)から招待")
-                            .font(.subheadline)
-                        Text("ルーム \(invite.roomCode)")
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("参加") {
-                        accept(invite)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    Button {
-                        Task { await friendService.deleteInvite(id: invite.id) }
-                    } label: {
-                        Image(systemName: "xmark.circle")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                }
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func accept(_ invite: RoomInvite) {
@@ -106,8 +115,43 @@ struct RoomHubView: View {
             friendService.startListening(uid: uid)
         } catch {
             print("サインインに失敗: \(error)")
-            signInFailed = true
         }
+    }
+}
+
+/// フレンドからのルーム招待バナー
+private struct InviteBanner: View {
+    let invite: RoomInvite
+    let onAccept: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "bell.fill")
+                .foregroundStyle(.orange)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(invite.fromNickname)から招待")
+                    .font(.subheadline.bold())
+                Text("ルーム \(invite.roomCode)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button("参加", action: onAccept)
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tertiary)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange.opacity(0.12)))
     }
 }
 

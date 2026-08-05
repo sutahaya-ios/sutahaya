@@ -52,6 +52,8 @@ struct RoomState {
         let questionCount: Int
         let timeLimit: TimeInterval
         let genre: Genre
+        /// 出題形式(速答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
+        var style: QuizStyle = QuizDefaults.style
     }
 
     let code: String
@@ -62,6 +64,18 @@ struct RoomState {
     let players: [Player]
     let questions: [QuestionPayload]
     let game: Game?
+
+    /// ローカル(ボット対戦)用に直接組み立てるイニシャライザ
+    init(code: String, hostID: String, status: Status, settings: Settings,
+         players: [Player], questions: [QuestionPayload], game: Game?) {
+        self.code = code
+        self.hostID = hostID
+        self.status = status
+        self.settings = settings
+        self.players = players
+        self.questions = questions
+        self.game = game
+    }
 
     init?(code: String, dict: [String: Any]) {
         guard let hostID = dict["hostID"] as? String,
@@ -76,7 +90,8 @@ struct RoomState {
         self.settings = Settings(
             questionCount: Self.int(settingsDict["questionCount"]) ?? QuizDefaults.questionCount,
             timeLimit: Self.double(settingsDict["timeLimit"]) ?? QuizDefaults.timeLimit,
-            genre: Genre(rawValue: settingsDict["genre"] as? String ?? "") ?? .englishWord
+            genre: Genre(rawValue: settingsDict["genre"] as? String ?? "") ?? .englishWord,
+            style: QuizStyle(rawValue: settingsDict["style"] as? String ?? "") ?? QuizDefaults.style
         )
 
         let playersDict = dict["players"] as? [String: [String: Any]] ?? [:]

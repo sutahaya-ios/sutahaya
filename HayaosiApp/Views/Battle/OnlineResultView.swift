@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 対戦リザルト:ポイント順の順位表示(同点は同順位)と再戦(要件 §5.1.3・§9-6)
 struct OnlineResultView: View {
-    let session: OnlineBattleSession
+    let session: any BattleSession
     let onLeave: () -> Void
 
     var body: some View {
@@ -36,7 +36,7 @@ struct OnlineResultView: View {
 
             VStack(spacing: 12) {
                 if session.isHost {
-                    Button("再戦する(ロビーに戻る)") {
+                    Button(session.isOnline ? "再戦する(ロビーに戻る)" : "もう一度対戦する") {
                         Task { await session.rematch() }
                     }
                     .buttonStyle(.borderedProminent)

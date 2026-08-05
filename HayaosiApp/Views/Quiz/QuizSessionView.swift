@@ -54,10 +54,30 @@ struct QuizSessionView: View {
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
         }
+        .onAppear {
+            SoundPlayer.shared.play(.questionStart)
+        }
         .onChange(of: session.phase) { _, newPhase in
-            if newPhase == .finished {
+            switch newPhase {
+            case .answering:
+                SoundPlayer.shared.play(.questionStart)
+            case .feedback:
+                playFeedbackSound()
+            case .finished:
+                SoundPlayer.shared.play(.fanfare)
                 recordIfNeeded()
             }
+        }
+    }
+
+    private func playFeedbackSound() {
+        guard let entry = session.currentEntry else { return }
+        if entry.didTimeout {
+            SoundPlayer.shared.play(.timeUp)
+        } else if entry.isCorrect {
+            SoundPlayer.shared.play(.correct)
+        } else {
+            SoundPlayer.shared.play(.wrong)
         }
     }
 
@@ -78,7 +98,7 @@ struct QuizSessionView: View {
             Spacer()
 
             Text(entry.question.text)
-                .font(.system(size: 40, weight: .bold))
+                .font(questionFont(for: entry.question))
                 .multilineTextAlignment(.center)
 
             Spacer()
@@ -86,6 +106,7 @@ struct QuizSessionView: View {
             VStack(spacing: 12) {
                 ForEach(entry.shuffledChoices, id: \.self) { choice in
                     ChoiceButton(choice: choice, entry: entry, phase: session.phase) {
+                        Haptics.impact(.light)
                         session.select(choice)
                     }
                 }
@@ -96,6 +117,13 @@ struct QuizSessionView: View {
             }
         }
         .padding()
+    }
+
+    /// 文字送り型の問題文は意味・説明文なので長い。単語1語と同じ大きさだと収まらない
+    private func questionFont(for question: Question) -> Font {
+        question.style.revealsProgressively
+            ? .system(size: 26, weight: .semibold)
+            : .system(size: 40, weight: .bold)
     }
 
     private func feedbackFooter(entry: QuizSession.Entry) -> some View {

@@ -1,0 +1,4 @@
+// これをコピーして Config/local.xcconfig を作り、自分のApple DeveloperのチームIDを書く。
+// チームIDの確認: Xcode → Settings → Accounts → 対象アカウント → チーム名の右側(10桁の英数字)
+// 実機ビルド・実機実行をしない場合(Simulatorだけ)は不要。
+DEVELOPMENT_TEAM = XXXXXXXXXX
