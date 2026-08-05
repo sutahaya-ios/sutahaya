@@ -33,6 +33,55 @@ cp Config/local.xcconfig.sample Config/local.xcconfig
 
 通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・ボット対戦はオフラインで動作する)。
 
+## GitHubの認証(初回のみ・pushできない場合)
+
+このリポジトリは **非公開のOrganizationリポジトリ**(`saikyo-app-team/HayaosiApp`)。プライベートリポジトリでは**認証が通っていないと403ではなく404 `Repository not found` が返る**ため、「リポジトリが無い」と表示されて権限問題に見えるが、実際は認証の問題であることが多い。
+
+GitHub CLI で認証するのが最短:
+
+```bash
+brew install gh
+```
+
+```bash
+gh auth login
+```
+
+GitHub.com → **HTTPS** → ブラウザで認証(**このリポジトリに招待されている自分のアカウント**で)。続けて git 側の認証ヘルパーを設定する:
+
+```bash
+gh auth setup-git
+```
+
+権限があるかを、コミットせずに確認できる:
+
+```bash
+git push --dry-run
+```
+
+### それでも失敗する場合(エラー文で切り分け)
+
+| エラー | 原因 | 対処 |
+|---|---|---|
+| `denied to <別のアカウント名>` | 別アカウントの資格情報が残っている | 下のコマンドで消してから再認証 |
+| `Repository not found` | 未認証、またはURL違い | `git remote -v` を確認 → 再認証 |
+| `Support for password authentication was removed` | パスワードで認証しようとしている | `gh auth login`、またはPAT(classic・`repo`スコープ) |
+| `Permission denied (publickey)` | SSHだが鍵が未登録 | 下のSSH手順 |
+
+古い資格情報を消す(macOS):
+
+```bash
+printf 'protocol=https\nhost=github.com\n\n' | git credential-osxkeychain erase
+```
+
+SSHに切り替える(トークンの期限切れがなく長期的に安定):
+
+```bash
+ssh-keygen -t ed25519 -C "github" && gh ssh-key add ~/.ssh/id_ed25519.pub && git remote set-url origin git@github.com:saikyo-app-team/HayaosiApp.git && ssh -T git@github.com
+```
+
+**Xcodeから push する場合は別管理**。Xcode → Settings → Accounts に自分のGitHubアカウントを追加する(パスワードではなく `repo` スコープ付きのPATを使う)。ターミナルで通っていてもXcode側は通らないので、ここで詰まる人が多い。
+
 ## 日々の作業(相手の変更を取り込む)
 
 **自動では降りてこない。** 作業を始める前に自分で取り込む:
