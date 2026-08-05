@@ -2,6 +2,8 @@ import SwiftUI
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct OnlineBattleView: View {
+    private static let tickInterval: TimeInterval = 0.1
+
     let session: any BattleSession
 
     @State private var submittedChoice: String?
@@ -21,10 +23,15 @@ struct OnlineBattleView: View {
                     style: state.settings.style,
                     mode: revealMode(state: state, game: game)
                 )
+                // 問題が変わったことを分かるように入れ替える
+                .id(game.questionIndex)
+                .transition(.opacity.combined(with: .move(edge: .top)))
 
                 Spacer()
 
                 interactionArea(state: state, game: game, question: question)
+                    .animation(BattleAnimation.reveal, value: game.phase)
+                    .animation(BattleAnimation.reveal, value: game.buzzWinner)
             } else {
                 Spacer()
                 ProgressView("問題を読み込み中…")
@@ -34,6 +41,7 @@ struct OnlineBattleView: View {
         .padding()
         .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
+        .animation(BattleAnimation.reveal, value: session.state?.game?.questionIndex)
         .onAppear {
             SoundPlayer.shared.play(.questionStart)
         }
@@ -70,44 +78,29 @@ struct OnlineBattleView: View {
     // MARK: - スコア・進行表示
 
     private var scoreBoard: some View {
-        HStack(spacing: 8) {
-            ForEach(session.state?.players ?? []) { player in
-                VStack(spacing: 4) {
-                    Text(player.nickname)
-                        .font(.caption)
-                        .lineLimit(1)
-                    Text("\(player.score)pt")
-                        .font(.headline)
-                        .monospacedDigit()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(player.id == session.myID
-                              ? Color.accentColor.opacity(0.15)
-                              : Color(.secondarySystemBackground))
-                )
-            }
-        }
+        BattleScoreBoard(
+            players: session.state?.players ?? [],
+            myID: session.myID,
+            scorerID: scorerID
+        )
+    }
+
+    /// 発表中だけ、得点したプレイヤーを強調するために返す
+    private var scorerID: String? {
+        guard let game = session.state?.game, game.phase == .reveal,
+              let reveal = game.reveal, !reveal.byTimeout else { return nil }
+        return reveal.scorerID
     }
 
     private func progressHeader(state: RoomState, game: RoomState.Game) -> some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("第\(game.questionIndex + 1)問 / \(state.questions.count)問")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-
-            if game.buzzWinner == nil && game.phase == .question {
-                TimelineView(.periodic(from: .now, by: 0.1)) { timeline in
-                    let remaining = session.remainingTime(at: timeline.date)
-                    ProgressView(value: min(remaining, state.settings.timeLimit), total: state.settings.timeLimit)
-                        .tint(remaining < 5 ? .red : .accentColor)
-                }
-            }
+        TimelineView(.periodic(from: .now, by: Self.tickInterval)) { timeline in
+            let isBuzzOpen = game.buzzWinner == nil && game.phase == .question
+            BattleProgressHeader(
+                questionNumber: game.questionIndex + 1,
+                totalCount: state.questions.count,
+                remaining: isBuzzOpen ? session.remainingTime(at: timeline.date) : nil,
+                timeLimit: state.settings.timeLimit
+            )
         }
     }
 
@@ -115,38 +108,34 @@ struct OnlineBattleView: View {
 
     @ViewBuilder
     private func interactionArea(state: RoomState, game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
-        if game.phase == .reveal {
-            revealView(state: state, game: game)
+        if game.phase == .reveal, let reveal = game.reveal {
+            BattleRevealCard(reveal: reveal, scorerName: session.player(for: reveal.scorerID)?.nickname)
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
         } else if game.buzzWinner == session.myID {
             answerArea(question: question)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let winner = game.buzzWinner {
-            Label("\(session.player(for: winner)?.nickname ?? "?")が回答中…", systemImage: "lock.fill")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 40)
+            statusLabel(
+                "\(session.player(for: winner)?.nickname ?? "?")が回答中…",
+                systemImage: "lock.fill",
+                color: .secondary
+            )
         } else if game.failedIDs.contains(session.myID) {
-            Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
-                .font(.headline)
-                .foregroundStyle(.red)
-                .padding(.bottom, 40)
+            statusLabel("お手つき!この問題には回答できません", systemImage: "hand.raised.fill", color: .red)
         } else {
-            buzzButton
+            BuzzButton {
+                Haptics.impact(.heavy)
+                session.buzz()
+            }
+            .padding(.bottom, 24)
         }
     }
 
-    private var buzzButton: some View {
-        Button {
-            Haptics.impact(.heavy)
-            session.buzz()
-        } label: {
-            Text("押す!")
-                .font(.title.bold())
-                .foregroundStyle(.white)
-                .frame(width: 160, height: 160)
-                .background(Circle().fill(.red))
-        }
-        .buttonStyle(.plain)
-        .padding(.bottom, 24)
+    private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.headline)
+            .foregroundStyle(color)
+            .padding(.bottom, 40)
     }
 
     private func answerArea(question: RoomState.QuestionPayload) -> some View {
@@ -169,27 +158,5 @@ struct OnlineBattleView: View {
                 .disabled(submittedChoice != nil)
             }
         }
-    }
-
-    private func revealView(state: RoomState, game: RoomState.Game) -> some View {
-        VStack(spacing: 12) {
-            if let reveal = game.reveal {
-                if reveal.byTimeout {
-                    Label("時間切れ…", systemImage: "clock.badge.xmark")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                } else if let scorer = session.player(for: reveal.scorerID) {
-                    Label("\(scorer.nickname)が正解!", systemImage: "circle")
-                        .font(.headline)
-                        .foregroundStyle(.green)
-                }
-                Text("正解:\(reveal.correctAnswer)")
-                    .font(.title3.bold())
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(.secondarySystemBackground)))
-        .padding(.bottom, 24)
     }
 }

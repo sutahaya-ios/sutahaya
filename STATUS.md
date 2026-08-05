@@ -57,6 +57,15 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
 
 ## 最新更新(2026年8月5日)
 
+- Claude(たける側): **対戦画面の演出・アニメーションを実装**(次のタスク6)。
+  - **得点の変化**:数字が入れ替わるトランジション(`contentTransition(.numericText)`)。正解した人のカードを緑の枠と背景で強調
+  - **正解発表**:緑のカード+チェックアイコンで「誰が取ったか」を明示。出現時にスケール+フェード。時間切れは灰色のまま区別
+  - **残り時間**:数値(残りN秒)を追加し、5秒を切ると赤く点滅。早押しの受付が終わっている間は時間を出さない
+  - **早押しボタン**:待機中はゆっくり脈動+赤いグロー、押下時は縮んで即座に手応えを返す(通信の返事を待たずに反応する)
+  - **問題の切り替え**:フェードで入れ替える
+  - View を分割(`BattleScoreBoard` / `BuzzButton` / `BattleRevealCard` / `BattleProgressHeader`)。動きの時間は `BattleAnimation` に集約し、画面ごとにバラつかないようにした
+  - 検証:テスト21件パス。Simulatorのボット対戦で**発表カード・得点者の緑ハイライト・残り秒数・脈動するボタン・文字送り**の表示をスクリーンショットで確認
+
 - 人間: GitHubのPrivateリポジトリをMacへcloneし、`xcodegen generate` 実行後にSimulatorでアプリがクラッシュせず起動することを確認
 - 人間: **Firebase基本セットアップを完了**。Firebaseプロジェクト `hayaosiapp` を作成し、Bundle ID `com.n.HayaosiApp` でiOSアプリを登録。Google Analyticsは無効、Sparkプランを使用。匿名Authentication、asia-southeast1のRealtime Database、Cloud Firestoreの`(default)`データベースを有効化し、`FIREBASE_SETUP.md` 記載の暫定セキュリティルールを公開
 - 人間: Realtime Database作成後の `GoogleService-Info.plist` を `HayaosiApp/Resources/` に配置。BUNDLE_IDが `com.n.HayaosiApp` であり、DATABASE_URLとGOOGLE_APP_IDが存在すること、およびplistがGit管理外であることを確認
