@@ -33,6 +33,8 @@ cp Config/local.xcconfig.sample Config/local.xcconfig
 
 通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・ボット対戦はオフラインで動作する)。
 
+**このファイルはgit管理外なので `git pull` では降りてきません。** Firebase担当からファイルを直接受け取ってください(理由と手順は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3)。
+
 ## GitHubの認証(初回のみ・pushできない場合)
 
 このリポジトリは **非公開のOrganizationリポジトリ**(`saikyo-app-team/HayaosiApp`)。プライベートリポジトリでは**認証が通っていないと403ではなく404 `Repository not found` が返る**ため、「リポジトリが無い」と表示されて権限問題に見えるが、実際は認証の問題であることが多い。
@@ -67,6 +69,8 @@ git push --dry-run
 | `Repository not found` | 未認証、またはURL違い | `git remote -v` を確認 → 再認証 |
 | `Support for password authentication was removed` | パスワードで認証しようとしている | `gh auth login`、またはPAT(classic・`repo`スコープ) |
 | `Permission denied (publickey)` | SSHだが鍵が未登録 | 下のSSH手順 |
+| `! [rejected] main -> main (fetch first)` | 相手が先にpushしていて自分のローカルが遅れている(正常な挙動) | `git pull --rebase` してから push |
+| **赤いエラーが出ず「変更なし」で終わる** | ファイルが `.gitignore` で除外されている | `git status --ignored` で確認。`GoogleService-Info.plist` は**意図的に管理外**([FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3) |
 
 古い資格情報を消す(macOS):
 

@@ -11,6 +11,7 @@
 - iOSアプリ:Swift / SwiftUI、iOS 17+、SwiftData(学習履歴・復習リスト・ローカル問題データ)
 - Firebase(SPM: firebase-ios-sdk 12+):匿名Auth / Realtime Database=ルーム同期・早押し判定 / Firestore=プロフィール・フレンド・招待
 - **`GoogleService-Info.plist` は未コミット(人間作業)**。無くてもビルド・オフライン機能は動く。セットアップ手順は `FIREBASE_SETUP.md`
+  - **git管理外なので `git pull` では届かない。受け渡しはファイルを直接送る**(`FIREBASE_SETUP.md` §3)。`git add` しても無言で無視されるため「コミットできない」と誤解されやすい。担当者に聞かれたらまずここを確認する
 
 ## ディレクトリ構成
 フォルダの役割だけを規約にする(ファイル名の列挙は陳腐化するのでしない)。

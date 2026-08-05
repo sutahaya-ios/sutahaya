@@ -22,13 +22,23 @@
 
 **注意:** Realtime Database を作成した**後に** plist をダウンロードし直すこと(`DATABASE_URL` が含まれている必要がある。無い場合はアプリのルームタブに「Realtime Databaseの設定が見つかりません」と表示される)。
 
-## 3. plistの配置
+## 3. plistの受け渡しと配置
+
+> ⚠️ **`GoogleService-Info.plist` は git では渡せません。**
+> `.gitignore` に入れているため、`git add` すると `The following paths are ignored by one of your .gitignore files` となってステージに乗らず、そのままコミットしても「変更なし」で終わります。
+> **赤いエラーが出ないので「コミットできない/pushできない」と誤解しやすい箇所です。** 環境や権限の問題ではありません。
+
+受け渡しは**ファイルを直接送る**(Slack・LINE・メール・AirDropなど何でもよい):
+
+1. Firebase担当が plist をダウンロードする(**Realtime Databaseを作成した後に**。`DATABASE_URL` が必要)
+2. アプリ担当へファイルとして送る
+3. 受け取った側が下記に配置して `xcodegen generate` を実行する
 
 ```
 HayaosiApp/Resources/GoogleService-Info.plist
 ```
 
-に置いて `xcodegen generate` を実行(.gitignore 済みなのでコミットされない)。
+リポジトリで管理する運用に変えたい場合は `.gitignore` から外す必要がある。plistの中身はアプリに埋め込まれて配布されるクライアント識別子であり秘密情報ではないため技術的には可能だが、**git履歴に永久に残る**ため、開発用と本番用でFirebaseプロジェクトを分けるときに厄介になる。方針の変更は人間が判断する。
 
 ## 4. セキュリティルール
 
