@@ -38,7 +38,7 @@ struct BotBattleSetupView: View {
                         Text("\(Int(seconds))秒 / 問").tag(seconds)
                     }
                 }
-                Stepper("ボット \(botCount)体", value: $botCount, in: Self.botCountRange)
+                Stepper("CPU \(botCount)体", value: $botCount, in: Self.botCountRange)
             }
 
             Section {
@@ -46,10 +46,10 @@ struct BotBattleSetupView: View {
                     start()
                 }
             } footer: {
-                Text("通信なしでボットと早押し対戦できます。結果は一人練習として学習履歴・復習リストに記録されます。")
+                Text("通信なしでCPUと早押し対戦できます。結果は一人練習として学習履歴・復習リストに記録されます。")
             }
         }
-        .navigationTitle("ボット対戦")
+        .navigationTitle("ひとりで(CPU対戦)")
         .navigationDestination(isPresented: $showRoom) {
             if let session {
                 OnlineRoomView(session: session)

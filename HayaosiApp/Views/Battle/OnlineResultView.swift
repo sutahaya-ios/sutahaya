@@ -16,7 +16,7 @@ struct OnlineResultView: View {
                         Text("\(rank(of: player))位")
                             .font(.headline)
                             .frame(width: 44, alignment: .leading)
-                        Text(player.nickname)
+                        Text(BattlePlayerDisplayName.text(for: player))
                             .fontWeight(player.id == session.myID ? .bold : .regular)
                         if player.id == session.myID {
                             Text("(自分)")

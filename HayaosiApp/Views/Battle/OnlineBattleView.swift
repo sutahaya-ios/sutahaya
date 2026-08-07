@@ -110,7 +110,7 @@ struct OnlineBattleView: View {
     @ViewBuilder
     private func interactionArea(state: RoomState, game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
         if game.phase == .reveal, let reveal = game.reveal {
-            BattleRevealCard(reveal: reveal, scorerName: session.player(for: reveal.scorerID)?.nickname)
+            BattleRevealCard(reveal: reveal, scorerName: displayName(for: reveal.scorerID))
                 .transition(.scale(scale: 0.92).combined(with: .opacity))
         } else if !state.settings.style.usesBuzzButton {
             progressiveChoiceArea(game: game, question: question)
@@ -119,7 +119,7 @@ struct OnlineBattleView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         } else if let winner = game.buzzWinner {
             statusLabel(
-                "\(session.player(for: winner)?.nickname ?? "?")が回答中…",
+                "\(displayName(for: winner) ?? "?")が回答中…",
                 systemImage: "lock.fill",
                 color: .secondary
             )
@@ -161,6 +161,11 @@ struct OnlineBattleView: View {
 
     private func myAnswer(in game: RoomState.Game) -> RoomState.Answer? {
         game.answers.first { $0.uid == session.myID }
+    }
+
+    private func displayName(for playerID: String?) -> String? {
+        guard let player = session.player(for: playerID) else { return nil }
+        return BattlePlayerDisplayName.text(for: player)
     }
 
     private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {

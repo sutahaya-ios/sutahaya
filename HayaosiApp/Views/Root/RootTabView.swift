@@ -3,25 +3,28 @@ import SwiftData
 
 /// アプリのルート。主要機能をタブバーで切り替える
 struct RootTabView: View {
+    private enum AppTab: Hashable {
+        case battle
+        case study
+        case myPage
+    }
+
     @Environment(\.modelContext) private var modelContext
+    @State private var selectedTab = AppTab.battle
 
     var body: some View {
-        TabView {
-            NavigationStack { HomeView() }
-                .tabItem { Label("ホーム", systemImage: "house.fill") }
+        TabView(selection: $selectedTab) {
+            NavigationStack { BattleHubView() }
+                .tabItem { Label("対戦", systemImage: "gamecontroller.fill") }
+                .tag(AppTab.battle)
 
-            NavigationStack { RoomHubView() }
-                .tabItem { Label("ルーム", systemImage: "gamecontroller.fill") }
+            NavigationStack { StudyHubView() }
+                .tabItem { Label("学習", systemImage: "book.fill") }
+                .tag(AppTab.study)
 
-            NavigationStack { FriendsView() }
-                .tabItem { Label("フレンド", systemImage: "person.2.fill") }
-
-            NavigationStack { ReviewListView() }
-                .tabItem { Label("復習", systemImage: "arrow.counterclockwise") }
-
-            // 設定はホーム右上へ移したので、ここは作問(次回アップデートで実装)
-            NavigationStack { QuestionCreateView() }
-                .tabItem { Label("作問", systemImage: "square.and.pencil") }
+            NavigationStack { MyPageView() }
+                .tabItem { Label("マイページ", systemImage: "person.crop.circle.fill") }
+                .tag(AppTab.myPage)
         }
         .task {
             QuestionSeeder.seedIfNeeded(context: modelContext)

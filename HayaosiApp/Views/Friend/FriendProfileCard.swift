@@ -5,7 +5,7 @@ struct FriendProfileCard: View {
     private static let copiedResetDelay: TimeInterval = 2
 
     let nickname: String
-    let friendCode: String
+    let friendCode: String?
 
     @State private var copied = false
 
@@ -16,26 +16,30 @@ struct FriendProfileCard: View {
             Text(nickname)
                 .font(.headline)
 
-            Text(friendCode)
+            Text(friendCode ?? "------")
                 .font(.system(.title, design: .monospaced).bold())
                 .kerning(4)
 
-            Text("このコードで友達に追加してもらえます")
+            Text(friendCode == nil
+                 ? "オンライン設定後にコードが発行されます"
+                 : "このコードで友達に追加してもらえます")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 12) {
-                Button {
-                    copy()
-                } label: {
-                    Label(copied ? "コピー済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
+            if let friendCode {
+                HStack(spacing: 12) {
+                    Button {
+                        copy(friendCode)
+                    } label: {
+                        Label(copied ? "コピー済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    }
+                    .buttonStyle(.bordered)
 
-                ShareLink(item: "HayaosiApp(仮)でフレンドになろう!マイコード:\(friendCode)") {
-                    Label("シェア", systemImage: "square.and.arrow.up")
+                    ShareLink(item: "マナビートでフレンドになろう!マイコード:\(friendCode)") {
+                        Label("シェア", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
         }
         .frame(maxWidth: .infinity)
@@ -47,11 +51,15 @@ struct FriendProfileCard: View {
         )
     }
 
-    private func copy() {
+    private func copy(_ friendCode: String) {
         UIPasteboard.general.string = friendCode
         copied = true
         Task {
-            try? await Task.sleep(nanoseconds: UInt64(Self.copiedResetDelay * 1_000_000_000))
+            do {
+                try await Task.sleep(for: .seconds(Self.copiedResetDelay))
+            } catch {
+                return
+            }
             copied = false
         }
     }

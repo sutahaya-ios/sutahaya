@@ -21,7 +21,7 @@ struct BattleScoreBoard: View {
     private func card(for player: RoomState.Player) -> some View {
         let isScorer = player.id == scorerID
         return VStack(spacing: 4) {
-            Text(player.nickname)
+            Text(BattlePlayerDisplayName.text(for: player))
                 .font(.caption)
                 .lineLimit(1)
             Text("\(player.score)pt")
@@ -58,7 +58,7 @@ struct BattleScoreBoard: View {
     BattleScoreBoard(
         players: [
             .init(id: "me", nickname: "ゲスト", score: 3, joinedAtMS: 0),
-            .init(id: "bot", nickname: "ボット(強)", score: 5, joinedAtMS: 1)
+            .init(id: "bot-strong", nickname: "ボット(強)", score: 5, joinedAtMS: 1)
         ],
         myID: "me",
         scorerID: "bot"

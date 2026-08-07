@@ -29,14 +29,14 @@ struct OnlineLobbyView: View {
                 } footer: {
                     Text(session.isOnline
                          ? "友達にこのコードを伝えて入室してもらいます"
-                         : "通信なしのボット対戦です")
+                         : "通信なしのCPU対戦です")
                 }
 
                 Section("参加者(\(state.players.count)/\(BattleRules.maxPlayers))") {
                     ForEach(state.players) { player in
                         HStack {
                             Label(
-                                player.nickname,
+                                BattlePlayerDisplayName.text(for: player),
                                 systemImage: player.id.hasPrefix("bot-") ? "desktopcomputer" : "person.fill"
                             )
                             if player.id == state.hostID && session.isOnline {

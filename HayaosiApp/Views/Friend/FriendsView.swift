@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// フレンドタブ:プロフィールカード+フレンドのアバターグリッド(案B)
+/// マイページから開くフレンド一覧。追加・削除もここで行う
 /// Firebase未設定時はサンプルデータで同じUIを表示する(操作は無効)
 struct FriendsView: View {
     /// Firebase未設定時のUI確認用サンプル
@@ -8,9 +8,6 @@ struct FriendsView: View {
         Friend(id: "sample-tokiya", nickname: "ときや", friendCode: "9GH2MN"),
         Friend(id: "sample-hanako", nickname: "はなこ", friendCode: "7PQ4RS")
     ]
-    private static let sampleCode = "SAMPLE"
-
-    @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var showAddSheet = false
     @State private var showPreviewAlert = false
     @State private var signInFailed = false
@@ -21,9 +18,9 @@ struct FriendsView: View {
     var body: some View {
         Group {
             if !OnlineService.isConfigured {
-                friendContent(friends: Self.sampleFriends, code: Self.sampleCode, isPreview: true)
+                friendContent(friends: Self.sampleFriends, isPreview: true)
             } else if auth.uid != nil {
-                friendContent(friends: friendService.friends, code: auth.friendCode ?? "------", isPreview: false)
+                friendContent(friends: friendService.friends, isPreview: false)
             } else if signInFailed {
                 ContentUnavailableView {
                     Label("サインインできません", systemImage: "wifi.slash")
@@ -45,14 +42,12 @@ struct FriendsView: View {
         }
     }
 
-    private func friendContent(friends: [Friend], code: String, isPreview: Bool) -> some View {
+    private func friendContent(friends: [Friend], isPreview: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 if isPreview {
                     OnlinePreviewBanner()
                 }
-
-                FriendProfileCard(nickname: nickname, friendCode: code)
 
                 friendGrid(friends: friends, isPreview: isPreview)
             }
