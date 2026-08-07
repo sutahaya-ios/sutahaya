@@ -30,6 +30,16 @@ struct HomeView: View {
             .padding()
         }
         .navigationTitle("マナビート")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                }
+                .accessibilityLabel("設定")
+            }
+        }
     }
 
     private var totalCount: Int { records.count }

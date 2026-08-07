@@ -19,8 +19,9 @@ struct RootTabView: View {
             NavigationStack { ReviewListView() }
                 .tabItem { Label("復習", systemImage: "arrow.counterclockwise") }
 
-            NavigationStack { SettingsView() }
-                .tabItem { Label("設定", systemImage: "gearshape.fill") }
+            // 設定はホーム右上へ移したので、ここは作問(次回アップデートで実装)
+            NavigationStack { QuestionCreateView() }
+                .tabItem { Label("作問", systemImage: "square.and.pencil") }
         }
         .task {
             QuestionSeeder.seedIfNeeded(context: modelContext)
