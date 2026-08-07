@@ -98,7 +98,7 @@ struct QuizSessionView: View {
             Spacer()
 
             Text(entry.question.text)
-                .font(questionFont(for: entry.question))
+                .font(.system(size: 40, weight: .bold))
                 .multilineTextAlignment(.center)
 
             Spacer()
@@ -117,13 +117,6 @@ struct QuizSessionView: View {
             }
         }
         .padding()
-    }
-
-    /// 文字送り型の問題文は意味・説明文なので長い。単語1語と同じ大きさだと収まらない
-    private func questionFont(for question: Question) -> Font {
-        question.style.revealsProgressively
-            ? .system(size: 26, weight: .semibold)
-            : .system(size: 40, weight: .bold)
     }
 
     private func feedbackFooter(entry: QuizSession.Entry) -> some View {

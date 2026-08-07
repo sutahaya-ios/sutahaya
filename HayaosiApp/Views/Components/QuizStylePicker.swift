@@ -17,9 +17,9 @@ struct QuizStylePicker: View {
 #Preview {
     Form {
         Section {
-            QuizStylePicker(style: .constant(.progressive))
+            QuizStylePicker(style: .constant(.progressiveChoice))
         } footer: {
-            Text(QuizStyle.progressive.detail)
+            Text(QuizStyle.progressiveChoice.detail)
         }
     }
 }

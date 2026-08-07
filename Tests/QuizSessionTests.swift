@@ -28,7 +28,6 @@ final class QuizSessionTests: XCTestCase {
                 id: "q\(index)",
                 genre: .englishWord,
                 type: .multipleChoice,
-                style: .speed,
                 text: "q\(index)",
                 choices: ["a\(index)", "wrong1", "wrong2", "wrong3"],
                 answer: "a\(index)"

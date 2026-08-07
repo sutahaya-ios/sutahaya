@@ -7,7 +7,6 @@ struct PracticeSetupView: View {
     @State private var genre: Genre = .englishWord
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
-    @State private var style = QuizDefaults.style
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
 
@@ -32,12 +31,6 @@ struct PracticeSetupView: View {
             }
 
             Section {
-                QuizStylePicker(style: $style)
-            } footer: {
-                Text(style.detail)
-            }
-
-            Section {
                 Button("スタート") {
                     start()
                 }
@@ -53,7 +46,7 @@ struct PracticeSetupView: View {
     }
 
     private var availableQuestions: [Question] {
-        allQuestions.filter { $0.genre == genre && $0.style == style }
+        allQuestions.filter { $0.genre == genre }
     }
 
     private func start() {

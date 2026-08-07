@@ -4,7 +4,7 @@ import SwiftData
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 3
+    static let dataVersion = 4
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -14,8 +14,7 @@ enum QuestionSeeder {
         let word: String
         let pos: String
         let meaning: String
-        /// 文字送り型で出す説明文(任意)。無ければ meaning を使う。
-        /// 長い文ほど「どこまで読んで押すか」の駆け引きが効くので、データ拡充時はここを充実させる
+        /// 語の説明文(任意)。現在の出題では未使用だが、ジャンル追加や入力式(v1.5)で使えるよう残している
         let definition: String?
     }
 
@@ -42,36 +41,21 @@ enum QuestionSeeder {
         return try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
     }
 
-    /// 1単語につき出題形式ごとの問題を作る(速答型=単語→意味 / 文字送り型=意味→単語)。
-    /// 誤答は同じ品詞の他単語から決定的に選ぶ
+    /// 「単語 → 意味を4択」の問題を作る。出題形式(速答型/文字送り型)は見せ方の違いなので、
+    /// 問題データは共通で1セットだけ持つ。誤答は同じ品詞の他単語から決定的に選ぶ
     private static func makeQuestions(from entries: [WordEntry]) -> [Question] {
         let groups = Dictionary(grouping: entries, by: \.pos)
-        var questions: [Question] = []
-        for (index, entry) in entries.enumerated() {
-            guard let group = groups[entry.pos] else { continue }
-            let number = index + 1
-
-            questions.append(Question(
-                id: String(format: "en_%04d", number),
+        return entries.enumerated().compactMap { index, entry in
+            guard let group = groups[entry.pos] else { return nil }
+            return Question(
+                id: String(format: "en_%04d", index + 1),
                 genre: .englishWord,
                 type: .multipleChoice,
-                style: .speed,
                 text: entry.word,
                 choices: [entry.meaning] + distractors(for: entry, in: group, using: \.meaning),
                 answer: entry.meaning
-            ))
-
-            questions.append(Question(
-                id: String(format: "pw_%04d", number),
-                genre: .englishWord,
-                type: .multipleChoice,
-                style: .progressive,
-                text: entry.definition ?? entry.meaning,
-                choices: [entry.word] + distractors(for: entry, in: group, using: \.word),
-                answer: entry.word
-            ))
+            )
         }
-        return questions
     }
 
     private static func distractors(

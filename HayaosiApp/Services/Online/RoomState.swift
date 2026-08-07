@@ -35,16 +35,28 @@ struct RoomState {
         let byTimeout: Bool
     }
 
+    /// 文字送り型の回答1件。選択肢を押した瞬間を記録する(要件 §5.1.2)
+    struct Answer: Equatable {
+        let uid: String
+        let choice: String
+        /// 押した時刻(サーバータイムスタンプ・ms)。先着はこの値で決まる
+        let answeredAtMS: Double
+        /// 押した時点で表示されていた文字数。何文字で分かったかの記録に使う
+        let visibleCount: Int
+    }
+
     struct Game {
         let questionIndex: Int
         let phase: GamePhase
         let startedAtMS: Double
         let buzzWinner: String?
-        /// uid → サーバータイムスタンプ(ms)。押下順キュー(要件 §5.1.2)
+        /// uid → サーバータイムスタンプ(ms)。押下順キュー(速答型。要件 §5.1.2)
         let buzzQueue: [String: Double]
-        /// この問題で誤答済みのuid
+        /// この問題で誤答済みのuid。再回答できない
         let failedIDs: Set<String>
         let answer: (uid: String, choice: String)?
+        /// 文字送り型で届いた回答(押した順)
+        let answers: [Answer]
         let reveal: Reveal?
     }
 
@@ -133,6 +145,18 @@ struct RoomState {
             answer = (uid, choice)
         }
 
+        let answers = (dict["answers"] as? [String: [String: Any]] ?? [:])
+            .compactMap { uid, value -> Answer? in
+                guard let choice = value["choice"] as? String else { return nil }
+                return Answer(
+                    uid: uid,
+                    choice: choice,
+                    answeredAtMS: double(value["ts"]) ?? 0,
+                    visibleCount: int(value["visibleCount"]) ?? 0
+                )
+            }
+            .sorted { $0.answeredAtMS < $1.answeredAtMS }
+
         var reveal: Reveal?
         if let revealDict = dict["reveal"] as? [String: Any],
            let correctAnswer = revealDict["correctAnswer"] as? String {
@@ -152,6 +176,7 @@ struct RoomState {
             buzzQueue: queue,
             failedIDs: failed,
             answer: answer,
+            answers: answers,
             reveal: reveal
         )
     }

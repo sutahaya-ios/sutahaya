@@ -15,6 +15,13 @@ extension OnlineBattleSession {
         switch game.phase {
         case .question:
             revealScheduledIndex = nil
+            guard !state.settings.style.revealsProgressively else {
+                // 文字送り型は早押しボタンが無く、届いた回答を早い順に採点していく
+                cancelAnswerTimer()
+                ensureQuestionTimer(game: game, timeLimit: state.settings.timeLimit)
+                judgeAnswers(state: state, game: game)
+                return
+            }
             if let winner = game.buzzWinner {
                 cancelQuestionTimer()
                 ensureAnswerTimer(index: game.questionIndex, winner: winner)
@@ -42,6 +49,56 @@ extension OnlineBattleSession {
         revealScheduledIndex = nil
     }
 
+    // MARK: - 文字送り型の採点(選択肢を押した順に判定する)
+
+    /// 届いた回答を**押した時刻の早い順**に1件ずつ採点する。
+    /// 最初に正解した人がその問題の勝者。誤答した人はこの問題に再回答できない
+    func judgeAnswers(state: RoomState, game: RoomState.Game) {
+        guard !isEvaluatingAnswer, state.questions.indices.contains(game.questionIndex) else { return }
+
+        if judgedQuestionIndex != game.questionIndex {
+            judgedQuestionIndex = game.questionIndex
+            judgedUIDs = []
+        }
+
+        let pending = game.answers.filter { !judgedUIDs.contains($0.uid) && !game.failedIDs.contains($0.uid) }
+        guard let target = pending.first else { return }
+
+        isEvaluatingAnswer = true
+        judgedUIDs.insert(target.uid)
+
+        let question = state.questions[game.questionIndex]
+        if target.choice == question.answer {
+            applyCorrectAnswer(uid: target.uid, question: question, state: state)
+        } else {
+            applyWrongChoice(uid: target.uid, question: question, state: state, game: game)
+        }
+    }
+
+    /// 誤答:−1点でこの問題から締め出す。全員が答え終えていたら待たずに発表へ進む
+    private func applyWrongChoice(uid: String, question: RoomState.QuestionPayload,
+                                  state: RoomState, game: RoomState.Game) {
+        let newScore = (player(for: uid)?.score ?? 0) + BattleRules.wrongPoint
+        var updates: [String: Any] = [
+            "players/\(uid)/score": newScore,
+            "game/buzz/failed/\(uid)": true
+        ]
+
+        let allFinished = state.players.allSatisfy { $0.id == uid || game.failedIDs.contains($0.id) }
+        if allFinished {
+            updates["game/phase"] = RoomState.GamePhase.reveal.rawValue
+            updates["game/reveal"] = [
+                "correctAnswer": question.answer,
+                "scorerID": "",
+                "byTimeout": true
+            ]
+        }
+
+        write(updates, failureMessage: "採点に失敗しました") { [weak self] in
+            self?.isEvaluatingAnswer = false
+        }
+    }
+
     // MARK: - 採点と回答権移行(要件 §5.1.2)
 
     private func evaluate(answer: (uid: String, choice: String), state: RoomState, game: RoomState.Game) {
@@ -58,7 +115,7 @@ extension OnlineBattleSession {
         }
     }
 
-    private func applyCorrectAnswer(uid: String, question: RoomState.QuestionPayload, state: RoomState) {
+    func applyCorrectAnswer(uid: String, question: RoomState.QuestionPayload, state: RoomState) {
         let newScore = (player(for: uid)?.score ?? 0) + BattleRules.correctPoint
         let updates: [String: Any] = [
             "players/\(uid)/score": newScore,
@@ -198,6 +255,7 @@ extension OnlineBattleSession {
                 "game/startedAt": ServerValue.timestamp(),
                 "game/buzz": NSNull(),
                 "game/answer": NSNull(),
+                "game/answers": NSNull(),
                 "game/reveal": NSNull()
             ]
         }

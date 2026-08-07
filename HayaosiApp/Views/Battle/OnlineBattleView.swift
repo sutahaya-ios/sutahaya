@@ -66,13 +66,14 @@ struct OnlineBattleView: View {
         }
     }
 
-    /// 文字送りは「まだ誰も押していない間」だけ進める。
-    /// 誰かが押した後は全文を出す(回答者が読めないと答えられず、
-    /// 回答権が移った人も問題文を読み直せる必要があるため)
+    /// 出題中は文字送りを進め、発表に入ったら全文を出す。
+    /// 速答型では誰かが押した時点で読み上げを止める代わりに全文表示にする
     private func revealMode(state: RoomState, game: RoomState.Game) -> BattleQuestionText.Mode {
-        let hasBuzzed = game.buzzWinner != nil || !game.failedIDs.isEmpty
-        guard game.phase == .question, !hasBuzzed else { return .full }
-        return .progressing(startedAtMS: game.startedAtMS, timeLimit: state.settings.timeLimit)
+        guard game.phase == .question else { return .full }
+        if state.settings.style.usesBuzzButton, game.buzzWinner != nil || !game.failedIDs.isEmpty {
+            return .full
+        }
+        return .progressing(startedAtMS: game.startedAtMS)
     }
 
     // MARK: - スコア・進行表示
@@ -111,6 +112,8 @@ struct OnlineBattleView: View {
         if game.phase == .reveal, let reveal = game.reveal {
             BattleRevealCard(reveal: reveal, scorerName: session.player(for: reveal.scorerID)?.nickname)
                 .transition(.scale(scale: 0.92).combined(with: .opacity))
+        } else if !state.settings.style.usesBuzzButton {
+            progressiveChoiceArea(game: game, question: question)
         } else if game.buzzWinner == session.myID {
             answerArea(question: question)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -131,6 +134,35 @@ struct OnlineBattleView: View {
         }
     }
 
+    /// 文字送り型の操作エリア。4択は最初から出ていて、押した瞬間が回答になる
+    private func progressiveChoiceArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
+        VStack(spacing: 10) {
+            if game.failedIDs.contains(session.myID) {
+                Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.red)
+            } else if let mine = myAnswer(in: game) {
+                Label("回答しました(\(mine.visibleCount)文字目)", systemImage: "checkmark.circle")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.orange)
+            }
+
+            BattleChoiceList(
+                choices: question.choices,
+                myChoice: myAnswer(in: game)?.choice ?? submittedChoice,
+                canAnswer: session.canAnswerNow && submittedChoice == nil
+            ) { choice in
+                Haptics.impact(.heavy)
+                submittedChoice = choice
+                session.submitAnswer(choice, visibleCount: session.visibleCharacterCount(at: .now))
+            }
+        }
+    }
+
+    private func myAnswer(in game: RoomState.Game) -> RoomState.Answer? {
+        game.answers.first { $0.uid == session.myID }
+    }
+
     private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
         Label(text, systemImage: systemImage)
             .font(.headline)
@@ -148,7 +180,7 @@ struct OnlineBattleView: View {
                 Button {
                     Haptics.impact(.light)
                     submittedChoice = choice
-                    session.submitAnswer(choice)
+                    session.submitAnswer(choice, visibleCount: question.text.count)
                 } label: {
                     Text(choice)
                         .frame(maxWidth: .infinity, minHeight: 44)

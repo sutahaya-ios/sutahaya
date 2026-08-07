@@ -115,9 +115,7 @@ struct OnlineLobbyView: View {
     }
 
     private func start(state: RoomState) async {
-        let pool = allQuestions.filter {
-            $0.genre == state.settings.genre && $0.style == state.settings.style
-        }
+        let pool = allQuestions.filter { $0.genre == state.settings.genre }
         let questions = Array(pool.shuffled().prefix(state.settings.questionCount))
         guard !questions.isEmpty else { return }
         await session.startGame(questions: questions)

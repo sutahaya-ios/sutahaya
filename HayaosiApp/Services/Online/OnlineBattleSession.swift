@@ -54,6 +54,9 @@ final class OnlineBattleSession: BattleSession {
     var answerTimerKey: String?
     var revealScheduledIndex: Int?
     var isEvaluatingAnswer = false
+    /// 文字送り型で採点済みの回答者。同じ回答を二重に採点しないためのマーカー
+    var judgedUIDs: Set<String> = []
+    var judgedQuestionIndex: Int?
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
 
@@ -207,9 +210,24 @@ final class OnlineBattleSession: BattleSession {
         roomRef.child("game/buzz/queue/\(uid)").setValue(ServerValue.timestamp())
     }
 
-    func submitAnswer(_ choice: String) {
-        guard let game = currentGame, game.buzzWinner == myID, game.phase == .question else { return }
-        roomRef.child("game/answer").setValue(["uid": myID, "choice": choice])
+    /// 回答を送る。
+    /// 文字送り型は選択肢を押した瞬間が回答なので、押下時刻(サーバー時刻)と表示文字数を一緒に残す。
+    /// 先着はサーバー時刻で決まるため、端末の時計のずれに影響されない
+    func submitAnswer(_ choice: String, visibleCount: Int) {
+        guard let state, let game = currentGame, game.phase == .question else { return }
+
+        guard state.settings.style.revealsProgressively else {
+            guard game.buzzWinner == myID else { return }
+            roomRef.child("game/answer").setValue(["uid": myID, "choice": choice])
+            return
+        }
+
+        guard canAnswerNow else { return }
+        roomRef.child("game/answers/\(myID)").setValue([
+            "choice": choice,
+            "ts": ServerValue.timestamp(),
+            "visibleCount": visibleCount
+        ])
     }
 
     // MARK: - 状態参照ヘルパー

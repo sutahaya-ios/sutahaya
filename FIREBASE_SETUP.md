@@ -105,11 +105,13 @@ service cloud.firestore {
 Realtime Database:
 rooms/{4桁コード}
   ├─ hostID, status(waiting/playing/finished/closed), createdAt
-  ├─ settings { questionCount, timeLimit, genre, style(speed/progressive) }
+  ├─ settings { questionCount, timeLimit, genre, style(progressive_choice/speed) }
   ├─ players/{uid} { nickname, score, joinedAt }
   ├─ questions [ { id, text, choices[4], answer } ]  ← 開始時にホストが配信
   └─ game { questionIndex, phase(question/reveal/finished), startedAt,
-            buzz { winner, queue/{uid}: ts, failed/{uid} }, answer, reveal }
+            answers/{uid} { choice, ts, visibleCount }   ← 文字送り型(標準)。押した瞬間の記録
+            buzz { winner, queue/{uid}: ts, failed/{uid} }, answer   ← 速答型
+            reveal }
 
 Firestore:
 users/{uid} { nickname, friendCode, createdAt }
