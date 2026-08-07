@@ -67,7 +67,7 @@ struct OnlineBattleView: View {
     }
 
     /// 出題中は文字送りを進め、発表に入ったら全文を出す。
-    /// 速答型では誰かが押した時点で読み上げを止める代わりに全文表示にする
+    /// 即答型では誰かが押した時点で読み上げを止める代わりに全文表示にする
     private func revealMode(state: RoomState, game: RoomState.Game) -> BattleQuestionText.Mode {
         guard game.phase == .question else { return .full }
         if state.settings.style.usesBuzzButton, game.buzzWinner != nil || !game.failedIDs.isEmpty {

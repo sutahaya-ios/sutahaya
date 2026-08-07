@@ -78,8 +78,8 @@
 - 相手の作業と衝突しそうな大きめの変更だけ `feat/<内容>` ブランチを切る
 
 ## 担当分担
-- **たける側(Claude含む)**:iOSアプリのコード全般(`HayaosiApp/`)、ドキュメント、Simulator検証、実機実行
-- **TOKIYA-YAMAMOTO氏**:Firebaseプロジェクト本体(コンソール設定・セキュリティルール・Cloud Functions)。詳細は `STATUS.md` の「次のタスク」
+- **たける側(Claude含む)**:**大枠のUI・対戦形式・ゲーム性**の設計と実装。ドキュメント、Simulator検証、実機実行
+- **TOKIYA-YAMAMOTO氏**:**細かいUI(効果音・ボイス・単語の種類やデータ拡充など)**、Firebaseプロジェクト本体(コンソール設定・セキュリティルール・Cloud Functions)。詳細は `STATUS.md` の「次のタスク」
 - Firebaseコンソールの設定値やセキュリティルールをアプリ側の都合で勝手に前提変更しない。必要な場合は `STATUS.md` に依頼として書く
 
 ## ビルド・検証の分担

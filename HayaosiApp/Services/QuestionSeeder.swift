@@ -41,7 +41,7 @@ enum QuestionSeeder {
         return try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
     }
 
-    /// 「単語 → 意味を4択」の問題を作る。出題形式(速答型/文字送り型)は見せ方の違いなので、
+    /// 「単語 → 意味を4択」の問題を作る。出題形式(即答型/文字送り型)は見せ方の違いなので、
     /// 問題データは共通で1セットだけ持つ。誤答は同じ品詞の他単語から決定的に選ぶ
     private static func makeQuestions(from entries: [WordEntry]) -> [Question] {
         let groups = Dictionary(grouping: entries, by: \.pos)

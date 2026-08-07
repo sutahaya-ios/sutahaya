@@ -14,7 +14,7 @@ final class BotBattleSession: BattleSession {
         let answerProbability: Double
         /// 回答が正解になる確率
         let correctProbability: Double
-        /// 速答型で早押しボタンを押すまでの待ち時間(秒)
+        /// 即答型で早押しボタンを押すまでの待ち時間(秒)
         let buzzDelay: ClosedRange<Double>
         /// 文字送り型で、単語が何割まで表示されたら答えるか。
         /// 強いボットほど少ない文字数で答える
@@ -140,7 +140,7 @@ final class BotBattleSession: BattleSession {
         openAnswering()
     }
 
-    /// 回答受付を開始する(問題開始時と、速答型で誤答による仕切り直し時)
+    /// 回答受付を開始する(問題開始時と、即答型で誤答による仕切り直し時)
     private func openAnswering() {
         let currentRound = answerRound
         for bot in bots where !failedIDs.contains(bot.id)
@@ -153,7 +153,7 @@ final class BotBattleSession: BattleSession {
         }
     }
 
-    /// ボットの動き。文字送り型は「何文字まで見えたら答えるか」、速答型は早押しボタンを押すまでの秒数で決める
+    /// ボットの動き。文字送り型は「何文字まで見えたら答えるか」、即答型は早押しボタンを押すまでの秒数で決める
     private func scheduleBotAction(bot: BotProfile, round: Int) {
         guard isProgressiveChoice else {
             let delay = min(Double.random(in: bot.buzzDelay), settings.timeLimit * Self.botDeadlineRatio)
@@ -182,7 +182,7 @@ final class BotBattleSession: BattleSession {
         return question.answer
     }
 
-    // MARK: - 速答型:早押しボタン
+    // MARK: - 即答型:早押しボタン
 
     /// 最初に押した1人に回答権を与える
     private func attemptBuzz(as id: String, round: Int) {
@@ -238,7 +238,7 @@ final class BotBattleSession: BattleSession {
             // 全員が答え終えて正解が出なかった。待っても何も起きないので発表へ進む
             showReveal(RoomState.Reveal(correctAnswer: question.answer, scorerID: nil, byTimeout: true))
         } else if !isProgressiveChoice {
-            // 速答型は早押しからやり直す
+            // 即答型は早押しからやり直す
             startedAtMS = Date().timeIntervalSince1970 * 1000
             answerRound += 1
             publish()
@@ -260,7 +260,7 @@ final class BotBattleSession: BattleSession {
         return participants.allSatisfy { failedIDs.contains($0) }
     }
 
-    /// 回答権を持ったまま時間切れ(速答型のみ)
+    /// 回答権を持ったまま時間切れ(即答型のみ)
     private func timeoutAnswer(winner: String, round: Int) {
         guard status == .playing, phase == .question,
               buzzWinner == winner, round == answerRound else { return }

@@ -30,7 +30,7 @@ enum QuizStyle: String, Codable, CaseIterable, Identifiable {
     /// 文字送り型:単語が1文字ずつ表示される。4択は最初から全員に見えていて、
     /// **選択肢を押した瞬間が「早押し+回答」**。早く答えるほど手がかりが少ない
     case progressiveChoice = "progressive_choice"
-    /// 速答型:単語を全部見せてから早押しボタン。押した人だけが4択に答える(従来方式)
+    /// 即答型:単語を全部見せてから早押しボタン。押した人だけが4択に答える(従来方式)
     case speed = "speed"
 
     var id: String { rawValue }
@@ -38,7 +38,7 @@ enum QuizStyle: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .progressiveChoice: return "文字送り型"
-        case .speed: return "速答型"
+        case .speed: return "即答型"
         }
     }
 
@@ -63,7 +63,7 @@ enum QuizStyle: String, Codable, CaseIterable, Identifiable {
 enum QuizDefaults {
     static let questionCount = 10
     static let timeLimit: TimeInterval = 20
-    /// 単語バトルの標準は文字送り型(駆け引きが生まれるため)。設定で速答型にも変えられる
+    /// 単語バトルの標準は文字送り型(駆け引きが生まれるため)。設定で即答型にも変えられる
     static let style = QuizStyle.progressiveChoice
     static let questionCountOptions = [5, 10, 15, 20]
     static let timeLimitOptions: [TimeInterval] = [10, 20, 30]

@@ -15,7 +15,7 @@ protocol BattleSession: AnyObject, Observable {
 
     func startGame(questions: [Question]) async
     func rematch() async
-    /// 速答型の早押しボタン。文字送り型では使わない
+    /// 即答型の早押しボタン。文字送り型では使わない
     func buzz()
     /// 回答する。文字送り型では選択肢を押した瞬間がこれにあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
@@ -36,7 +36,7 @@ extension BattleSession {
         return state?.players.first { $0.id == uid }
     }
 
-    /// いま何文字目まで見えているか。文字送り型でのみ増えていき、速答型では常に全文
+    /// いま何文字目まで見えているか。文字送り型でのみ増えていき、即答型では常に全文
     func visibleCharacterCount(at date: Date) -> Int {
         guard let state, let question = currentQuestion else { return 0 }
         guard let game = state.game,

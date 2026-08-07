@@ -13,6 +13,14 @@ struct RoomCreateView: View {
 
     var body: some View {
         Form {
+            Section {
+                QuizStylePicker(style: $style)
+            } header: {
+                Text("対戦形式")
+            } footer: {
+                Text(style.detail)
+            }
+
             Section("対戦設定") {
                 Picker("ジャンル", selection: .constant(Genre.englishWord)) {
                     ForEach(Genre.allCases) { genre in
@@ -29,12 +37,6 @@ struct RoomCreateView: View {
                         Text("\(Int(seconds))秒 / 問").tag(seconds)
                     }
                 }
-            }
-
-            Section {
-                QuizStylePicker(style: $style)
-            } footer: {
-                Text(style.detail)
             }
 
             Section {

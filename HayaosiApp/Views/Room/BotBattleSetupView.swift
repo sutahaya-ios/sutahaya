@@ -14,6 +14,14 @@ struct BotBattleSetupView: View {
 
     var body: some View {
         Form {
+            Section {
+                QuizStylePicker(style: $style)
+            } header: {
+                Text("対戦形式")
+            } footer: {
+                Text(style.detail)
+            }
+
             Section("対戦設定") {
                 Picker("ジャンル", selection: .constant(Genre.englishWord)) {
                     ForEach(Genre.allCases) { genre in
@@ -31,12 +39,6 @@ struct BotBattleSetupView: View {
                     }
                 }
                 Stepper("ボット \(botCount)体", value: $botCount, in: Self.botCountRange)
-            }
-
-            Section {
-                QuizStylePicker(style: $style)
-            } footer: {
-                Text(style.detail)
             }
 
             Section {

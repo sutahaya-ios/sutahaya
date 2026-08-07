@@ -2,7 +2,7 @@ import SwiftUI
 
 /// 対戦画面の問題文(英単語)。文字送り型では1文字ずつ表示する(要件 §5.1.2)
 struct BattleQuestionText: View {
-    /// 見せ方。発表中や速答型では全文を出す
+    /// 見せ方。発表中や即答型では全文を出す
     enum Mode: Equatable {
         case progressing(startedAtMS: Double)
         case full

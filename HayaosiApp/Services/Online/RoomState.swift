@@ -50,7 +50,7 @@ struct RoomState {
         let phase: GamePhase
         let startedAtMS: Double
         let buzzWinner: String?
-        /// uid → サーバータイムスタンプ(ms)。押下順キュー(速答型。要件 §5.1.2)
+        /// uid → サーバータイムスタンプ(ms)。押下順キュー(即答型。要件 §5.1.2)
         let buzzQueue: [String: Double]
         /// この問題で誤答済みのuid。再回答できない
         let failedIDs: Set<String>
@@ -64,7 +64,7 @@ struct RoomState {
         let questionCount: Int
         let timeLimit: TimeInterval
         let genre: Genre
-        /// 出題形式(速答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
+        /// 出題形式(即答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
         var style: QuizStyle = QuizDefaults.style
     }
 
