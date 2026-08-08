@@ -105,7 +105,8 @@ service cloud.firestore {
 Realtime Database:
 rooms/{4桁コード}
   ├─ hostID, status(waiting/playing/finished/closed), createdAt
-  ├─ settings { questionCount, timeLimit, genre, style(progressive_choice/speed) }
+  ├─ settings { questionCount, timeLimit, genre, style(progressive_choice/speed),
+  │             wordCategory(junior_high/high_school), wordDifficulty(1〜5) }
   ├─ players/{uid} { nickname, score, joinedAt }
   ├─ questions [ { id, text, choices[4], answer } ]  ← 開始時にホストが配信
   └─ game { questionIndex, phase(question/reveal/finished), startedAt,

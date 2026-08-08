@@ -5,6 +5,8 @@ import SwiftData
 struct PracticeSetupView: View {
     @Query private var allQuestions: [Question]
     @State private var genre: Genre = .englishWord
+    @State private var category = WordCategory.juniorHigh
+    @State private var difficulty = WordDifficulty.one
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
     @State private var quizQuestions: [Question] = []
@@ -18,6 +20,7 @@ struct PracticeSetupView: View {
                         Text(genre.displayName).tag(genre)
                     }
                 }
+                WordClassificationPicker(category: $category, difficulty: $difficulty)
                 Picker("問題数", selection: $questionCount) {
                     ForEach(QuizDefaults.questionCountOptions, id: \.self) { count in
                         Text("\(count)問").tag(count)
@@ -36,7 +39,7 @@ struct PracticeSetupView: View {
                 }
                 .disabled(availableQuestions.isEmpty)
             } footer: {
-                Text("収録問題数:\(availableQuestions.count)問")
+                Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問")
             }
         }
         .navigationTitle("一人練習")
@@ -46,7 +49,9 @@ struct PracticeSetupView: View {
     }
 
     private var availableQuestions: [Question] {
-        allQuestions.filter { $0.genre == genre }
+        allQuestions
+            .filter { $0.genre == genre }
+            .matching(category: category, difficulty: difficulty)
     }
 
     private func start() {

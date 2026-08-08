@@ -1,0 +1,155 @@
+[
+  {
+    "id": "jh_0001",
+    "word": "benefit",
+    "meaning": "恩恵",
+    "definition": "そのおかげで受け取る、ためになるものや良い効果",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0002",
+    "word": "economy",
+    "meaning": "経済",
+    "definition": "お金や物が世の中を回っていく仕組みの全体",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0003",
+    "word": "emergency",
+    "meaning": "緊急事態",
+    "definition": "すぐに手を打たなければならない、思いがけない事態",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0004",
+    "word": "industry",
+    "meaning": "産業、工業",
+    "definition": "原料から製品をつくり出す仕事の分野",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_0005",
+    "word": "opportunity",
+    "meaning": "機会",
+    "definition": "何かをするのにちょうど都合のよい、めぐり合わせ",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_0006",
+    "word": "visible",
+    "meaning": "目に見える",
+    "definition": "目で見て確かめられる",
+    "pos": "形容詞",
+    "category": "junior_high",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0007",
+    "word": "admire",
+    "meaning": "〜を称賛する",
+    "definition": "優れた点に心を動かされ、すばらしいと思う",
+    "pos": "動詞",
+    "category": "junior_high",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0008",
+    "word": "announce",
+    "meaning": "〜を発表する",
+    "definition": "決まったことを多くの人へ正式に知らせる",
+    "pos": "動詞",
+    "category": "junior_high",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0009",
+    "word": "apply",
+    "meaning": "適用する、応募する",
+    "definition": "規則や方法を当てはめる。また希望を出して申し込む",
+    "pos": "動詞",
+    "category": "junior_high",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_0010",
+    "word": "avoid",
+    "meaning": "〜を避ける",
+    "definition": "望ましくない事態に近づかないようにする",
+    "pos": "動詞",
+    "category": "junior_high",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_0011",
+    "word": "advantage",
+    "meaning": "利点、有利",
+    "definition": "他より得をしている点や、勝っている条件",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0012",
+    "word": "competition",
+    "meaning": "競争、競技会",
+    "definition": "同じものを目指して互いに争うこと",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0013",
+    "word": "fuel",
+    "meaning": "燃料",
+    "definition": "燃やして熱や動力を得るためのもの",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0014",
+    "word": "income",
+    "meaning": "収入",
+    "definition": "働きや財産から個人に入ってくるお金",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_0015",
+    "word": "item",
+    "meaning": "品目、項目",
+    "definition": "一覧の中の一つ一つの品物や事柄",
+    "pos": "名詞",
+    "category": "junior_high",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_0016",
+    "word": "aware",
+    "meaning": "気づいている",
+    "definition": "そこにあることを分かっている状態の",
+    "pos": "形容詞",
+    "category": "junior_high",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0017",
+    "word": "entire",
+    "meaning": "全体の",
+    "definition": "欠けたところがなく、まるごと全部の",
+    "pos": "形容詞",
+    "category": "junior_high",
+    "difficulty": 2
+  }
+]

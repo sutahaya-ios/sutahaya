@@ -1,0 +1,1649 @@
+[
+  {
+    "id": "hs_0001",
+    "word": "abandon",
+    "meaning": "〜を捨てる、断念する",
+    "definition": "それまで続けてきたことややり方を、途中でやめて手放してしまう",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0002",
+    "word": "accomplish",
+    "meaning": "〜を成し遂げる",
+    "definition": "目標にしていた難しいことを、最後までやりきって形にする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0003",
+    "word": "acquire",
+    "meaning": "〜を習得する、身につける",
+    "definition": "知識や技術を、時間をかけた努力によって自分のものにする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0004",
+    "word": "adopt",
+    "meaning": "〜を採用する",
+    "definition": "提案や方法をよいものとして選び、これから使うことに決める",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0005",
+    "word": "analyze",
+    "meaning": "〜を分析する",
+    "definition": "全体をいくつかの要素に分けて、その仕組みや原因を細かく調べる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0006",
+    "word": "anticipate",
+    "meaning": "〜を予期する",
+    "definition": "これから起こりそうなことを前もって見込み、心の準備をする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0007",
+    "word": "assume",
+    "meaning": "〜を仮定する、当然と思う",
+    "definition": "確かな証拠はないが、たぶんそうだろうと考えて話を進める",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0008",
+    "word": "attribute",
+    "meaning": "〜のせいにする、〜に帰する",
+    "definition": "ある結果が起きた原因を、特定の物事のせいだと考える",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0009",
+    "word": "compensate",
+    "meaning": "〜を補償する、埋め合わせる",
+    "definition": "相手に与えた損害や不足を、お金や別のもので埋め合わせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0010",
+    "word": "conclude",
+    "meaning": "〜と結論づける",
+    "definition": "検討を重ねたうえで、最後にこうだと判断を下す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0011",
+    "word": "confirm",
+    "meaning": "〜を確認する、裏付ける",
+    "definition": "本当にそうかを調べて、間違いないとはっきりさせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0012",
+    "word": "criticize",
+    "meaning": "〜を批判する",
+    "definition": "相手のよくない点を取り上げて、悪いとはっきり言う",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0013",
+    "word": "decline",
+    "meaning": "減少する、断る",
+    "definition": "勢いや数量が下がっていく。また、申し出をていねいに断る",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0014",
+    "word": "demonstrate",
+    "meaning": "〜を実証する、証明してみせる",
+    "definition": "実際にやって見せたり証拠を挙げたりして、正しいと示す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0015",
+    "word": "derive",
+    "meaning": "〜を引き出す、〜に由来する",
+    "definition": "あるものを元にして引き出す。また、そこから生まれてくる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0016",
+    "word": "determine",
+    "meaning": "〜を決定する",
+    "definition": "いくつかの可能性の中から、これにすると最終的に決める",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0017",
+    "word": "devote",
+    "meaning": "〜を捧げる",
+    "definition": "時間や力のすべてを、一つのことのために注ぎ込む",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0018",
+    "word": "eliminate",
+    "meaning": "〜を取り除く",
+    "definition": "不要なものや邪魔なものを、そこから完全になくす",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0019",
+    "word": "emphasize",
+    "meaning": "〜を強調する",
+    "definition": "特に大事な点を、目立つように強く言ったり示したりする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0020",
+    "word": "establish",
+    "meaning": "〜を設立する、確立する",
+    "definition": "会社や制度などを新しくつくって、続いていく形にする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0021",
+    "word": "estimate",
+    "meaning": "〜を見積もる",
+    "definition": "正確には分からない数量を、だいたいこれくらいと計算する",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0022",
+    "word": "evaluate",
+    "meaning": "〜を評価する",
+    "definition": "価値や能力がどれくらいかを調べて、判断を付ける",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0023",
+    "word": "expand",
+    "meaning": "〜を拡大する",
+    "definition": "大きさや範囲、規模をより大きく広げる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0024",
+    "word": "facilitate",
+    "meaning": "〜を容易にする、促進する",
+    "definition": "物事がうまく運ぶように手助けして、進みやすくする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0025",
+    "word": "imply",
+    "meaning": "〜を暗に意味する",
+    "definition": "直接は口に出さず、言葉の裏でそれとなく示す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0026",
+    "word": "impose",
+    "meaning": "〜を課す、押しつける",
+    "definition": "税や規則、負担などを相手に有無を言わせず負わせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0027",
+    "word": "indicate",
+    "meaning": "〜を示す",
+    "definition": "それだと分かるように、指し示したり表したりする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0028",
+    "word": "interpret",
+    "meaning": "〜を解釈する",
+    "definition": "言葉や出来事の意味を、自分なりに読み取って説明する",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0029",
+    "word": "investigate",
+    "meaning": "〜を調査する",
+    "definition": "事件や問題の真相を、詳しく調べて明らかにしようとする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0030",
+    "word": "justify",
+    "meaning": "〜を正当化する",
+    "definition": "自分の行いが正しかった理由を挙げて、当然だと示す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0031",
+    "word": "maintain",
+    "meaning": "〜を維持する、主張する",
+    "definition": "今の状態をそのまま保ち続ける。また、自分の考えを言い張る",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0032",
+    "word": "negotiate",
+    "meaning": "交渉する",
+    "definition": "立場の違う相手と話し合い、条件の折り合いをつける",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0033",
+    "word": "obtain",
+    "meaning": "〜を手に入れる",
+    "definition": "欲しかったものを、手続きや努力を経て手に入れる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0034",
+    "word": "occupy",
+    "meaning": "〜を占める",
+    "definition": "場所や時間、地位をふさぐようにして自分のものとする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0035",
+    "word": "persuade",
+    "meaning": "〜を説得する",
+    "definition": "話して相手の気持ちを変え、こちらの望む行動をとらせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0036",
+    "word": "postpone",
+    "meaning": "〜を延期する",
+    "definition": "予定していたことを、後の日時にずらして先に延ばす",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0037",
+    "word": "preserve",
+    "meaning": "〜を保存する、保護する",
+    "definition": "傷んだり失われたりしないように、そのままの状態で守る",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0038",
+    "word": "prohibit",
+    "meaning": "〜を禁止する",
+    "definition": "規則や法律で、してはいけないと決めて許さない",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0039",
+    "word": "pursue",
+    "meaning": "〜を追求する",
+    "definition": "目標や理想を、あきらめずに追いかけ続ける",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0040",
+    "word": "restrict",
+    "meaning": "〜を制限する",
+    "definition": "使える範囲や量に枠をはめて、それ以上は認めない",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0041",
+    "word": "agriculture",
+    "meaning": "農業",
+    "definition": "土地を耕して作物を育て、家畜を飼う仕事の全体",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0042",
+    "word": "atmosphere",
+    "meaning": "大気、雰囲気",
+    "definition": "地球を包んでいる空気の層。また、その場に漂う感じ",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0043",
+    "word": "authority",
+    "meaning": "権威、当局",
+    "definition": "人を従わせる力。また、その力を持つ役所や機関",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0044",
+    "word": "circumstance",
+    "meaning": "状況、事情",
+    "definition": "そのとき人を取り巻いていた、まわりの事情や成り行き",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0045",
+    "word": "colleague",
+    "meaning": "同僚",
+    "definition": "同じ職場や研究の場で一緒に働いている相手",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0046",
+    "word": "commerce",
+    "meaning": "商業",
+    "definition": "品物を売り買いして利益を得る営みの全体",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0047",
+    "word": "consequence",
+    "meaning": "結果、影響",
+    "definition": "ある行いのあとに、その結果として生じてくること",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0048",
+    "word": "controversy",
+    "meaning": "論争",
+    "definition": "意見が真っ向から分かれ、長く言い争いが続くこと",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0049",
+    "word": "criteria",
+    "meaning": "基準",
+    "definition": "良いか悪いかを判断するときのよりどころとなる目安",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0050",
+    "word": "democracy",
+    "meaning": "民主主義",
+    "definition": "国のことを、国民が選んだ代表によって決める仕組み",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0051",
+    "word": "dimension",
+    "meaning": "次元、寸法",
+    "definition": "縦・横・高さといった広がりの方向。また、物事の側面",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0052",
+    "word": "evidence",
+    "meaning": "証拠",
+    "definition": "それが本当だと裏づける、目に見える手がかり",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0053",
+    "word": "expenditure",
+    "meaning": "支出、経費",
+    "definition": "ある目的のために支払われて出ていくお金",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0054",
+    "word": "hypothesis",
+    "meaning": "仮説",
+    "definition": "まだ確かめられていないが、説明のために立てた仮の考え",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0055",
+    "word": "institution",
+    "meaning": "機関、制度",
+    "definition": "社会の役割を担う組織。また、長く続いてきた決まり",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0056",
+    "word": "insurance",
+    "meaning": "保険",
+    "definition": "万一の損害に備えて、掛け金を出し合っておく仕組み",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0057",
+    "word": "labor",
+    "meaning": "労働",
+    "definition": "体や頭を使って働くこと。またその働き手",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0058",
+    "word": "legislation",
+    "meaning": "法律の制定、法令",
+    "definition": "議会が法律をつくること。またつくられた法律",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0059",
+    "word": "luxury",
+    "meaning": "贅沢(品)",
+    "definition": "生活に必要ではないが、豊かで心地よい高価なもの",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0060",
+    "word": "obstacle",
+    "meaning": "障害物",
+    "definition": "進もうとする道の途中で、行く手をふさいでいるもの",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0061",
+    "word": "occupation",
+    "meaning": "職業",
+    "definition": "生活のために就いている仕事",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0062",
+    "word": "phenomenon",
+    "meaning": "現象",
+    "definition": "実際に目に見える形で現れた出来事",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0063",
+    "word": "poverty",
+    "meaning": "貧困",
+    "definition": "暮らしていくのに必要なものが足りない状態",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0064",
+    "word": "priority",
+    "meaning": "優先事項",
+    "definition": "ほかより先に扱うべきだと決めた物事",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0065",
+    "word": "profit",
+    "meaning": "利益、もうけ",
+    "definition": "売り上げから費用を引いて残る、もうけの分",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0066",
+    "word": "reputation",
+    "meaning": "評判",
+    "definition": "その人や物について、世間で言われている評価",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0067",
+    "word": "resource",
+    "meaning": "資源",
+    "definition": "役に立つもとになる、自然の産物や人の力",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0068",
+    "word": "revenue",
+    "meaning": "歳入、収益",
+    "definition": "国や会社に入ってくるお金の総額",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0069",
+    "word": "strategy",
+    "meaning": "戦略",
+    "definition": "目的を達するために前もって立てた、大きな筋道",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0070",
+    "word": "welfare",
+    "meaning": "福祉",
+    "definition": "人々が安心して暮らせるようにする、社会の仕組み",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0071",
+    "word": "abstract",
+    "meaning": "抽象的な",
+    "definition": "形がなく、頭の中だけで考える性質の",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0072",
+    "word": "accurate",
+    "meaning": "正確な",
+    "definition": "ずれや誤りがなく、事実とぴったり合っている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0073",
+    "word": "adequate",
+    "meaning": "十分な、適切な",
+    "definition": "目的を満たすのに足りていて、不足がない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0074",
+    "word": "ambiguous",
+    "meaning": "あいまいな",
+    "definition": "意味が二通りに取れて、どちらとも決めきれない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0075",
+    "word": "annual",
+    "meaning": "年に1度の",
+    "definition": "1年に1度めぐってくる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0076",
+    "word": "artificial",
+    "meaning": "人工的な",
+    "definition": "自然のものではなく、人の手で作り出された",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0077",
+    "word": "crucial",
+    "meaning": "極めて重要な",
+    "definition": "そこで決まるかどうかが分かれるほど、決定的に大事な",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0078",
+    "word": "deliberate",
+    "meaning": "意図的な",
+    "definition": "うっかりではなく、わざとそうした",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0079",
+    "word": "domestic",
+    "meaning": "国内の、家庭の",
+    "definition": "外国ではなく自分の国の中の。また、家の中の",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0080",
+    "word": "efficient",
+    "meaning": "効率的な",
+    "definition": "少ない手間や時間で、無駄なく成果を出せる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0081",
+    "word": "essential",
+    "meaning": "不可欠な",
+    "definition": "それを欠くと全体が成り立たない、根本にかかわる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0082",
+    "word": "evident",
+    "meaning": "明白な",
+    "definition": "誰の目にもはっきりしていて、疑う余地がない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0083",
+    "word": "flexible",
+    "meaning": "柔軟な",
+    "definition": "状況に合わせて、形ややり方を変えられる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0084",
+    "word": "genuine",
+    "meaning": "本物の",
+    "definition": "見せかけや偽物ではなく、正真正銘の",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0085",
+    "word": "inevitable",
+    "meaning": "避けられない",
+    "definition": "どうしても避けようがなく、必ずそうなる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0086",
+    "word": "moderate",
+    "meaning": "適度な、穏やかな",
+    "definition": "多すぎず少なすぎず、行きすぎのない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0087",
+    "word": "permanent",
+    "meaning": "永続的な",
+    "definition": "一時的ではなく、そのままずっと続く",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0088",
+    "word": "profound",
+    "meaning": "深遠な、深い",
+    "definition": "表面的ではなく、非常に深いところまで及ぶ",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0089",
+    "word": "rational",
+    "meaning": "合理的な",
+    "definition": "感情ではなく理屈に沿って、筋道が通っている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0090",
+    "word": "reluctant",
+    "meaning": "気が進まない",
+    "definition": "やりたくない気持ちがあって、乗り気でない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0091",
+    "word": "rigid",
+    "meaning": "硬直した、厳格な",
+    "definition": "曲がらないほど硬い。また、少しも融通がきかない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0092",
+    "word": "subtle",
+    "meaning": "微妙な、繊細な",
+    "definition": "ごくわずかな違いで、気づきにくい",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0093",
+    "word": "tremendous",
+    "meaning": "途方もない、莫大な",
+    "definition": "程度や量が並外れて大きい",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0094",
+    "word": "urgent",
+    "meaning": "緊急の",
+    "definition": "今すぐ対応しなければならないほど差し迫った",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0095",
+    "word": "accumulate",
+    "meaning": "〜を蓄積する",
+    "definition": "少しずつ集めて量を増やし、まとまった量にする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0096",
+    "word": "adapt",
+    "meaning": "適応する、〜を適合させる",
+    "definition": "新しい環境や条件に合わせて、やり方や形を変える",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0097",
+    "word": "allocate",
+    "meaning": "〜を割り当てる",
+    "definition": "限られた予算や資源を、目的ごとに分けて配る",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0098",
+    "word": "appreciate",
+    "meaning": "〜を正しく理解する、ありがたく思う",
+    "definition": "価値をよく分かって受け止め、ありがたいと感じる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0099",
+    "word": "approve",
+    "meaning": "〜を承認する",
+    "definition": "内容を認めて、それでよいと公式に許す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0100",
+    "word": "accompany",
+    "meaning": "〜に同行する、伴う",
+    "definition": "一緒に付いていく。また、あるものと同時に起こる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0101",
+    "word": "assign",
+    "meaning": "〜を割り当てる、任命する",
+    "definition": "仕事や役割を、担当する人を決めて任せる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0102",
+    "word": "attain",
+    "meaning": "〜を達成する",
+    "definition": "努力を続けて、目指していた水準や地位に届く",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0103",
+    "word": "cease",
+    "meaning": "やむ、〜をやめる",
+    "definition": "続いていた動きや音が止まる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0104",
+    "word": "collaborate",
+    "meaning": "共同で行う",
+    "definition": "複数の人が力を合わせて一つの作品や仕事に取り組む",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0105",
+    "word": "comprehend",
+    "meaning": "〜を理解する",
+    "definition": "内容の筋道をつかんで、意味がのみこめる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0106",
+    "word": "conceal",
+    "meaning": "〜を隠す",
+    "definition": "人に見られたり知られたりしないように覆う",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0107",
+    "word": "consist",
+    "meaning": "(〜から)成る",
+    "definition": "いくつかの部分が集まって全体を作っている",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0108",
+    "word": "consume",
+    "meaning": "〜を消費する",
+    "definition": "使ってなくす。また、飲んだり食べたりする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0109",
+    "word": "contribute",
+    "meaning": "貢献する、寄付する",
+    "definition": "役に立つものを差し出して、全体の助けになる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0110",
+    "word": "convince",
+    "meaning": "〜を納得させる",
+    "definition": "話して相手に、それが本当だと信じさせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0111",
+    "word": "cultivate",
+    "meaning": "〜を耕す、育てる",
+    "definition": "土地を耕して作物を育てる。また能力を時間をかけて伸ばす",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0112",
+    "word": "correspond",
+    "meaning": "一致する、文通する",
+    "definition": "両者がぴったり合う。また、手紙をやり取りする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0113",
+    "word": "deceive",
+    "meaning": "〜をだます",
+    "definition": "うそを信じ込ませて、相手に損をさせる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0114",
+    "word": "reveal",
+    "meaning": "〜を明らかにする",
+    "definition": "隠れていたことを、人に見えるようにする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0115",
+    "word": "deny",
+    "meaning": "〜を否定する、拒む",
+    "definition": "そうではないと言う。また、求めを受け入れない",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0116",
+    "word": "depict",
+    "meaning": "〜を描写する",
+    "definition": "絵や言葉で、様子が目に浮かぶように表す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0117",
+    "word": "discard",
+    "meaning": "〜を捨てる",
+    "definition": "不要になったものを手放して処分する",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0118",
+    "word": "distinguish",
+    "meaning": "〜を区別する",
+    "definition": "二つ以上のものを見比べて、違いを見分ける",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0119",
+    "word": "dominate",
+    "meaning": "〜を支配する、優位を占める",
+    "definition": "強い力で全体を押さえ、中心の位置を占める",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0120",
+    "word": "encounter",
+    "meaning": "〜に出会う、直面する",
+    "definition": "思いがけず人や困難に行き当たる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0121",
+    "word": "endure",
+    "meaning": "〜に耐える",
+    "definition": "つらい状態を投げ出さずに持ちこたえる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0122",
+    "word": "enhance",
+    "meaning": "〜を高める",
+    "definition": "もともとある良さや価値をさらに引き上げる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0123",
+    "word": "ensure",
+    "meaning": "〜を確実にする",
+    "definition": "間違いなくそうなるように、前もって手を打つ",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0124",
+    "word": "exaggerate",
+    "meaning": "〜を大げさに言う",
+    "definition": "実際よりも程度が大きいように表す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0125",
+    "word": "exceed",
+    "meaning": "〜を超える",
+    "definition": "決められた限度や予想を上回る",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0126",
+    "word": "exclude",
+    "meaning": "〜を除外する",
+    "definition": "仲間や対象の範囲の中に入れない",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0127",
+    "word": "exhibit",
+    "meaning": "〜を展示する、示す",
+    "definition": "多くの人に見えるように並べる。また性質を表に出す",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0128",
+    "word": "expose",
+    "meaning": "〜をさらす、暴露する",
+    "definition": "覆いを取って、外気や人目に触れる状態にする",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0129",
+    "word": "fulfill",
+    "meaning": "〜を果たす、満たす",
+    "definition": "約束や条件を、言ったとおりにやり遂げる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0130",
+    "word": "generate",
+    "meaning": "〜を生み出す",
+    "definition": "新しく作り出す。また、電気などを発生させる",
+    "pos": "動詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0131",
+    "word": "achievement",
+    "meaning": "業績、達成",
+    "definition": "努力の結果として成し遂げられた立派な成果",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0132",
+    "word": "aspect",
+    "meaning": "側面",
+    "definition": "物事を見る向きによって現れる一つの面",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0133",
+    "word": "capacity",
+    "meaning": "能力、収容力",
+    "definition": "受け入れられる最大の量。また物事をこなす力",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0134",
+    "word": "category",
+    "meaning": "分類、部門",
+    "definition": "性質の似たものをまとめた区分",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0135",
+    "word": "component",
+    "meaning": "構成要素、部品",
+    "definition": "全体を組み立てている一つ一つの部分",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0136",
+    "word": "concept",
+    "meaning": "概念",
+    "definition": "複数の物事に共通する特徴をまとめた考え方",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0137",
+    "word": "conflict",
+    "meaning": "対立、紛争",
+    "definition": "立場や利害がぶつかり合って争いになること",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0138",
+    "word": "consumer",
+    "meaning": "消費者",
+    "definition": "商品やサービスを買って使う側の人",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0139",
+    "word": "contract",
+    "meaning": "契約(書)",
+    "definition": "当事者が取り決めた約束と、それを記した書面",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0140",
+    "word": "crisis",
+    "meaning": "危機",
+    "definition": "悪い方に転びかねない、きわどい局面",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0141",
+    "word": "currency",
+    "meaning": "通貨",
+    "definition": "国の中で支払いに使われるお金の単位",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0142",
+    "word": "decade",
+    "meaning": "10年間",
+    "definition": "10年をひとまとめにした期間",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0143",
+    "word": "deficit",
+    "meaning": "赤字、不足",
+    "definition": "収入より支出が多く、足りていない状態",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0144",
+    "word": "device",
+    "meaning": "装置、工夫",
+    "definition": "ある働きをさせるために作られた道具や仕掛け",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0145",
+    "word": "diversity",
+    "meaning": "多様性",
+    "definition": "性質の違うものが混ざって存在していること",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0146",
+    "word": "efficiency",
+    "meaning": "効率",
+    "definition": "かけた手間に対して得られる成果の割合",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0147",
+    "word": "equipment",
+    "meaning": "装備、設備",
+    "definition": "作業や活動のためにそろえた道具や機械の一式",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0148",
+    "word": "essence",
+    "meaning": "本質",
+    "definition": "そのものを成り立たせている、一番大事な性質",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0149",
+    "word": "estate",
+    "meaning": "地所、財産",
+    "definition": "まとまった広さの土地と、その持ち主の財産",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0150",
+    "word": "fatigue",
+    "meaning": "疲労",
+    "definition": "体や心を使いすぎて力が出なくなった状態",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0151",
+    "word": "feature",
+    "meaning": "特徴、機能",
+    "definition": "他と見分ける手がかりになる、目立つ点",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0152",
+    "word": "framework",
+    "meaning": "枠組み",
+    "definition": "物事を組み立てるときの土台となる骨組み",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0153",
+    "word": "function",
+    "meaning": "機能、働き",
+    "definition": "そのものが果たすべき役目",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 1
+  },
+  {
+    "id": "hs_0154",
+    "word": "influence",
+    "meaning": "影響(力)",
+    "definition": "他のものの考えや動きを変えるはたらき",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0155",
+    "word": "insight",
+    "meaning": "洞察",
+    "definition": "表面に出ていない仕組みや本質を見抜く力",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0156",
+    "word": "instance",
+    "meaning": "例、場合",
+    "definition": "説明のために挙げる、具体的な一つの場合",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0157",
+    "word": "isolation",
+    "meaning": "孤立、隔離",
+    "definition": "周りとのつながりを断たれて、一つだけになること",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0158",
+    "word": "journal",
+    "meaning": "専門誌、日誌",
+    "definition": "特定分野の論文を載せる雑誌。また日々の記録",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0159",
+    "word": "justice",
+    "meaning": "正義、司法",
+    "definition": "ものごとを公平に扱うこと。また裁きの仕組み",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0160",
+    "word": "majority",
+    "meaning": "大多数、過半数",
+    "definition": "全体の半分を超える、大きい方の部分",
+    "pos": "名詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0161",
+    "word": "abundant",
+    "meaning": "豊富な",
+    "definition": "必要より多く、たっぷりある",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0162",
+    "word": "absolute",
+    "meaning": "絶対的な",
+    "definition": "他と比べる必要がないほど完全で、例外がない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0163",
+    "word": "alternative",
+    "meaning": "代わりの",
+    "definition": "本来のものの代わりに選べる",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0164",
+    "word": "apparent",
+    "meaning": "明らかな、見かけ上の",
+    "definition": "ぱっと見て分かる。また、見かけだけそう見える",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0165",
+    "word": "appropriate",
+    "meaning": "適切な",
+    "definition": "その場や目的にちょうどふさわしい",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0166",
+    "word": "brief",
+    "meaning": "短い、簡潔な",
+    "definition": "時間が短く、要点だけにまとまっている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0167",
+    "word": "capable",
+    "meaning": "能力がある",
+    "definition": "その仕事をやり遂げる力を持っている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0168",
+    "word": "complex",
+    "meaning": "複雑な",
+    "definition": "多くの要素が絡み合って、簡単には解けない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0169",
+    "word": "conscious",
+    "meaning": "意識のある、自覚した",
+    "definition": "はっきり目覚めていて、自分の状態が分かっている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0170",
+    "word": "considerable",
+    "meaning": "かなりの",
+    "definition": "無視できないほど量や程度が大きい",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0171",
+    "word": "consistent",
+    "meaning": "一貫した",
+    "definition": "前後で食い違いがなく、筋が通っている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0172",
+    "word": "constant",
+    "meaning": "絶え間ない、一定の",
+    "definition": "途切れずに続き、値が変わらない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0173",
+    "word": "contemporary",
+    "meaning": "現代の、同時代の",
+    "definition": "今の時代の。また、同じ時代に生きている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0174",
+    "word": "contrary",
+    "meaning": "反対の",
+    "definition": "向きや内容がまったく逆の",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0175",
+    "word": "dense",
+    "meaning": "密集した、濃い",
+    "definition": "狭い範囲にぎっしり詰まっている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0176",
+    "word": "distinct",
+    "meaning": "はっきり異なる、明瞭な",
+    "definition": "他とはっきり区別できて、まぎれない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0177",
+    "word": "diverse",
+    "meaning": "多様な",
+    "definition": "見た目や性質がさまざまで、一様でない",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  },
+  {
+    "id": "hs_0178",
+    "word": "dramatic",
+    "meaning": "劇的な",
+    "definition": "芝居のように急で、目を引く変わり方の",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 2
+  },
+  {
+    "id": "hs_0179",
+    "word": "eager",
+    "meaning": "熱心な",
+    "definition": "早くやりたくてたまらない気持ちの",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0180",
+    "word": "elaborate",
+    "meaning": "精巧な、入念な",
+    "definition": "細部まで手をかけて作り込まれている",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0181",
+    "word": "eligible",
+    "meaning": "資格のある",
+    "definition": "条件を満たしていて、選ばれる権利がある",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 5
+  },
+  {
+    "id": "hs_0182",
+    "word": "external",
+    "meaning": "外部の",
+    "definition": "内側ではなく、外に属している",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 3
+  },
+  {
+    "id": "hs_0183",
+    "word": "extensive",
+    "meaning": "広範囲の",
+    "definition": "およぶ範囲が広く、量も多い",
+    "pos": "形容詞",
+    "category": "high_school",
+    "difficulty": 4
+  }
+]

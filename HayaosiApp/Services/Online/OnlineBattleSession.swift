@@ -81,12 +81,7 @@ final class OnlineBattleSession: BattleSession {
                 "hostID": myID,
                 "status": RoomState.Status.waiting.rawValue,
                 "createdAt": ServerValue.timestamp(),
-                "settings": [
-                    "questionCount": settings.questionCount,
-                    "timeLimit": settings.timeLimit,
-                    "genre": settings.genre.rawValue,
-                    "style": settings.style.rawValue
-                ],
+                "settings": settings.databaseValue,
                 "players": [
                     myID: ["nickname": nickname, "score": 0, "joinedAt": ServerValue.timestamp()]
                 ]

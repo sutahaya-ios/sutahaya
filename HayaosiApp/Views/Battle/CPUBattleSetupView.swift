@@ -1,10 +1,14 @@
 import SwiftUI
+import SwiftData
 
 /// CPU対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる
 struct CPUBattleSetupView: View {
     private static let botCountRange = 1...3
 
     @AppStorage("nickname") private var nickname = "ゲスト"
+    @Query private var allQuestions: [Question]
+    @State private var category = WordCategory.juniorHigh
+    @State private var difficulty = WordDifficulty.one
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
     @State private var style = QuizDefaults.style
@@ -28,6 +32,7 @@ struct CPUBattleSetupView: View {
                         Text(genre.displayName).tag(genre)
                     }
                 }
+                WordClassificationPicker(category: $category, difficulty: $difficulty)
                 Picker("問題数", selection: $questionCount) {
                     ForEach(QuizDefaults.questionCountOptions, id: \.self) { count in
                         Text("\(count)問").tag(count)
@@ -45,8 +50,9 @@ struct CPUBattleSetupView: View {
                 Button("ロビーへ") {
                     start()
                 }
+                .disabled(availableQuestions.isEmpty)
             } footer: {
-                Text("通信なしでCPUと早押し対戦できます。結果は一人練習として学習履歴・復習リストに記録されます。")
+                Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")
             }
         }
         .navigationTitle("ひとりで(CPU対戦)")
@@ -63,14 +69,24 @@ struct CPUBattleSetupView: View {
         }
     }
 
+    private var availableQuestions: [Question] {
+        allQuestions
+            .filter { $0.genre == .englishWord }
+            .matching(category: category, difficulty: difficulty)
+    }
+
     private func start() {
+        let availableQuestionCount = availableQuestions.count
+        guard availableQuestionCount > 0 else { return }
         session = CPUBattleSession(
             nickname: nickname,
             settings: .init(
-                questionCount: questionCount,
+                questionCount: min(questionCount, availableQuestionCount),
                 timeLimit: timeLimit,
                 genre: .englishWord,
-                style: style
+                style: style,
+                wordCategory: category,
+                wordDifficulty: difficulty
             ),
             cpuCount: cpuCount
         )

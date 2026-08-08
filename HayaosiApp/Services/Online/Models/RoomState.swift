@@ -65,7 +65,59 @@ struct RoomState {
         let timeLimit: TimeInterval
         let genre: Genre
         /// 出題形式(即答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
-        var style: QuizStyle = QuizDefaults.style
+        let style: QuizStyle
+        /// 英単語のカテゴリと難易度。nilは分類設定のない旧ルームとの互換用
+        let wordCategory: WordCategory?
+        let wordDifficulty: WordDifficulty?
+
+        init(
+            questionCount: Int,
+            timeLimit: TimeInterval,
+            genre: Genre,
+            style: QuizStyle = QuizDefaults.style,
+            wordCategory: WordCategory? = nil,
+            wordDifficulty: WordDifficulty? = nil
+        ) {
+            self.questionCount = questionCount
+            self.timeLimit = timeLimit
+            self.genre = genre
+            self.style = style
+            self.wordCategory = wordCategory
+            self.wordDifficulty = wordDifficulty
+        }
+
+        /// Realtime Databaseのsettingsへ保存する値
+        var databaseValue: [String: Any] {
+            var value: [String: Any] = [
+                "questionCount": questionCount,
+                "timeLimit": timeLimit,
+                "genre": genre.rawValue,
+                "style": style.rawValue
+            ]
+            if let wordCategory, let wordDifficulty {
+                value["wordCategory"] = wordCategory.rawValue
+                value["wordDifficulty"] = wordDifficulty.rawValue
+            }
+            return value
+        }
+
+        init(databaseValue: [String: Any]) {
+            questionCount = RoomState.int(databaseValue["questionCount"]) ?? QuizDefaults.questionCount
+            timeLimit = RoomState.double(databaseValue["timeLimit"]) ?? QuizDefaults.timeLimit
+            genre = Genre(rawValue: databaseValue["genre"] as? String ?? "") ?? .englishWord
+            style = QuizStyle(rawValue: databaseValue["style"] as? String ?? "") ?? QuizDefaults.style
+
+            let category = WordCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
+            let difficultyValue = RoomState.int(databaseValue["wordDifficulty"])
+            let difficulty = difficultyValue.flatMap(WordDifficulty.init(rawValue:))
+            if let category, let difficulty {
+                wordCategory = category
+                wordDifficulty = difficulty
+            } else {
+                wordCategory = nil
+                wordDifficulty = nil
+            }
+        }
     }
 
     let code: String
@@ -99,12 +151,7 @@ struct RoomState {
         self.status = status
 
         let settingsDict = dict["settings"] as? [String: Any] ?? [:]
-        self.settings = Settings(
-            questionCount: Self.int(settingsDict["questionCount"]) ?? QuizDefaults.questionCount,
-            timeLimit: Self.double(settingsDict["timeLimit"]) ?? QuizDefaults.timeLimit,
-            genre: Genre(rawValue: settingsDict["genre"] as? String ?? "") ?? .englishWord,
-            style: QuizStyle(rawValue: settingsDict["style"] as? String ?? "") ?? QuizDefaults.style
-        )
+        self.settings = Settings(databaseValue: settingsDict)
 
         let playersDict = dict["players"] as? [String: [String: Any]] ?? [:]
         self.players = playersDict.map { uid, value in

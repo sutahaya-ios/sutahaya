@@ -34,6 +34,13 @@ struct BattleLobbyView: View {
                         .buttonStyle(.bordered)
                     }
                     LabeledContent("ジャンル", value: state.settings.genre.displayName)
+                    if let category = state.settings.wordCategory,
+                       let difficulty = state.settings.wordDifficulty {
+                        LabeledContent("カテゴリ", value: category.displayName)
+                        LabeledContent("難易度", value: difficulty.starDisplay)
+                    } else {
+                        LabeledContent("単語範囲", value: "すべて")
+                    }
                     LabeledContent("出題形式", value: state.settings.style.displayName)
                     LabeledContent("問題数", value: "\(state.settings.questionCount)問")
                     LabeledContent("制限時間", value: "\(Int(state.settings.timeLimit))秒 / 問")
@@ -139,7 +146,12 @@ struct BattleLobbyView: View {
     }
 
     private func start(state: RoomState) async {
-        let pool = allQuestions.filter { $0.genre == state.settings.genre }
+        let pool = allQuestions
+            .filter { $0.genre == state.settings.genre }
+            .matching(
+                category: state.settings.wordCategory,
+                difficulty: state.settings.wordDifficulty
+            )
         let questions = Array(pool.shuffled().prefix(state.settings.questionCount))
         guard !questions.isEmpty else { return }
         await session.startGame(questions: questions)

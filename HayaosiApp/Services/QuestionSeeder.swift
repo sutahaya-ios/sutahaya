@@ -1,28 +1,41 @@
 import Foundation
 import SwiftData
 
+enum QuestionDataError: LocalizedError {
+    case missingResource(name: String)
+    case categoryMismatch(id: String, expected: WordCategory, actual: WordCategory)
+    case duplicateID(String)
+    case duplicateWord(word: String, category: WordCategory)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingResource(let name):
+            return "単語データ \(name).json が見つかりません"
+        case .categoryMismatch(let id, let expected, let actual):
+            return "\(id) のカテゴリが不正です: \(actual.rawValue)（期待値: \(expected.rawValue)）"
+        case .duplicateID(let id):
+            return "問題ID \(id) が重複しています"
+        case .duplicateWord(let word, let category):
+            return "\(category.displayName)で「\(word)」が重複しています"
+        }
+    }
+}
+
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 4
+    static let dataVersion = 6
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
     private static let distractorStride = 11
 
-    private struct WordEntry: Decodable {
-        let word: String
-        let pos: String
-        let meaning: String
-        /// 語の説明文(任意)。現在の出題では未使用だが、ジャンル追加や入力式(v1.5)で使えるよう残している
-        let definition: String?
-    }
-
     static func seedIfNeeded(context: ModelContext) {
         guard UserDefaults.standard.integer(forKey: versionKey) < dataVersion else { return }
         do {
             let entries = try loadEntries()
-            // 旧データを入れ替える。履歴・復習リストはquestionIDで別管理なので影響しない
+            try migrateQuestionReferences(to: entries, context: context)
+            // QuestionはJSONから再生成できる配布データなので、全件を新構造で入れ替える
             try context.delete(model: Question.self)
             for question in makeQuestions(from: entries) {
                 context.insert(question)
@@ -34,26 +47,88 @@ enum QuestionSeeder {
         }
     }
 
-    private static func loadEntries() throws -> [WordEntry] {
-        guard let url = Bundle.main.url(forResource: "english_words", withExtension: "json") else {
-            throw CocoaError(.fileNoSuchFile)
+    /// ID体系の変更時も、同じ単語なら既存の解答履歴と復習項目を新IDへ引き継ぐ
+    private static func migrateQuestionReferences(
+        to entries: [WordEntry],
+        context: ModelContext
+    ) throws {
+        let currentQuestions = try context.fetch(FetchDescriptor<Question>())
+        let entriesByID = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0) })
+        let entriesByWord = Dictionary(grouping: entries, by: \.normalizedWordKey)
+        var replacementIDByCurrentID: [String: String] = [:]
+
+        for question in currentQuestions {
+            if entriesByID[question.id] != nil {
+                replacementIDByCurrentID[question.id] = question.id
+                continue
+            }
+
+            let wordKey = question.text
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            let matches = entriesByWord[wordKey] ?? []
+            let categoryMatches = matches.filter { $0.category == question.category }
+            if categoryMatches.count == 1 {
+                replacementIDByCurrentID[question.id] = categoryMatches[0].id
+            } else if matches.count == 1 {
+                replacementIDByCurrentID[question.id] = matches[0].id
+            }
         }
-        return try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
+
+        for record in try context.fetch(FetchDescriptor<AnswerRecord>()) {
+            record.questionID = replacementIDByCurrentID[record.questionID] ?? record.questionID
+        }
+        for item in try context.fetch(FetchDescriptor<ReviewItem>()) {
+            item.questionID = replacementIDByCurrentID[item.questionID] ?? item.questionID
+        }
     }
 
-    /// 「単語 → 意味を4択」の問題を作る。出題形式(即答型/文字送り型)は見せ方の違いなので、
-    /// 問題データは共通で1セットだけ持つ。誤答は同じ品詞の他単語から決定的に選ぶ
+    /// 中学・高校の2ファイルを読み、カテゴリ内の重複とIDの一意性を検証する
+    static func loadEntries() throws -> [WordEntry] {
+        var allEntries: [WordEntry] = []
+        var allIDs: Set<String> = []
+
+        for category in WordCategory.allCases {
+            guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
+                throw QuestionDataError.missingResource(name: category.rawValue)
+            }
+            let entries = try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
+            var wordsInCategory: Set<String> = []
+
+            for entry in entries {
+                guard entry.category == category else {
+                    throw QuestionDataError.categoryMismatch(
+                        id: entry.id,
+                        expected: category,
+                        actual: entry.category
+                    )
+                }
+                guard allIDs.insert(entry.id).inserted else {
+                    throw QuestionDataError.duplicateID(entry.id)
+                }
+                guard wordsInCategory.insert(entry.normalizedWordKey).inserted else {
+                    throw QuestionDataError.duplicateWord(word: entry.word, category: category)
+                }
+            }
+            allEntries.append(contentsOf: entries)
+        }
+        return allEntries
+    }
+
+    /// 「単語 → 意味を4択」の問題を作る。誤答は同じ品詞の他単語から決定的に選ぶ
     private static func makeQuestions(from entries: [WordEntry]) -> [Question] {
         let groups = Dictionary(grouping: entries, by: \.pos)
-        return entries.enumerated().compactMap { index, entry in
+        return entries.compactMap { entry in
             guard let group = groups[entry.pos] else { return nil }
             return Question(
-                id: String(format: "en_%04d", index + 1),
+                id: entry.id,
                 genre: .englishWord,
                 type: .multipleChoice,
                 text: entry.word,
                 choices: [entry.meaning] + distractors(for: entry, in: group, using: \.meaning),
-                answer: entry.meaning
+                answer: entry.meaning,
+                category: entry.category,
+                difficulty: entry.difficulty
             )
         }
     }
@@ -63,7 +138,7 @@ enum QuestionSeeder {
         in group: [WordEntry],
         using key: KeyPath<WordEntry, String>
     ) -> [String] {
-        guard let base = group.firstIndex(where: { $0.word == entry.word }) else { return [] }
+        guard let base = group.firstIndex(where: { $0.id == entry.id }) else { return [] }
         let correct = entry[keyPath: key]
         var result: [String] = []
         for step in 1..<group.count where result.count < distractorCount {
