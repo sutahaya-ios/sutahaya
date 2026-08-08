@@ -1,6 +1,44 @@
 # コーディング規約・ナレッジ(Swiftを書く/レビューする前に読む)
 
-CLAUDE.md には構造と開発ルールだけを置き、コードを書くときの規約はこのファイルに集約している。
+CLAUDE.md には守るべきルールだけを置き、コードを書くときの規約と手順はこのファイルに集約している。
+
+## ディレクトリ構成
+
+フォルダの役割だけを規約にする(ファイル名の列挙は陳腐化するのでしない)。
+
+```
+├── project.yml               # XcodeGen定義(ターゲット・ビルド設定はここが正)
+├── Config/                   # 署名設定(local.xcconfigはgit管理外=各自の環境)
+├── HayaosiApp.xcodeproj/     # 生成物。手編集禁止・git管理外
+├── HayaosiApp/
+│   ├── App/                  # エントリポイント
+│   ├── Models/               # SwiftDataモデル・enum
+│   ├── Services/             # ロジック(出題エンジン・集計・データ投入など)
+│   │   ├── Battle/           # 対戦の共通部分(Firebase非依存)とCPU対戦
+│   │   └── Online/           # Firebase層(認証・フレンド・ルーム状態・対戦セッション)
+│   ├── Views/<機能名>/        # 画面(機能ごとにフォルダを分ける)
+│   ├── Resources/            # 単語データJSON・効果音・GoogleService-Info.plist(git管理外)
+│   └── Assets.xcassets/
+├── Tests/                    # ユニットテスト(ロジックのみ)
+└── docs/                     # 随時読み込むナレッジ(このファイルなど)
+```
+
+配置のルールは CLAUDE.md「置き場所のルール」が正。
+
+## ビルド・テスト
+
+リポジトリのルートで実行する。
+
+```bash
+xcodegen generate && env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project HayaosiApp.xcodeproj -scheme HayaosiApp -destination 'generic/platform=iOS Simulator' build
+```
+
+```bash
+env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project HayaosiApp.xcodeproj -scheme HayaosiApp -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+- 機種名は環境によって違う。`xcrun simctl list devices available` で確認する。**一覧にあっても xcodebuild が解決できない機種がある**(古いランタイムの端末)ので、失敗したら新しい機種で試す
+- Simulatorの操作には `xcode-select` がXcode本体を指している必要がある(ビルドは `DEVELOPER_DIR` 指定で通るが操作はできない)
 
 ## Swift規約
 
@@ -35,4 +73,8 @@ CLAUDE.md には構造と開発ルールだけを置き、コードを書くと�
 
 - 効果音は `Resources/Sounds/se_*.wav`。正弦波合成の自作(著作権フリー)で、**同名ファイルを差し替えれば音が変わる**(コード変更不要)
 - 問題データを更新したら `QuestionSeeder.dataVersion` を上げる(次回起動時に再投入される)
+- **英単語を増やす手順**:`HayaosiApp/Resources/junior_high.json` または `high_school.json` へ既存要素と同じ形式で直接追記し、`QuestionSeeder.dataVersion` を上げる。
+  - 必須項目は `id` / `word` / `meaning` / `pos` / `category` / `difficulty`。`definition` も既存どおり保持する。カテゴリはファイル名と一致させ、難易度は整数の1〜5にする
+  - IDは中学=`jh_####`、高校=`hs_####`。同じファイル内ではIDと単語(大文字小文字を無視)を重複させない。中学・高校をまたぐ同じ単語は登録してよい
+  - 品詞は `PartOfSpeech` の3種のみ(誤答を同じ品詞から作るため、表記がゆれるとグループが割れる)
 - SwiftDataモデル(`Models/`)にプロパティを足すときは Optional かデフォルト値付きにし、**アプリを削除せず上書きインストールで移行を確認する**(ユーザーの学習履歴が飛ぶ事故を防ぐ)
