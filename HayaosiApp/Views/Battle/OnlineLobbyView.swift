@@ -4,6 +4,14 @@ import SwiftData
 /// 待機ロビー:参加者一覧・設定確認・フレンド招待。ホストが開始する(要件 §9-4)
 /// ボット対戦時は参加コード・招待などオンライン専用UIを出さない
 struct OnlineLobbyView: View {
+    private static let inviteTitle = "マナビートで対戦しよう!"
+    private static let roomCodeLabel = "ルームコード"
+    private static let appStoreLabel = "アプリはこちら"
+    private static let inviteShareButtonTitle = "招待リンクを共有"
+    private static let inviteShareSystemImage = "square.and.arrow.up"
+    private static let inviteLabelSeparator = ":"
+    private static let inviteLineSeparator = "\n"
+
     let session: any BattleSession
 
     @Query private var allQuestions: [Question]
@@ -19,6 +27,11 @@ struct OnlineLobbyView: View {
                         Text(state.code)
                             .font(.system(size: 40, weight: .bold, design: .monospaced))
                             .frame(maxWidth: .infinity)
+
+                        ShareLink(item: inviteMessage(roomCode: state.code)) {
+                            Label(Self.inviteShareButtonTitle, systemImage: Self.inviteShareSystemImage)
+                        }
+                        .buttonStyle(.bordered)
                     }
                     LabeledContent("ジャンル", value: state.settings.genre.displayName)
                     LabeledContent("出題形式", value: state.settings.style.displayName)
@@ -82,6 +95,17 @@ struct OnlineLobbyView: View {
                 }
             }
         }
+    }
+
+    private func inviteMessage(roomCode: String) -> String {
+        var lines = [
+            Self.inviteTitle,
+            "\(Self.roomCodeLabel)\(Self.inviteLabelSeparator)\(roomCode)"
+        ]
+        if let appStoreURL = AppLinks.appStoreURL {
+            lines.append("\(Self.appStoreLabel)\(Self.inviteLabelSeparator)\(appStoreURL.absoluteString)")
+        }
+        return lines.joined(separator: Self.inviteLineSeparator)
     }
 
     private func startSection(state: RoomState) -> some View {

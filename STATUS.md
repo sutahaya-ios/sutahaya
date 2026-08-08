@@ -62,11 +62,17 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Codex(たける側) | `Views/Battle/BattleScoreBoard.swift`、`Views/Battle/OnlineLobbyView.swift`、各Viewの`#Preview`、`STATUS.md` | BattleScoreBoardのPreview修復、Preview全体点検、オンラインロビーへの招待リンク共有追加 | 2026年8月8日 |
+| (なし) | | | |
 
 ---
 
 ## 最新更新(2026年8月8日)
+
+- Codex(たける側): **オンラインロビーに招待リンク共有を追加し、BattleScoreBoardのPreviewを修復**。
+  - オンライン対戦の参加コード直下に`ShareLink`を追加。共有文面は「マナビートで対戦しよう!」とルームコードを含み、CPU対戦ではボタンを表示しない
+  - App Store URLは`Services/AppLinks.swift`の`AppLinks.appStoreURL`へ集約。未申請中は`nil`としてURL行を省き、App ID確定後はこの1か所の設定で共有文面へ追加される
+  - `BattleScoreBoard`のPreviewで`scorerID`を`bot-strong`へ一致させ、内部名「ボット(強)」が「CPU(強)」へ表示変換される得点者ハイライトを確認できるサンプルに修正。全26件の`#Preview`を点検し、同種のID不一致はなし
+  - 検証:Simulatorのオンラインロビーで共有シートを開き、共有内容「ルームコード:3017」とURL行の省略を確認。CPUロビーで共有ボタンがないことを確認。Simulatorビルド成功、テスト19件パス
 
 - Claude(たける側): **画面構成を「対戦 / 学習 / マイページ」の3タブへ再編**。起動時は対戦タブを開き、従来のホーム・ルーム・フレンド・復習・作問の導線を役割別に集約した。
   - 対戦タブは「ひとりで(CPU対戦)」とオンラインに分け、オンラインのサンプル表示・招待・ルーム作成/参加を維持。対戦ロジックは変更せず、ユーザー向けの「ボット」表記だけを「CPU」に統一
