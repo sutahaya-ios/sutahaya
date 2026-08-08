@@ -51,7 +51,7 @@ final class ProgressiveRevealTests: XCTestCase {
         XCTAssertEqual(ProgressiveReveal.visibleCount(totalCharacters: 0, elapsed: 1), 0)
     }
 
-    // MARK: - ボットの回答タイミング算出(文字数 → 秒)
+    // MARK: - CPUの回答タイミング算出(文字数 → 秒)
 
     func test_指定文字数が出るまでの時間を求める() {
         XCTAssertEqual(ProgressiveReveal.time(forVisibleCount: 1), 0, accuracy: 0.001)

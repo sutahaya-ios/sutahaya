@@ -31,7 +31,7 @@ cp Config/local.xcconfig.sample Config/local.xcconfig
 
 コピーした `Config/local.xcconfig` の `DEVELOPMENT_TEAM` を自分のチームIDに書き換える(Xcode → Settings → Accounts → チーム名の右の10桁)。このファイルはgit管理外なので、開発者ごとに別の値を持てる。
 
-通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・ボット対戦はオフラインで動作する)。
+通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・CPU対戦はオフラインで動作する)。
 
 **このファイルはgit管理外なので `git pull` では降りてきません。** Firebase担当からファイルを直接受け取ってください(理由と手順は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3)。
 

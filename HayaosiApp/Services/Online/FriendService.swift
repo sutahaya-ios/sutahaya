@@ -2,18 +2,6 @@ import Foundation
 import Observation
 import FirebaseFirestore
 
-struct Friend: Identifiable, Equatable {
-    let id: String       // 相手のuid
-    let nickname: String
-    let friendCode: String
-}
-
-struct RoomInvite: Identifiable, Equatable {
-    let id: String
-    let roomCode: String
-    let fromNickname: String
-}
-
 /// フレンドリスト(users/{uid}/friends)とルーム招待(users/{uid}/invites)の管理
 /// フレンドは片方向フォロー方式(自分が追加した相手が自分のリストに載る)
 @MainActor

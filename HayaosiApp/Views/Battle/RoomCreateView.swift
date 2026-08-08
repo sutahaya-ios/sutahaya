@@ -58,7 +58,7 @@ struct RoomCreateView: View {
         .navigationTitle("ルーム作成")
         .navigationDestination(isPresented: $showRoom) {
             if let session {
-                OnlineRoomView(session: session)
+                BattleFlowView(session: session)
             }
         }
         .onChange(of: showRoom) { _, isShowing in

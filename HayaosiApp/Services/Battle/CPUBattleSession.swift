@@ -2,39 +2,17 @@ import Foundation
 import Observation
 import SwiftData
 
-/// ローカルで完結するボット対戦(Firebase不要)。
-/// オンライン対戦と同じ RoomState を組み立てて同じ画面を駆動する。UI開発・一人練習用
+/// ローカルで完結するCPU対戦(Firebase不要)。
+/// オンライン対戦と同じ RoomState を組み立てて同じ画面を駆動する。UI開発・一人練習用。
+///
+/// 責務はセッション状態・試合進行・採点まで。**CPUが「いつ・何を答えるか」の判断は
+/// `CPUAnswerStrategy`(純粋計算)に分離**してある。進行・採点は private な状態遷移
+/// そのものなので、アクセス制御を弱めないためにこのファイルに残す
 @MainActor
 @Observable
-final class BotBattleSession: BattleSession {
-    private struct BotProfile {
-        let id: String
-        let nickname: String
-        /// 問題ごとに回答に参加する確率
-        let answerProbability: Double
-        /// 回答が正解になる確率
-        let correctProbability: Double
-        /// 即答型で早押しボタンを押すまでの待ち時間(秒)
-        let buzzDelay: ClosedRange<Double>
-        /// 文字送り型で、単語が何割まで表示されたら答えるか。
-        /// 強いボットほど少ない文字数で答える
-        let answerRevealFraction: ClosedRange<Double>
-        /// 選択肢を読んで選ぶまでの間。これが無いと人間が4択を読む前に決着してしまう
-        let thinkingDelay: ClosedRange<Double>
-    }
-
-    /// 先頭から botCount 体が参加する(1体なら「中」だけ)
-    private static let botProfiles = [
-        BotProfile(id: "bot-normal", nickname: "ボット(中)", answerProbability: 0.9, correctProbability: 0.55,
-                   buzzDelay: 2.0...7.0, answerRevealFraction: 0.55...0.85, thinkingDelay: 1.5...3.0),
-        BotProfile(id: "bot-strong", nickname: "ボット(強)", answerProbability: 0.95, correctProbability: 0.75,
-                   buzzDelay: 1.2...5.0, answerRevealFraction: 0.35...0.65, thinkingDelay: 0.8...1.8),
-        BotProfile(id: "bot-weak", nickname: "ボット(弱)", answerProbability: 0.7, correctProbability: 0.35,
-                   buzzDelay: 3.0...9.0, answerRevealFraction: 0.8...1.0, thinkingDelay: 2.5...4.5)
-    ]
-    private static let botAnswerDelay: ClosedRange<Double> = 1.0...2.5
-    /// 制限時間ぎりぎりの回答は不自然なので、ボットは制限時間の8割までに動く
-    private static let botDeadlineRatio = 0.8
+final class CPUBattleSession: BattleSession {
+    /// タイマーの生成方法。テストでは即時・手動発火の実装に差し替える(既定は実時間で待つ)
+    typealias TimerScheduler = @MainActor (_ seconds: TimeInterval, _ action: @escaping @MainActor () -> Void) -> Task<Void, Never>
 
     let myID = "me"
     let isHost = true
@@ -43,7 +21,9 @@ final class BotBattleSession: BattleSession {
 
     private let nickname: String
     private let settings: RoomState.Settings
-    private let bots: [BotProfile]
+    private let cpus: [CPUProfile]
+    private let strategy: CPUAnswerStrategy
+    private let makeTimer: TimerScheduler
 
     private var scores: [String: Int] = [:]
     private var questionPayloads: [RoomState.QuestionPayload] = []
@@ -66,10 +46,23 @@ final class BotBattleSession: BattleSession {
 
     private var isProgressiveChoice: Bool { settings.style.revealsProgressively }
 
-    init(nickname: String, settings: RoomState.Settings, botCount: Int) {
+    /// `strategy`・`timerScheduler` はテスト用の注入口。本番は既定値のまま使う
+    init(nickname: String,
+         settings: RoomState.Settings,
+         cpuCount: Int,
+         strategy: CPUAnswerStrategy = CPUAnswerStrategy(),
+         timerScheduler: TimerScheduler? = nil) {
         self.nickname = nickname
         self.settings = settings
-        self.bots = Array(Self.botProfiles.prefix(max(1, botCount)))
+        self.cpus = Array(CPUProfile.roster.prefix(max(1, cpuCount)))
+        self.strategy = strategy
+        self.makeTimer = timerScheduler ?? { seconds, action in
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                action()
+            }
+        }
         publish()
     }
 
@@ -114,7 +107,7 @@ final class BotBattleSession: BattleSession {
         cancelAllTasks()
     }
 
-    /// ボット対戦は一人練習扱いで学習履歴・復習リストに反映する
+    /// CPU対戦は一人練習扱いで学習履歴・復習リストに反映する
     func saveResultsIfNeeded(context: ModelContext) {
         guard !hasSavedResults, status == .finished else { return }
         hasSavedResults = true
@@ -143,43 +136,31 @@ final class BotBattleSession: BattleSession {
     /// 回答受付を開始する(問題開始時と、即答型で誤答による仕切り直し時)
     private func openAnswering() {
         let currentRound = answerRound
-        for bot in bots where !failedIDs.contains(bot.id)
-            && !answers.contains(where: { $0.uid == bot.id })
-            && Double.random(in: 0...1) < bot.answerProbability {
-            scheduleBotAction(bot: bot, round: currentRound)
+        for cpu in cpus where !failedIDs.contains(cpu.id)
+            && !answers.contains(where: { $0.uid == cpu.id })
+            && strategy.participates(cpu) {
+            scheduleCPUAction(cpu: cpu, round: currentRound)
         }
         schedule(after: settings.timeLimit) { [weak self] in
             self?.timeoutQuestion(round: currentRound)
         }
     }
 
-    /// ボットの動き。文字送り型は「何文字まで見えたら答えるか」、即答型は早押しボタンを押すまでの秒数で決める
-    private func scheduleBotAction(bot: BotProfile, round: Int) {
+    /// CPUの動き。いつ・何を答えるかの判断は `CPUAnswerStrategy` が決める
+    private func scheduleCPUAction(cpu: CPUProfile, round: Int) {
+        let question = questionPayloads[questionIndex]
         guard isProgressiveChoice else {
-            let delay = min(Double.random(in: bot.buzzDelay), settings.timeLimit * Self.botDeadlineRatio)
+            let delay = strategy.buzzDelay(for: cpu, timeLimit: settings.timeLimit)
             schedule(after: delay) { [weak self] in
-                self?.attemptBuzz(as: bot.id, round: round)
+                self?.attemptBuzz(as: cpu.id, round: round)
             }
             return
         }
 
-        let total = questionPayloads[questionIndex].text.count
-        let fraction = Double.random(in: bot.answerRevealFraction)
-        let target = max(1, min(total, Int((Double(total) * fraction).rounded(.up))))
-        let delay = min(ProgressiveReveal.time(forVisibleCount: target) + Double.random(in: bot.thinkingDelay),
-                        settings.timeLimit * Self.botDeadlineRatio)
-        let choice = botChoice(for: bot)
-        schedule(after: delay) { [weak self] in
-            self?.evaluate(uid: bot.id, choice: choice, visibleCount: target, round: round)
+        let plan = strategy.progressivePlan(for: cpu, question: question, timeLimit: settings.timeLimit)
+        schedule(after: plan.delay) { [weak self] in
+            self?.evaluate(uid: cpu.id, choice: plan.choice, visibleCount: plan.visibleCount, round: round)
         }
-    }
-
-    private func botChoice(for bot: BotProfile) -> String {
-        let question = questionPayloads[questionIndex]
-        guard Double.random(in: 0...1) < bot.correctProbability else {
-            return question.choices.filter { $0 != question.answer }.randomElement() ?? question.answer
-        }
-        return question.answer
     }
 
     // MARK: - 即答型:早押しボタン
@@ -192,11 +173,12 @@ final class BotBattleSession: BattleSession {
         buzzWinner = id
         publish()
 
-        if let bot = bots.first(where: { $0.id == id }) {
-            let choice = botChoice(for: bot)
-            let total = questionPayloads[questionIndex].text.count
-            schedule(after: Double.random(in: Self.botAnswerDelay)) { [weak self] in
-                self?.evaluate(uid: bot.id, choice: choice, visibleCount: total, round: round)
+        if let cpu = cpus.first(where: { $0.id == id }) {
+            let question = questionPayloads[questionIndex]
+            let plan = strategy.postBuzzPlan(for: cpu, question: question)
+            let total = question.text.count
+            schedule(after: plan.delay) { [weak self] in
+                self?.evaluate(uid: cpu.id, choice: plan.choice, visibleCount: total, round: round)
             }
         }
         schedule(after: BattleRules.answerTimeLimit) { [weak self] in
@@ -256,7 +238,7 @@ final class BotBattleSession: BattleSession {
     }
 
     private var everyoneFinishedAnswering: Bool {
-        let participants = [myID] + bots.map(\.id)
+        let participants = [myID] + cpus.map(\.id)
         return participants.allSatisfy { failedIDs.contains($0) }
     }
 
@@ -304,7 +286,7 @@ final class BotBattleSession: BattleSession {
     // MARK: - 状態の公開・タスク管理
 
     private func publish() {
-        let players = ([(myID, nickname)] + bots.map { ($0.id, $0.nickname) })
+        let players = ([(myID, nickname)] + cpus.map { ($0.id, $0.nickname) })
             .enumerated()
             .map { index, entry in
                 RoomState.Player(id: entry.0, nickname: entry.1, score: scores[entry.0] ?? 0, joinedAtMS: Double(index))
@@ -337,12 +319,7 @@ final class BotBattleSession: BattleSession {
     }
 
     private func schedule(after seconds: TimeInterval, action: @escaping @MainActor () -> Void) {
-        let task = Task {
-            try? await Task.sleep(nanoseconds: UInt64(max(0, seconds) * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            action()
-        }
-        pendingTasks.append(task)
+        pendingTasks.append(makeTimer(seconds, action))
     }
 
     private func cancelAllTasks() {

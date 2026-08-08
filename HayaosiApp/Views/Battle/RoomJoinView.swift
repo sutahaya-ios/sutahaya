@@ -42,7 +42,7 @@ struct RoomJoinView: View {
         .navigationTitle("ルーム参加")
         .navigationDestination(isPresented: $showRoom) {
             if let session {
-                OnlineRoomView(session: session)
+                BattleFlowView(session: session)
             }
         }
         .onChange(of: showRoom) { _, isShowing in

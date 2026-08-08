@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// 対戦のコンテナ(オンライン・ボット共通)。ルーム状態(待機/対戦中/リザルト/解散)で画面を切り替える
-struct OnlineRoomView: View {
+/// 対戦のコンテナ(オンライン・CPU共通)。ルーム状態(待機/対戦中/リザルト/解散)で画面を切り替える
+struct BattleFlowView: View {
     let session: any BattleSession
 
     @Environment(\.dismiss) private var dismiss
@@ -13,11 +13,11 @@ struct OnlineRoomView: View {
         Group {
             switch session.state?.status {
             case .waiting:
-                OnlineLobbyView(session: session)
+                BattleLobbyView(session: session)
             case .playing:
-                OnlineBattleView(session: session)
+                BattleView(session: session)
             case .finished:
-                OnlineResultView(session: session, onLeave: leaveAndDismiss)
+                BattleResultView(session: session, onLeave: leaveAndDismiss)
             case .closed:
                 closedView(message: "ホストが退出したため、ルームは解散しました")
             case nil:

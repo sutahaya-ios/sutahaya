@@ -21,7 +21,7 @@ enum ProgressiveReveal {
         return min(totalCharacters, initialCharacters + advanced)
     }
 
-    /// 指定の文字数が表示されるまでにかかる時間。ボットが「何文字目で答えるか」を決めるのに使う
+    /// 指定の文字数が表示されるまでにかかる時間。CPUが「何文字目で答えるか」を決めるのに使う
     static func time(forVisibleCount count: Int) -> TimeInterval {
         let steps = max(0, count - initialCharacters)
         return Double(steps) * characterInterval

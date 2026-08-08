@@ -67,7 +67,7 @@ struct BattleHubView: View {
     private var modeCards: some View {
         HStack(alignment: .top, spacing: 12) {
             NavigationLink {
-                BotBattleSetupView()
+                CPUBattleSetupView()
             } label: {
                 BattleModeCard(
                     title: "ひとりで",

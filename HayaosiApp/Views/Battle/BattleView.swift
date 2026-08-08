@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
-struct OnlineBattleView: View {
+struct BattleView: View {
     private static let tickInterval: TimeInterval = 0.1
 
     let session: any BattleSession
@@ -164,8 +164,7 @@ struct OnlineBattleView: View {
     }
 
     private func displayName(for playerID: String?) -> String? {
-        guard let player = session.player(for: playerID) else { return nil }
-        return BattlePlayerDisplayName.text(for: player)
+        session.player(for: playerID)?.nickname
     }
 
     private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {

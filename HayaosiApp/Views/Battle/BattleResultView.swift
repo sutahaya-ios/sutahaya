@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 対戦リザルト:ポイント順の順位表示(同点は同順位)と再戦(要件 §5.1.3・§9-6)
-struct OnlineResultView: View {
+struct BattleResultView: View {
     let session: any BattleSession
     let onLeave: () -> Void
 
@@ -16,7 +16,7 @@ struct OnlineResultView: View {
                         Text("\(rank(of: player))位")
                             .font(.headline)
                             .frame(width: 44, alignment: .leading)
-                        Text(BattlePlayerDisplayName.text(for: player))
+                        Text(player.nickname)
                             .fontWeight(player.id == session.myID ? .bold : .regular)
                         if player.id == session.myID {
                             Text("(自分)")
@@ -58,11 +58,11 @@ struct OnlineResultView: View {
     }
 
     private var rankedPlayers: [RoomState.Player] {
-        (session.state?.players ?? []).sorted { $0.score > $1.score }
+        BattleRanking.ranked(session.state?.players ?? [])
     }
 
-    /// 同点は同順位(要件 §5.1.3)
+    /// 同点は同順位(要件 §5.1.3)。計算はテスト可能な BattleRanking に置く
     private func rank(of player: RoomState.Player) -> Int {
-        rankedPlayers.filter { $0.score > player.score }.count + 1
+        BattleRanking.rank(of: player, in: rankedPlayers)
     }
 }

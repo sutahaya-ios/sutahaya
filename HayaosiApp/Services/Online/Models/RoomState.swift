@@ -77,7 +77,7 @@ struct RoomState {
     let questions: [QuestionPayload]
     let game: Game?
 
-    /// ローカル(ボット対戦)用に直接組み立てるイニシャライザ
+    /// ローカル(CPU対戦)用に直接組み立てるイニシャライザ
     init(code: String, hostID: String, status: Status, settings: Settings,
          players: [Player], questions: [QuestionPayload], game: Game?) {
         self.code = code

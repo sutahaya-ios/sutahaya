@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// 待機ロビー:参加者一覧・設定確認・フレンド招待。ホストが開始する(要件 §9-4)
-/// ボット対戦時は参加コード・招待などオンライン専用UIを出さない
-struct OnlineLobbyView: View {
+/// CPU対戦時は参加コード・招待などオンライン専用UIを出さない
+struct BattleLobbyView: View {
     private static let inviteTitle = "マナビートで対戦しよう!"
     private static let roomCodeLabel = "ルームコード"
     private static let appStoreLabel = "アプリはこちら"
@@ -49,8 +49,8 @@ struct OnlineLobbyView: View {
                     ForEach(state.players) { player in
                         HStack {
                             Label(
-                                BattlePlayerDisplayName.text(for: player),
-                                systemImage: player.id.hasPrefix("bot-") ? "desktopcomputer" : "person.fill"
+                                player.nickname,
+                                systemImage: player.id.hasPrefix("cpu-") ? "desktopcomputer" : "person.fill"
                             )
                             if player.id == state.hostID && session.isOnline {
                                 Image(systemName: "crown.fill")

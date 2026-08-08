@@ -1,7 +1,7 @@
 import Foundation
 
 /// 対戦ルールの定数(要件 §5.1)。数値はここが唯一の出典。
-/// オンライン対戦・ボット対戦の両方が参照するため、Firebaseに依存しない `Battle/` に置く
+/// オンライン対戦・CPU対戦の両方が参照するため、Firebaseに依存しない `Battle/` に置く
 enum BattleRules {
     static let maxPlayers = 8
     static let minPlayersToStart = 2

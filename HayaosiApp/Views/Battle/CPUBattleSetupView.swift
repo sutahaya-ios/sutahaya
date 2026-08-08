@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// ボット対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる
-struct BotBattleSetupView: View {
+/// CPU対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる
+struct CPUBattleSetupView: View {
     private static let botCountRange = 1...3
 
     @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
     @State private var style = QuizDefaults.style
-    @State private var botCount = 2
-    @State private var session: BotBattleSession?
+    @State private var cpuCount = 2
+    @State private var session: CPUBattleSession?
     @State private var showRoom = false
 
     var body: some View {
@@ -38,7 +38,7 @@ struct BotBattleSetupView: View {
                         Text("\(Int(seconds))秒 / 問").tag(seconds)
                     }
                 }
-                Stepper("CPU \(botCount)体", value: $botCount, in: Self.botCountRange)
+                Stepper("CPU \(cpuCount)体", value: $cpuCount, in: Self.botCountRange)
             }
 
             Section {
@@ -52,7 +52,7 @@ struct BotBattleSetupView: View {
         .navigationTitle("ひとりで(CPU対戦)")
         .navigationDestination(isPresented: $showRoom) {
             if let session {
-                OnlineRoomView(session: session)
+                BattleFlowView(session: session)
             }
         }
         .onChange(of: showRoom) { _, isShowing in
@@ -64,7 +64,7 @@ struct BotBattleSetupView: View {
     }
 
     private func start() {
-        session = BotBattleSession(
+        session = CPUBattleSession(
             nickname: nickname,
             settings: .init(
                 questionCount: questionCount,
@@ -72,7 +72,7 @@ struct BotBattleSetupView: View {
                 genre: .englishWord,
                 style: style
             ),
-            botCount: botCount
+            cpuCount: cpuCount
         )
         showRoom = true
     }
@@ -80,7 +80,7 @@ struct BotBattleSetupView: View {
 
 #Preview {
     NavigationStack {
-        BotBattleSetupView()
+        CPUBattleSetupView()
     }
     .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self], inMemory: true)
 }

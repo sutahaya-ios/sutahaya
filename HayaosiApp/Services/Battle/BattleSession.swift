@@ -3,13 +3,13 @@ import Observation
 import SwiftData
 
 /// 対戦セッションの共通インターフェース。
-/// オンライン対戦(OnlineBattleSession=Firebase)とボット対戦(BotBattleSession=ローカル)が実装し、
+/// オンライン対戦(OnlineBattleSession=Firebase)とCPU対戦(CPUBattleSession=ローカル)が実装し、
 /// ロビー・対戦・リザルト画面はこのプロトコル越しに描画する
 @MainActor
 protocol BattleSession: AnyObject, Observable {
     var myID: String { get }
     var isHost: Bool { get }
-    /// オンライン対戦か(false=ボット対戦。参加コードや招待UIを出さない)
+    /// オンライン対戦か(false=CPU対戦。参加コードや招待UIを出さない)
     var isOnline: Bool { get }
     var state: RoomState? { get }
 
