@@ -62,7 +62,7 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| (なし) | | | |
+| Codex(たける側) | `Views/Battle/BattleScoreBoard.swift`、`Views/Battle/OnlineLobbyView.swift`、各Viewの`#Preview`、`STATUS.md` | BattleScoreBoardのPreview修復、Preview全体点検、オンラインロビーへの招待リンク共有追加 | 2026年8月8日 |
 
 ---
 

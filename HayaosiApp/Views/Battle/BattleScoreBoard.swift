@@ -54,14 +54,14 @@ struct BattleScoreBoard: View {
     }
 }
 
-#Preview {
+#Preview("CPU得点者") {
     BattleScoreBoard(
         players: [
             .init(id: "me", nickname: "ゲスト", score: 3, joinedAtMS: 0),
             .init(id: "bot-strong", nickname: "ボット(強)", score: 5, joinedAtMS: 1)
         ],
         myID: "me",
-        scorerID: "bot"
+        scorerID: "bot-strong"
     )
     .padding()
 }
