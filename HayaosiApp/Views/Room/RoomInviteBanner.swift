@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// フレンドから届いたルーム招待をオンライン区画内に表示する
+/// フレンドから届いたルーム招待を、見逃さないよう対戦タブ上部に表示する
 struct RoomInviteBanner: View {
     let invite: RoomInvite
     let onAccept: () -> Void
