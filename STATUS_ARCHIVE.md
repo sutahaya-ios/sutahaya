@@ -5,6 +5,31 @@
 
 ---
 
+## 過去の更新(2026年8月8日・その2)
+
+- Claude(たける側): **責務分割とCPU対戦のテスト追加(挙動変更なし)**。
+  - `CPUBattleSession`(353行)から**CPUの判断だけを `CPUAnswerStrategy` へ抽出**(純粋計算・`random` 注入で固定可能)。`CPUProfile` と強さの値もそこへ移動。進行・採点はprivateな状態遷移そのものなのでセッションに残した(アクセス制御を弱めないため)
+  - タイマー生成を `TimerScheduler` として注入可能に(既定は従来と同じ実時間待ち。本番挙動は不変)
+  - リザルトの順位計算をViewから `BattleRanking` へ抽出(同点同順位がテスト可能に)
+  - **`Tests/CPUBattleSessionTests.swift` を追加(8件)**:初期状態/開始遷移/正答・誤答の採点と再回答ロック/最終問題→リザルト/次問への進行/同点同順位/CPU 0〜99体で完走。手動発火タイマーと固定乱数で実時間ゼロ
+  - `FriendService.swift` に同居していた `Friend`・`RoomInvite` を `Services/Online/Models/` へ分離し、`RoomState.swift` も同フォルダへ移動(Firebaseのフィールド名・パスは不変)
+  - README・FIREBASE_SETUP・要件定義書§6 の旧用語(ボット対戦/ルームタブ)を現行UIに合わせて修正(STATUS_ARCHIVEは当時の記録なので不変)
+  - 検証:`git diff --check` OK・テスト33件パス・SimulatorでCPU対戦1試合完走(文字送り・4択・リザルト表示)
+
+- Claude(たける側): **構造リファクタ(名前と場所の整理。ロジック変更なし)**。たけるの判断で実施(※リネームは本来トキヤ氏の事前合意対象。push時に pull --rebase + xcodegen generate 必須の旨を連絡すること)
+  - `Views/Room/` の4ファイルを `Views/Battle/` へ `git mv`(対戦フローを1フォルダに)。`Views/Room/` は消滅
+  - 共用Viewから `Online` 接頭辞を除去:`OnlineBattleView`→`BattleView` / `OnlineLobbyView`→`BattleLobbyView` / `OnlineResultView`→`BattleResultView` / `OnlineRoomView`→`BattleFlowView`(いずれもCPU対戦でも使うため名前が実態と乖離していた)。オンライン専用の `OnlineBattleSession`・`OnlinePreviewBanner` は据え置き
+  - `Bot`→`CPU` 語彙統一:`BotBattleSession`→`CPUBattleSession`、ID接頭辞 `bot-`→`cpu-`(オフライン専用でRTDBに載らないため保存データへの影響なし)、ニックネーム生成を「CPU(強)」等に変更し、**表示変換シム `BattlePlayerDisplayName` を削除**
+  - 検証:旧名の残存0件をgrepで確認、テスト25件パス、Simulatorで CPU対戦を1試合完走(スコア表示・お手つきロック・リザルトの同点同順位まで)+オンラインのシート表示を確認
+
+- Claude(たける側): **STATUS.md に150行の上限を設け、超過を自動検知するフックを追加**(たける発案)。`.claude/hooks/check-status-size.sh` が SessionStart と Edit/Write 後に行数を確認し、超過時は「古い日付の項目からアーカイブへ」と警告する。移動自体は自動化しない(何が「古い」かは文脈判断が要るため、検知=機械/移動=判断側の分担)。4ケースのパイプテストで動作確認済み
+
+- Claude(たける側): **CLAUDE.md を「構造と開発ルールだけ」に再編し、コーディング規約・ナレッジを `docs/CODING.md` へ分離**(たける発案)。常時読み込むのは CLAUDE.md と STATUS.md だけにし、規約はSwiftを書くときだけ読む方式。CLAUDE.md に「読み込みガイド」表を新設。命名規約(View名に通信の有無を入れない/UIとコードの用語一致/用語変更時は同一作業で追従)を docs/CODING.md に追加。AGENTS.md の読み順も更新
+
+- Claude(たける側): **STATUS.md を分割**。完了済みの過去記録と終わった計画を `STATUS_ARCHIVE.md` へ移し、本体は「現在の状態・宣言・次のタスク・決定事項」だけにした(毎セッション読むファイルを太らせない運用。冒頭の運用ルールに明記)。あわせて陳腐化していた記述を修正:決定事項メモの旧仕様(形式ごとに2問生成・押下後全文表示・definition運用)、CLAUDE.mdの検証フロー(旧「ルームタブ→ボット対戦」)、要件定義書 §5.1.2 の定数表(値はコードが正なので出典参照に戻した)。空フォルダ `Views/Home/` を削除
+
+---
+
 ## 旧リリース工程(8/11公開計画・8/7に延期決定)
 
 | 日 | TOKIYA-YAMAMOTO(Firebase) | たける(人間作業) | Claude(実装) |
