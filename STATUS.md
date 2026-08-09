@@ -43,6 +43,7 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
+| Codex(たける側) | `Models/QuizTypes.swift`、`Services/Battle/{BattleRules,BattleSession,CPUAnswerStrategy,CPUBattleSession}.swift`、`Services/Online/{OnlineBattleSession,OnlineBattleSession+Host}.swift`、`Services/Online/Models/RoomState.swift`、`Services/SoundPlayer.swift`、`Views/Battle/{BattleAnimation,BattleScoreBoard,BattleView,BattleQuestionText,BattleLobbyView,CPUBattleSetupView,RoomCreateView,BuzzButton.swift(削除)}`、`Views/Components/QuizStylePicker.swift(削除)`、`Resources/Sounds/se_buzz.wav(削除)`、`Tests/{CPUBattleSessionTests,BattleStartTimingTests,WordClassificationTests}.swift`、`FIREBASE_SETUP.md`、`要件定義書_勉強系早押し対戦アプリ.md`、`STATUS.md` | 即答型を廃止し、RTDBの`game.buzz*`・`game.answer`・`settings.style`を削除して文字送り型へ一本化。その後、丸アイコン列のスコアボードへ刷新 | 2026-08-09 |
 
 ---
 
