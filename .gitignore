@@ -19,3 +19,11 @@ Config/local.xcconfig
 
 # Claude Code ローカル設定
 .claude/settings.local.json
+
+# Firebase Emulator / Node.js のローカル生成物
+node_modules/
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+ui-debug.log*

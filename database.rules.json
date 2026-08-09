@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null && (data.child('status').val() == 'waiting' || data.child('players').child(auth.uid).exists())",
+        ".write": "auth != null && !data.exists() && newData.child('hostID').val() == auth.uid && newData.child('players').child(auth.uid).exists()",
+        ".validate": "newData.hasChildren(['hostID', 'status', 'players']) && newData.child('hostID').isString() && newData.child('status').isString()",
+        "hostID": {
+          ".write": false,
+          ".validate": "newData.isString() && ((!data.exists() && newData.val() == auth.uid) || newData.val() == data.val())"
+        },
+        "status": {
+          ".write": "auth != null && auth.uid == root.child('rooms').child($roomId).child('hostID').val()",
+          ".validate": "newData.isString() && (newData.val() == 'waiting' || newData.val() == 'playing' || newData.val() == 'finished' || newData.val() == 'closed')"
+        },
+        "createdAt": {
+          ".write": false,
+          ".validate": "newData.isNumber()"
+        },
+        "settings": {
+          ".write": "auth != null && auth.uid == root.child('rooms').child($roomId).child('hostID').val()"
+        },
+        "questions": {
+          ".write": "auth != null && auth.uid == root.child('rooms').child($roomId).child('hostID').val()"
+        },
+        "game": {
+          ".write": "auth != null && auth.uid == root.child('rooms').child($roomId).child('hostID').val()"
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && (auth.uid == root.child('rooms').child($roomId).child('hostID').val() || (auth.uid == $uid && ((!data.exists() && newData.child('nickname').isString() && newData.child('score').val() == 0 && newData.child('joinedAt').isNumber()) || (data.exists() && !newData.exists()))))",
+            ".validate": "newData.hasChildren(['nickname', 'score', 'joinedAt']) && newData.child('nickname').isString() && newData.child('score').isNumber() && newData.child('joinedAt').isNumber()"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

@@ -92,6 +92,33 @@ service cloud.firestore {
 
 ※ #2 はアプリ側(`AuthService` / `FriendService`)の変更も伴うため、着手前に `STATUS.md` の「作業中宣言」で調整すること。
 
+### 4-2. ルールファイルとローカル自動テスト
+
+本格ルールの目標仕様は、リポジトリ内の次のファイルで管理する。
+
+- `database.rules.json`: Realtime Database。待機中の部屋は参加前のコード確認を許可し、対戦開始後は参加者だけが読める。ゲーム進行と得点はホストだけが更新できる
+- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、招待は送信者が登録済みフレンドへ送る場合だけ許可する
+- `firebase.json`: 上記ルールとLocal Emulator Suiteの設定
+- `FirebaseRulesTests/rules.test.js`: 許可する操作と拒否する操作の自動テスト
+
+テストは実在するFirebaseプロジェクトではなく、`demo-hayaosiapp` というローカル専用IDを使う。本番データ・課金・公開中のルールには影響しない。
+
+初回だけ依存関係を入れる:
+
+```bash
+npm install
+```
+
+ルールテストを実行する:
+
+```bash
+npm run test:firebase-rules
+```
+
+> ⚠️ `firestore.rules` は `friendCodes/{code}` と招待の `fromUID` を前提にしている。`AuthService` / `FriendService` の対応と実機確認が完了するまで、Firebase Consoleへ公開しないこと。
+
+本番公開は外部状態を変更するため、差分・テスト結果・Swift側の対応を確認し、担当者の明示的な許可を得た後にだけ行う。公開対象を限定するコマンドは `firebase deploy --only firestore:rules,database`。
+
 ## 5. 動作確認
 
 1. Simulatorまたは実機2台でアプリを起動

@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validFriendCode(code) {
+      return code is string && code.matches('^[A-Z0-9]{6}$');
+    }
+
+    function validUserDocument(uid) {
+      return request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'createdAt'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 30
+        && validFriendCode(request.resource.data.friendCode)
+        && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if isOwner(uid) && validUserDocument(uid);
+      allow delete: if isOwner(uid)
+        && !existsAfter(/databases/$(database)/documents/friendCodes/$(resource.data.friendCode));
+
+      match /friends/{friendUid} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && friendUid != uid
+          && request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'addedAt'])
+          && request.resource.data.nickname is string
+          && validFriendCode(request.resource.data.friendCode);
+        allow delete: if isOwner(uid);
+      }
+
+      match /invites/{inviteId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['roomCode', 'fromUID', 'fromNickname', 'createdAt'])
+          && request.resource.data.fromUID == request.auth.uid
+          && request.resource.data.fromNickname is string
+          && request.resource.data.roomCode is string
+          && request.resource.data.roomCode.matches('^[0-9]{4}$')
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid));
+        allow update: if false;
+      }
+    }
+
+    match /friendCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && validFriendCode(code)
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.friendCode == code;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
