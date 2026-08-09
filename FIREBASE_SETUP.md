@@ -124,7 +124,7 @@ npm run test:firebase-rules
 1. Simulatorまたは実機2台でアプリを起動
 2. フレンドタブでマイコードが表示されればAuth+Firestore疎通OK
 3. ルーム作成→もう1台でコード入力→ロビーに2人表示されればRealtime DB疎通OK
-4. 対戦開始→早押し→回答→リザルトまで通し確認(**要件の技術検証スパイク:実機2台で体感遅延を確認すること**)
+4. 対戦開始→選択肢を回答→リザルトまで通し確認(**要件の技術検証スパイク:実機2台で体感遅延を確認すること**)
 
 ## データ構造(実装済み)
 
@@ -132,14 +132,14 @@ npm run test:firebase-rules
 Realtime Database:
 rooms/{4桁コード}
   ├─ hostID, status(waiting/playing/finished/closed), createdAt
-  ├─ settings { questionCount, timeLimit, genre, style(progressive_choice/speed),
+  ├─ settings { questionCount, timeLimit, genre,
   │             wordCategory(junior_high/high_school), wordDifficulty(1〜5) }
   ├─ players/{uid} { nickname, score, joinedAt }
   ├─ questions [ { id, text, choices[4], answer } ]  ← 開始時にホストが配信
   └─ game { questionIndex, phase(question/reveal/finished), startedAt, startDelayMS(1問目のみ),
-            answers/{uid} { choice, ts, visibleCount }   ← 文字送り型(標準)。押した瞬間の記録
-            buzz { winner, queue/{uid}: ts, failed/{uid} }, answer   ← 速答型
-            reveal }
+            answers/{uid} { choice, ts, visibleCount }   ← 選択肢を押した瞬間の記録
+            failed/{uid}: true                            ← 誤答済みで再回答不可
+            reveal { correctAnswer, correctIDs[] }        ← 時間終了時に確定した正解者順 }
 
 Firestore:
 users/{uid} { nickname, friendCode, createdAt }

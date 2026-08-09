@@ -31,8 +31,8 @@ struct RoomState {
 
     struct Reveal: Equatable {
         let correctAnswer: String
-        let scorerID: String?
-        let byTimeout: Bool
+        /// 正解者内の回答時刻順。空なら正解者なし
+        let correctIDs: [String]
     }
 
     /// 文字送り型の回答1件。選択肢を押した瞬間を記録する(要件 §5.1.2)
@@ -52,12 +52,8 @@ struct RoomState {
         let startDelayMS: Double
         let startedAtMS: Double
         var effectiveStartedAtMS: Double { startedAtMS + startDelayMS }
-        let buzzWinner: String?
-        /// uid → サーバータイムスタンプ(ms)。押下順キュー(即答型。要件 §5.1.2)
-        let buzzQueue: [String: Double]
         /// この問題で誤答済みのuid。再回答できない
         let failedIDs: Set<String>
-        let answer: (uid: String, choice: String)?
         /// 文字送り型で届いた回答(押した順)
         let answers: [Answer]
         let reveal: Reveal?
@@ -67,8 +63,6 @@ struct RoomState {
         let questionCount: Int
         let timeLimit: TimeInterval
         let genre: Genre
-        /// 出題形式(即答型/文字送り型)。ホストが決め、全員に同じ形式で配信される
-        let style: QuizStyle
         /// 英単語のカテゴリと難易度。nilは分類設定のない旧ルームとの互換用
         let wordCategory: WordCategory?
         let wordDifficulty: WordDifficulty?
@@ -77,14 +71,12 @@ struct RoomState {
             questionCount: Int,
             timeLimit: TimeInterval,
             genre: Genre,
-            style: QuizStyle = QuizDefaults.style,
             wordCategory: WordCategory? = nil,
             wordDifficulty: WordDifficulty? = nil
         ) {
             self.questionCount = questionCount
             self.timeLimit = timeLimit
             self.genre = genre
-            self.style = style
             self.wordCategory = wordCategory
             self.wordDifficulty = wordDifficulty
         }
@@ -94,8 +86,7 @@ struct RoomState {
             var value: [String: Any] = [
                 "questionCount": questionCount,
                 "timeLimit": timeLimit,
-                "genre": genre.rawValue,
-                "style": style.rawValue
+                "genre": genre.rawValue
             ]
             if let wordCategory, let wordDifficulty {
                 value["wordCategory"] = wordCategory.rawValue
@@ -108,7 +99,6 @@ struct RoomState {
             questionCount = RoomState.int(databaseValue["questionCount"]) ?? QuizDefaults.questionCount
             timeLimit = RoomState.double(databaseValue["timeLimit"]) ?? QuizDefaults.timeLimit
             genre = Genre(rawValue: databaseValue["genre"] as? String ?? "") ?? .englishWord
-            style = QuizStyle(rawValue: databaseValue["style"] as? String ?? "") ?? QuizDefaults.style
 
             let category = WordCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
             let difficultyValue = RoomState.int(databaseValue["wordDifficulty"])
@@ -184,16 +174,7 @@ struct RoomState {
               let phaseRaw = dict["phase"] as? String,
               let phase = GamePhase(rawValue: phaseRaw) else { return nil }
 
-        let buzz = dict["buzz"] as? [String: Any] ?? [:]
-        let queue = (buzz["queue"] as? [String: Any] ?? [:]).compactMapValues { double($0) }
-        let failed = Set((buzz["failed"] as? [String: Any] ?? [:]).keys)
-
-        var answer: (uid: String, choice: String)?
-        if let answerDict = dict["answer"] as? [String: Any],
-           let uid = answerDict["uid"] as? String,
-           let choice = answerDict["choice"] as? String {
-            answer = (uid, choice)
-        }
+        let failed = Set((dict["failed"] as? [String: Any] ?? [:]).keys)
 
         let answers = (dict["answers"] as? [String: [String: Any]] ?? [:])
             .compactMap { uid, value -> Answer? in
@@ -210,11 +191,10 @@ struct RoomState {
         var reveal: Reveal?
         if let revealDict = dict["reveal"] as? [String: Any],
            let correctAnswer = revealDict["correctAnswer"] as? String {
-            let scorer = revealDict["scorerID"] as? String
+            let correctIDs = revealDict["correctIDs"] as? [String] ?? []
             reveal = Reveal(
                 correctAnswer: correctAnswer,
-                scorerID: (scorer?.isEmpty ?? true) ? nil : scorer,
-                byTimeout: revealDict["byTimeout"] as? Bool ?? false
+                correctIDs: correctIDs
             )
         }
 
@@ -223,10 +203,7 @@ struct RoomState {
             phase: phase,
             startDelayMS: double(dict["startDelayMS"]) ?? 0,
             startedAtMS: double(dict["startedAt"]) ?? 0,
-            buzzWinner: buzz["winner"] as? String,
-            buzzQueue: queue,
             failedIDs: failed,
-            answer: answer,
             answers: answers,
             reveal: reveal
         )

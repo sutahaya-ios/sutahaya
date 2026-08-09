@@ -41,7 +41,6 @@ struct BattleLobbyView: View {
                     } else {
                         LabeledContent("単語範囲", value: "すべて")
                     }
-                    LabeledContent("出題形式", value: state.settings.style.displayName)
                     LabeledContent("問題数", value: "\(state.settings.questionCount)問")
                     LabeledContent("制限時間", value: "\(Int(state.settings.timeLimit))秒 / 問")
                 } header: {

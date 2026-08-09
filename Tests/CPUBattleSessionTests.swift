@@ -44,6 +44,12 @@ final class CPUBattleSessionTests: XCTestCase {
             }
         }
 
+        /// 先頭の予約だけを発火する。「CPUだけが答えた」途中状態を作るのに使う
+        func fireFirst() {
+            guard !pending.isEmpty else { return }
+            pending.removeFirst().action()
+        }
+
         /// **今この時点で**予約済みのものだけを発火する(発火中に増えた予約は残す)。
         /// 「発表の経過だけ進めて、次の問題のタイマーは触らない」という検証に使う
         func fireExisting() {
@@ -84,7 +90,7 @@ final class CPUBattleSessionTests: XCTestCase {
                              timer: ManualTimer) -> CPUBattleSession {
         CPUBattleSession(
             nickname: "テスト",
-            settings: .init(questionCount: 10, timeLimit: 20, genre: .englishWord, style: .progressiveChoice),
+            settings: .init(questionCount: 10, timeLimit: 20, genre: .englishWord),
             cpuCount: cpuCount,
             strategy: strategy ?? silentCPU,
             timerScheduler: timer.scheduler
@@ -99,7 +105,8 @@ final class CPUBattleSessionTests: XCTestCase {
     // MARK: - 初期状態
 
     func test_開始前はロビー待機でゲームが無い() {
-        let session = makeSession(cpuCount: 2, timer: ManualTimer())
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 2, timer: timer)
 
         XCTAssertEqual(session.state?.status, .waiting)
         XCTAssertNil(session.state?.game)
@@ -125,30 +132,99 @@ final class CPUBattleSessionTests: XCTestCase {
 
     // MARK: - 採点
 
-    func test_正解すると加点され勝者として発表される() async {
-        let session = makeSession(timer: ManualTimer())
+    func test_正解した時点で加点され他の回答を待つ間も反映される() async {
+        let timer = ManualTimer()
+        // 参加するCPUを1体置き、まだ答えていない=待ちが発生する状況を作る
+        let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)
         await session.startGame(questions: makeQuestions(count: 2))
 
         session.submitAnswer(currentAnswer(session), visibleCount: 3)
 
         let me = session.state?.players.first { $0.id == "me" }
-        XCTAssertEqual(me?.score, BattleRules.correctPoint)
-        XCTAssertEqual(session.state?.game?.phase, .reveal)
-        XCTAssertEqual(session.state?.game?.reveal?.scorerID, "me")
+        XCTAssertEqual(me?.score, BattleRules.correctPoint(for: 1), "1番目の正解として即座に加点される")
+        XCTAssertEqual(session.state?.game?.phase, .question, "CPUがまだ答えていないので発表しない")
+        XCTAssertNil(session.state?.game?.reveal)
         XCTAssertEqual(session.state?.game?.answers.first?.visibleCount, 3, "何文字目で答えたかが記録される")
     }
 
-    func test_誤答すると減点されその問題に再回答できない() async {
-        let session = makeSession(timer: ManualTimer())
+    func test_誤答すると即時に回答権を失い減点される() async {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)
         await session.startGame(questions: makeQuestions(count: 2))
 
         session.submitAnswer("わざと間違い", visibleCount: 2)
         session.submitAnswer(currentAnswer(session), visibleCount: 5) // ロックされているので無視されるはず
 
         let me = session.state?.players.first { $0.id == "me" }
-        XCTAssertEqual(me?.score, BattleRules.wrongPoint)
+        XCTAssertEqual(me?.score, BattleRules.wrongPoint, "誤答は順位に関係なく即座に減点される")
         XCTAssertEqual(session.state?.game?.failedIDs.contains("me"), true)
         XCTAssertEqual(session.state?.game?.answers.count, 1, "2回目の回答は受け付けない")
+        XCTAssertEqual(session.state?.game?.phase, .question)
+    }
+
+    func test_あとから先に正解した人が出ると得点が置き直される() async {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)
+        await session.startGame(questions: makeQuestions(count: 2))
+
+        session.submitAnswer(currentAnswer(session), visibleCount: 3)
+        XCTAssertEqual(session.state?.players.first { $0.id == "me" }?.score, BattleRules.correctPoint(for: 1))
+
+        timer.fireFirst() // CPUが後から正解する
+
+        XCTAssertEqual(session.state?.players.first { $0.id == "me" }?.score,
+                       BattleRules.correctPoint(for: 1),
+                       "先に答えた自分の順位は変わらない")
+        XCTAssertEqual(session.state?.players.first { $0.id == "cpu-normal" }?.score,
+                       BattleRules.correctPoint(for: 2),
+                       "後から答えたCPUは2番目の得点。二重加算にならない")
+    }
+
+    func test_参加を見送ったCPUは待たずに発表へ進む() async {
+        let timer = ManualTimer()
+        // silentCPU はこの問題に参加しないので、待っても永遠に回答しない
+        let session = makeSession(cpuCount: 1, strategy: silentCPU, timer: timer)
+        await session.startGame(questions: makeQuestions(count: 2))
+
+        session.submitAnswer(currentAnswer(session), visibleCount: 3)
+
+        XCTAssertEqual(session.state?.game?.phase, .reveal, "答える人が残っていないので制限時間を待たない")
+        XCTAssertEqual(session.state?.game?.reveal?.correctIDs, ["me"])
+        XCTAssertEqual(session.state?.players.first { $0.id == "cpu-normal" }?.score, 0, "無回答は0点")
+    }
+
+    func test_複数の正解者を正解者内の回答順で採点する() async {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 3, strategy: aggressiveCPU, timer: timer)
+        await session.startGame(questions: makeQuestions(count: 1))
+
+        timer.fireExisting()
+
+        let players = session.state?.players ?? []
+        XCTAssertEqual(session.state?.game?.phase, .reveal)
+        XCTAssertEqual(session.state?.game?.reveal?.correctIDs.count, 3)
+        XCTAssertEqual(players.first { $0.id == "cpu-normal" }?.score, 20)
+        XCTAssertEqual(players.first { $0.id == "cpu-strong" }?.score, 10)
+        XCTAssertEqual(players.first { $0.id == "cpu-weak" }?.score, 5)
+        XCTAssertEqual(players.first { $0.id == "me" }?.score, 0, "無回答は0点")
+    }
+
+    func test_全員が回答し終えたら制限時間を待たずに発表へ進む() async {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)
+        await session.startGame(questions: makeQuestions(count: 2))
+
+        timer.fireFirst() // CPUだけが回答した状態
+
+        XCTAssertEqual(session.state?.game?.phase, .question, "自分がまだ答えていないので発表しない")
+
+        session.submitAnswer(currentAnswer(session), visibleCount: 4)
+
+        XCTAssertEqual(session.state?.game?.phase, .reveal, "全員が答え終わったので制限時間前に発表する")
+        XCTAssertEqual(session.state?.game?.reveal?.correctIDs.count, 2)
+        XCTAssertEqual(session.state?.game?.reveal?.correctIDs.first, "cpu-normal", "先に答えたCPUが1位")
+        let me = session.state?.players.first { $0.id == "me" }
+        XCTAssertEqual(me?.score, BattleRules.correctPoint(for: 2), "2番目の正解として加点される")
     }
 
     // MARK: - 進行
@@ -165,15 +241,16 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(session.state?.game?.phase, .finished)
     }
 
-    func test_正解すると次の問題へ進む() async {
+    func test_発表時間が終わると次の問題へ進む() async {
         let timer = ManualTimer()
+        // 既定の silentCPU はこの問題に参加しないので、自分が答えた時点で発表へ進む
         let session = makeSession(timer: timer)
         await session.startGame(questions: makeQuestions(count: 2))
 
         session.submitAnswer(currentAnswer(session), visibleCount: 1)
-        // この時点の予約(第1問の制限時間・発表の経過)だけを発火する。
-        // 第1問の制限時間はphaseガードで無効になり、発表の経過で第2問が始まるはず
-        timer.fireExisting()
+        XCTAssertEqual(session.state?.game?.phase, .reveal)
+
+        timer.fireExisting() // 発表時間の経過
 
         XCTAssertEqual(session.state?.status, .playing)
         XCTAssertEqual(session.state?.game?.questionIndex, 1)
@@ -197,6 +274,51 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(BattleRanking.rank(of: ranked[2], in: ranked), 3, "次の順位は人数ぶん飛ぶ")
     }
 
+    func test_スコアボードは回答順に並び正誤を表示する() {
+        let players = [
+            RoomState.Player(id: "host", nickname: "ホスト", score: 1, joinedAtMS: 30),
+            RoomState.Player(id: "first", nickname: "先着", score: -1, joinedAtMS: 10),
+            RoomState.Player(id: "second", nickname: "次", score: 1, joinedAtMS: 20)
+        ]
+        let answers = [
+            RoomState.Answer(uid: "first", choice: "誤答", answeredAtMS: 100, visibleCount: 2),
+            RoomState.Answer(uid: "second", choice: "正答", answeredAtMS: 200, visibleCount: 3)
+        ]
+
+        let entries = BattleScoreBoard.entries(
+            players: players,
+            hostID: "host",
+            answers: answers,
+            failedIDs: ["first"],
+            correctIDs: ["second"]
+        )
+
+        XCTAssertEqual(entries.map(\.id), ["first", "second", "host"])
+        XCTAssertEqual(entries.map(\.answerRank), [1, 2, nil])
+        XCTAssertEqual(entries[0].result, .wrong)
+        XCTAssertEqual(entries[1].result, .correct)
+    }
+
+    func test_未回答時のスコアボードはホストから入室順に戻る() {
+        let players = [
+            RoomState.Player(id: "guest", nickname: "参加者", score: 0, joinedAtMS: 10),
+            RoomState.Player(id: "host", nickname: "ホスト", score: 0, joinedAtMS: 30),
+            RoomState.Player(id: "later", nickname: "後から", score: 0, joinedAtMS: 20)
+        ]
+
+        let entries = BattleScoreBoard.entries(
+            players: players,
+            hostID: "host",
+            answers: [],
+            failedIDs: [],
+            correctIDs: []
+        )
+
+        XCTAssertEqual(entries.map(\.id), ["host", "guest", "later"])
+        XCTAssertEqual(entries.map(\.answerRank), [nil, nil, nil])
+        XCTAssertTrue(entries.allSatisfy { $0.result == nil })
+    }
+
     // MARK: - CPU人数・強さの頑健性
 
     func test_CPUの人数と強さを変えてもクラッシュせず完走する() async {
@@ -208,7 +330,7 @@ final class CPUBattleSessionTests: XCTestCase {
             timer.fireAll() // CPUの回答・発表・次問をすべて発火し、最後まで進める
 
             XCTAssertEqual(session.state?.status, .finished, "cpuCount=\(cpuCount)")
-            XCTAssertEqual(session.state?.players.count, min(3, max(1, cpuCount)) + 1)
+            XCTAssertEqual(session.state?.players.count, min(CPUProfile.roster.count, max(1, cpuCount)) + 1)
         }
     }
 }

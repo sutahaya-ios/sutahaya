@@ -9,7 +9,6 @@ struct RoomCreateView: View {
     @State private var difficulty = WordDifficulty.one
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
-    @State private var style = QuizDefaults.style
     @State private var session: OnlineBattleSession?
     @State private var isCreating = false
     @State private var showRoom = false
@@ -17,14 +16,6 @@ struct RoomCreateView: View {
 
     var body: some View {
         Form {
-            Section {
-                QuizStylePicker(style: $style)
-            } header: {
-                Text("対戦形式")
-            } footer: {
-                Text(style.detail)
-            }
-
             Section {
                 Picker("ジャンル", selection: .constant(Genre.englishWord)) {
                     ForEach(Genre.allCases) { genre in
@@ -101,7 +92,6 @@ struct RoomCreateView: View {
                 questionCount: min(questionCount, availableQuestions.count),
                 timeLimit: timeLimit,
                 genre: .englishWord,
-                style: style,
                 wordCategory: category,
                 wordDifficulty: difficulty
             ))

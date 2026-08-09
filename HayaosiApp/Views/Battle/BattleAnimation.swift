@@ -6,8 +6,8 @@ enum BattleAnimation {
     static let scoreChange: Animation = .snappy(duration: 0.32)
     /// 正解・時間切れの発表が出るとき
     static let reveal: Animation = .spring(response: 0.38, dampingFraction: 0.7)
-    /// 早押しボタンの待機中の脈動(1往復)
-    static let buzzPulse: Animation = .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
+    /// 回答順に並び替わるプレイヤーアイコン。順位は読めるよう短く収める
+    static let playerOrder: Animation = .snappy(duration: 0.32, extraBounce: 0.08)
     /// 残り時間が少ないときの点滅
     static let urgentPulse: Animation = .easeInOut(duration: 0.5).repeatForever(autoreverses: true)
 

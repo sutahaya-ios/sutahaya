@@ -74,7 +74,6 @@ final class WordClassificationTests: XCTestCase {
             questionCount: 10,
             timeLimit: 20,
             genre: .englishWord,
-            style: .progressiveChoice,
             wordCategory: .highSchool,
             wordDifficulty: .three
         )
@@ -84,7 +83,6 @@ final class WordClassificationTests: XCTestCase {
         XCTAssertEqual(restored.questionCount, 10)
         XCTAssertEqual(restored.timeLimit, 20)
         XCTAssertEqual(restored.genre, .englishWord)
-        XCTAssertEqual(restored.style, .progressiveChoice)
         XCTAssertEqual(restored.wordCategory, .highSchool)
         XCTAssertEqual(restored.wordDifficulty, .three)
     }
@@ -93,8 +91,7 @@ final class WordClassificationTests: XCTestCase {
         let legacySettings = RoomState.Settings(databaseValue: [
             "questionCount": 10,
             "timeLimit": 20,
-            "genre": Genre.englishWord.rawValue,
-            "style": QuizStyle.progressiveChoice.rawValue
+            "genre": Genre.englishWord.rawValue
         ])
 
         XCTAssertNil(legacySettings.wordCategory)

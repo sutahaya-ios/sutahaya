@@ -20,8 +20,7 @@ struct BattleView: View {
 
                 BattleQuestionText(
                     text: question.text,
-                    style: state.settings.style,
-                    mode: revealMode(state: state, game: game)
+                    mode: revealMode(game: game)
                 )
                 // 問題が変わったことを分かるように入れ替える
                 .id(game.questionIndex)
@@ -29,9 +28,8 @@ struct BattleView: View {
 
                 Spacer()
 
-                interactionArea(state: state, game: game, question: question)
+                interactionArea(game: game, question: question)
                     .animation(BattleAnimation.reveal, value: game.phase)
-                    .animation(BattleAnimation.reveal, value: game.buzzWinner)
             } else {
                 Spacer()
                 ProgressView("問題を読み込み中…")
@@ -49,30 +47,28 @@ struct BattleView: View {
             submittedChoice = nil
             SoundPlayer.shared.play(.questionStart)
         }
-        .onChange(of: session.state?.game?.buzzWinner) { _, newWinner in
-            if newWinner != nil {
-                SoundPlayer.shared.play(.buzz)
-            }
-        }
         .onChange(of: session.state?.game?.failedIDs.count) { oldCount, newCount in
             if let oldCount, let newCount, newCount > oldCount {
                 SoundPlayer.shared.play(.wrong)
             }
         }
+        // 正解も回答した時点で鳴らす。発表まで待たせると手応えが遅れて伝わるため
+        .onChange(of: correctIDs.count) { oldCount, newCount in
+            if newCount > oldCount {
+                SoundPlayer.shared.play(.correct)
+            }
+        }
+        // 正解の音は回答時に鳴らし終えているので、発表では誰も取れなかった時だけ鳴らす
         .onChange(of: session.state?.game?.reveal) { _, newReveal in
-            if let newReveal {
-                SoundPlayer.shared.play(newReveal.byTimeout ? .timeUp : .correct)
+            if let newReveal, newReveal.correctIDs.isEmpty {
+                SoundPlayer.shared.play(.timeUp)
             }
         }
     }
 
-    /// 出題中は文字送りを進め、発表に入ったら全文を出す。
-    /// 即答型では誰かが押した時点で読み上げを止める代わりに全文表示にする
-    private func revealMode(state: RoomState, game: RoomState.Game) -> BattleQuestionText.Mode {
+    /// 出題中は文字送りを進め、発表に入ったら全文を出す
+    private func revealMode(game: RoomState.Game) -> BattleQuestionText.Mode {
         guard game.phase == .question else { return .full }
-        if state.settings.style.usesBuzzButton, game.buzzWinner != nil || !game.failedIDs.isEmpty {
-            return .full
-        }
         return .progressing(startedAtMS: game.effectiveStartedAtMS)
     }
 
@@ -81,63 +77,52 @@ struct BattleView: View {
     private var scoreBoard: some View {
         BattleScoreBoard(
             players: session.state?.players ?? [],
-            myID: session.myID,
-            scorerID: scorerID,
-            failedIDs: failedIDs
+            hostID: session.state?.hostID ?? session.myID,
+            answers: session.state?.game?.answers ?? [],
+            failedIDs: failedIDs,
+            correctIDs: correctIDs
         )
     }
 
-    /// 出題中だけ、誤答して回答権を失ったプレイヤーを返す(発表中は得点者の強調を優先する)
+    /// 誤答済みのプレイヤー。発表中も残して、その問題の結果を確認できるようにする
     private var failedIDs: Set<String> {
-        guard let game = session.state?.game, game.phase == .question else { return [] }
-        return game.failedIDs
+        session.state?.game?.failedIDs ?? []
     }
 
-    /// 発表中だけ、得点したプレイヤーを強調するために返す
-    private var scorerID: String? {
-        guard let game = session.state?.game, game.phase == .reveal,
-              let reveal = game.reveal, !reveal.byTimeout else { return nil }
-        return reveal.scorerID
+    /// 正解者。出題中も、届いた回答から確定したぶんはその場で見せる
+    /// (得点が同時に動くので、正誤だけ伏せても意味がないため)
+    private var correctIDs: Set<String> {
+        guard let game = session.state?.game else { return [] }
+        if game.phase == .reveal, let reveal = game.reveal {
+            return Set(reveal.correctIDs)
+        }
+        guard let question = session.currentQuestion else { return [] }
+        return Set(game.answers.filter { $0.choice == question.answer }.map(\.uid))
     }
 
     private func progressHeader(state: RoomState, game: RoomState.Game) -> some View {
         TimelineView(.periodic(from: .now, by: Self.tickInterval)) { timeline in
-            let isBuzzOpen = game.buzzWinner == nil && game.phase == .question
             BattleProgressHeader(
                 questionNumber: game.questionIndex + 1,
                 totalCount: state.questions.count,
-                remaining: isBuzzOpen ? session.remainingTime(at: timeline.date) : nil,
+                remaining: game.phase == .question ? session.remainingTime(at: timeline.date) : nil,
                 timeLimit: state.settings.timeLimit
             )
         }
     }
 
-    // MARK: - 操作エリア(状況に応じて早押し/回答/待機を出し分け)
+    // MARK: - 操作エリア
 
     @ViewBuilder
-    private func interactionArea(state: RoomState, game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
+    private func interactionArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
         if game.phase == .reveal, let reveal = game.reveal {
-            BattleRevealCard(reveal: reveal, scorerName: displayName(for: reveal.scorerID))
-                .transition(.scale(scale: 0.92).combined(with: .opacity))
-        } else if !state.settings.style.usesBuzzButton {
-            progressiveChoiceArea(game: game, question: question)
-        } else if game.buzzWinner == session.myID {
-            answerArea(question: question)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-        } else if let winner = game.buzzWinner {
-            statusLabel(
-                "\(displayName(for: winner) ?? "?")が回答中…",
-                systemImage: "lock.fill",
-                color: .secondary
+            BattleRevealCard(
+                reveal: reveal,
+                correctNames: reveal.correctIDs.compactMap { displayName(for: $0) }
             )
-        } else if game.failedIDs.contains(session.myID) {
-            statusLabel("お手つき!この問題には回答できません", systemImage: "hand.raised.fill", color: .red)
+                .transition(.scale(scale: 0.92).combined(with: .opacity))
         } else {
-            BuzzButton {
-                Haptics.impact(.heavy)
-                session.buzz()
-            }
-            .padding(.bottom, 24)
+            progressiveChoiceArea(game: game, question: question)
         }
     }
 
@@ -174,32 +159,4 @@ struct BattleView: View {
         session.player(for: playerID)?.nickname
     }
 
-    private func statusLabel(_ text: String, systemImage: String, color: Color) -> some View {
-        Label(text, systemImage: systemImage)
-            .font(.headline)
-            .foregroundStyle(color)
-            .padding(.bottom, 40)
-    }
-
-    private func answerArea(question: RoomState.QuestionPayload) -> some View {
-        VStack(spacing: 12) {
-            Text("回答権ゲット!\(Int(BattleRules.answerTimeLimit))秒以内に回答")
-                .font(.subheadline.bold())
-                .foregroundStyle(.orange)
-
-            ForEach(question.choices, id: \.self) { choice in
-                Button {
-                    Haptics.impact(.light)
-                    submittedChoice = choice
-                    session.submitAnswer(choice, visibleCount: question.text.count)
-                } label: {
-                    Text(choice)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.bordered)
-                .tint(submittedChoice == choice ? .orange : .accentColor)
-                .disabled(submittedChoice != nil)
-            }
-        }
-    }
 }

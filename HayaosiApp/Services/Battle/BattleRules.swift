@@ -10,13 +10,19 @@ enum BattleRules {
     static let matchStartDelayMS = matchStartDelay * 1_000
     static let maxPlayers = 8
     static let minPlayersToStart = 2
-    static let correctPoint = 1
-    static let wrongPoint = -1
-    /// 回答権を得てから回答するまでの制限時間
-    static let answerTimeLimit: TimeInterval = 10
+    /// 正解者内の順位ごとの得点。4位以降は `laterCorrectPoint`
+    static let rankedCorrectPoints = [20, 10, 5]
+    static let laterCorrectPoint = 1
+    static let wrongPoint = -10
     /// 正解・時間切れの発表を見せる時間
     static let revealDuration: TimeInterval = 3
     static let codeDigits = 4
     /// ルームコードが重複したときの再抽選回数
     static let createAttempts = 5
+
+    static func correctPoint(for rank: Int) -> Int {
+        guard rank > 0 else { return 0 }
+        let index = rank - 1
+        return rankedCorrectPoints.indices.contains(index) ? rankedCorrectPoints[index] : laterCorrectPoint
+    }
 }

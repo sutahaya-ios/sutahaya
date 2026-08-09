@@ -15,9 +15,7 @@ protocol BattleSession: AnyObject, Observable {
 
     func startGame(questions: [Question]) async
     func rematch() async
-    /// 即答型の早押しボタン。文字送り型では使わない
-    func buzz()
-    /// 回答する。文字送り型では選択肢を押した瞬間がこれにあたるため、
+    /// 回答する。選択肢を押した瞬間が回答にあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
     func submitAnswer(_ choice: String, visibleCount: Int)
     func leave()
@@ -36,12 +34,10 @@ extension BattleSession {
         return state?.players.first { $0.id == uid }
     }
 
-    /// いま何文字目まで見えているか。文字送り型でのみ増えていき、即答型では常に全文
+    /// いま何文字目まで見えているか。出題中だけ経過時間に応じて増える
     func visibleCharacterCount(at date: Date) -> Int {
         guard let state, let question = currentQuestion else { return 0 }
-        guard let game = state.game,
-              state.settings.style.revealsProgressively,
-              game.phase == .question else { return question.text.count }
+        guard let game = state.game, game.phase == .question else { return question.text.count }
 
         let elapsed = date.timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000
         return ProgressiveReveal.visibleCount(totalCharacters: question.text.count, elapsed: elapsed)
@@ -50,7 +46,9 @@ extension BattleSession {
     /// 自分がこの問題にまだ回答できるか(未回答かつ誤答していない)
     var canAnswerNow: Bool {
         guard let game = state?.game, game.phase == .question else { return false }
-        guard Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS else { return false }
+        let nowMS = Date().timeIntervalSince1970 * 1_000
+        let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
+        guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else { return false }
         guard !game.failedIDs.contains(myID) else { return false }
         return !game.answers.contains { $0.uid == myID }
     }

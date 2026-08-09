@@ -8,8 +8,6 @@ struct CPUProfile {
     let answerProbability: Double
     /// 回答が正解になる確率
     let correctProbability: Double
-    /// 即答型で早押しボタンを押すまでの待ち時間(秒)
-    let buzzDelay: ClosedRange<Double>
     /// 文字送り型で、単語が何割まで表示されたら答えるか。強いCPUほど少ない文字数で答える
     let answerRevealFraction: ClosedRange<Double>
     /// 選択肢を読んで選ぶまでの間。これが無いと人間が4択を読む前に決着してしまう
@@ -18,11 +16,19 @@ struct CPUProfile {
     /// 先頭から参加人数ぶんを使う(1体なら「中」だけ)
     static let roster = [
         CPUProfile(id: "cpu-normal", nickname: "CPU(中)", answerProbability: 0.9, correctProbability: 0.55,
-                   buzzDelay: 2.0...7.0, answerRevealFraction: 0.55...0.85, thinkingDelay: 1.5...3.0),
+                   answerRevealFraction: 0.55...0.85, thinkingDelay: 1.5...3.0),
         CPUProfile(id: "cpu-strong", nickname: "CPU(強)", answerProbability: 0.95, correctProbability: 0.75,
-                   buzzDelay: 1.2...5.0, answerRevealFraction: 0.35...0.65, thinkingDelay: 0.8...1.8),
+                   answerRevealFraction: 0.35...0.65, thinkingDelay: 0.8...1.8),
         CPUProfile(id: "cpu-weak", nickname: "CPU(弱)", answerProbability: 0.7, correctProbability: 0.35,
-                   buzzDelay: 3.0...9.0, answerRevealFraction: 0.8...1.0, thinkingDelay: 2.5...4.5)
+                   answerRevealFraction: 0.8...1.0, thinkingDelay: 2.5...4.5),
+        CPUProfile(id: "cpu-a", nickname: "CPU(A)", answerProbability: 0.8, correctProbability: 0.45,
+                   answerRevealFraction: 0.65...0.95, thinkingDelay: 1.8...3.5),
+        CPUProfile(id: "cpu-b", nickname: "CPU(B)", answerProbability: 0.85, correctProbability: 0.5,
+                   answerRevealFraction: 0.5...0.8, thinkingDelay: 1.3...2.8),
+        CPUProfile(id: "cpu-c", nickname: "CPU(C)", answerProbability: 0.75, correctProbability: 0.4,
+                   answerRevealFraction: 0.7...1.0, thinkingDelay: 2.0...4.0),
+        CPUProfile(id: "cpu-d", nickname: "CPU(D)", answerProbability: 0.9, correctProbability: 0.6,
+                   answerRevealFraction: 0.45...0.75, thinkingDelay: 1.0...2.2)
     ]
 }
 
@@ -40,9 +46,6 @@ struct CPUAnswerStrategy {
 
     /// 制限時間ぎりぎりの回答は不自然なので、CPUは制限時間のこの割合までに動く
     static let deadlineRatio = 0.8
-    /// 即答型で回答権を取ったあと、選択肢を選ぶまでの間(秒)
-    static let postBuzzAnswerDelay: ClosedRange<Double> = 1.0...2.5
-
     /// 判断に使う乱数。テストでは固定値を返す実装に差し替える
     var random: (ClosedRange<Double>) -> Double = { Double.random(in: $0) }
 
@@ -72,14 +75,4 @@ struct CPUAnswerStrategy {
         return ProgressivePlan(delay: delay, choice: choice(for: cpu, in: question), visibleCount: target)
     }
 
-    /// 即答型:早押しボタンを押すまでの待ち時間
-    func buzzDelay(for cpu: CPUProfile, timeLimit: TimeInterval) -> TimeInterval {
-        min(random(cpu.buzzDelay), timeLimit * Self.deadlineRatio)
-    }
-
-    /// 即答型:回答権を取ったあとの回答(選択肢と、選ぶまでの間)
-    func postBuzzPlan(for cpu: CPUProfile,
-                      question: RoomState.QuestionPayload) -> (delay: TimeInterval, choice: String) {
-        (random(Self.postBuzzAnswerDelay), choice(for: cpu, in: question))
-    }
 }

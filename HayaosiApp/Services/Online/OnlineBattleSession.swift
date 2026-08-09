@@ -48,15 +48,13 @@ final class OnlineBattleSession: BattleSession {
 
     // MARK: ホスト進行管理(OnlineBattleSession+Host.swift から使用)
     var questionTimerTask: Task<Void, Never>?
-    var answerTimerTask: Task<Void, Never>?
     var revealTask: Task<Void, Never>?
     var timedQuestion: (index: Int, effectiveStartedAtMS: Double)?
-    var answerTimerKey: String?
     var revealScheduledIndex: Int?
-    var isEvaluatingAnswer = false
-    /// 文字送り型で採点済みの回答者。同じ回答を二重に採点しないためのマーカー
-    var judgedUIDs: Set<String> = []
-    var judgedQuestionIndex: Int?
+    /// 採点済みの問題。スナップショットが複数回届いても得点を二重加算しないためのマーカー
+    var scoredQuestionIndex: Int?
+    /// 問題を始めた時点の得点。回答が届くたびに「この値+確定した増減」へ置き直すため保持する
+    var questionBaseScores: (index: Int, scores: [String: Int])?
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
 
@@ -188,37 +186,14 @@ final class OnlineBattleSession: BattleSession {
 
     // MARK: - プレイヤー操作
 
-    /// 早押し。winnerへのトランザクションで「最初の1人」を原子的に確定し(要件 §5.1.2)、
-    /// 併せて押下順キューにも記録する(誤答時の回答権移行用)
-    func buzz() {
-        guard let game = currentGame,
-              game.phase == .question,
-              Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS,
-              game.buzzWinner == nil,
-              !game.failedIDs.contains(myID) else { return }
-
-        let uid = myID
-        roomRef.child("game/buzz/winner").runTransactionBlock { currentData in
-            if currentData.value == nil || currentData.value is NSNull {
-                currentData.value = uid
-            }
-            return TransactionResult.success(withValue: currentData)
-        }
-        roomRef.child("game/buzz/queue/\(uid)").setValue(ServerValue.timestamp())
-    }
-
     /// 回答を送る。
     /// 文字送り型は選択肢を押した瞬間が回答なので、押下時刻(サーバー時刻)と表示文字数を一緒に残す。
     /// 先着はサーバー時刻で決まるため、端末の時計のずれに影響されない
     func submitAnswer(_ choice: String, visibleCount: Int) {
-        guard let state, let game = currentGame, game.phase == .question else { return }
-        guard Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS else { return }
-
-        guard state.settings.style.revealsProgressively else {
-            guard game.buzzWinner == myID else { return }
-            roomRef.child("game/answer").setValue(["uid": myID, "choice": choice])
-            return
-        }
+        guard let game = currentGame, game.phase == .question else { return }
+        let nowMS = Date().timeIntervalSince1970 * 1_000
+        let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
+        guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else { return }
 
         guard canAnswerNow else { return }
         roomRef.child("game/answers/\(myID)").setValue([
@@ -267,18 +242,13 @@ final class OnlineBattleSession: BattleSession {
         }
     }
 
-    /// 自分が関与した問題の正誤を記録する(正解発表・誤答マークから拾う)
+    /// 自分が回答した問題の正誤を記録する
     private func captureMyResults(from state: RoomState) {
         guard let game = state.game,
               state.questions.indices.contains(game.questionIndex) else { return }
         let questionID = state.questions[game.questionIndex].id
-
-        if game.failedIDs.contains(myID) {
-            myResultsByQuestion[questionID] = false
-        }
-        if game.reveal?.scorerID == myID {
-            myResultsByQuestion[questionID] = true
-        }
+        guard let answer = game.answers.first(where: { $0.uid == myID }) else { return }
+        myResultsByQuestion[questionID] = answer.choice == state.questions[game.questionIndex].answer
     }
 
     /// 対戦終了時に一度だけ、正誤履歴と復習リストへ反映する(要件 §5.4)

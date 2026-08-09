@@ -109,10 +109,7 @@ final class BattleStartTimingTests: XCTestCase {
             phase: .question,
             startDelayMS: startDelayMS,
             startedAtMS: startedAtMS,
-            buzzWinner: nil,
-            buzzQueue: [:],
             failedIDs: [],
-            answer: nil,
             answers: [],
             reveal: nil
         )
@@ -123,8 +120,7 @@ final class BattleStartTimingTests: XCTestCase {
             settings: .init(
                 questionCount: 1,
                 timeLimit: 20,
-                genre: .englishWord,
-                style: .progressiveChoice
+                genre: .englishWord
             ),
             players: [],
             questions: [question],
@@ -147,7 +143,6 @@ private final class StubBattleSession: BattleSession {
 
     func startGame(questions: [Question]) async {}
     func rematch() async {}
-    func buzz() {}
     func submitAnswer(_ choice: String, visibleCount: Int) {}
     func leave() {}
     func saveResultsIfNeeded(context: ModelContext) {}

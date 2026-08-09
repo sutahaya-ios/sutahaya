@@ -5,7 +5,6 @@ import AVFoundation
 @MainActor
 final class SoundPlayer {
     enum Effect: String, CaseIterable {
-        case buzz = "se_buzz"              // 早押し(回答権確定)
         case correct = "se_correct"        // 正解(ピンポン)
         case wrong = "se_wrong"            // 不正解(ブブー)
         case timeUp = "se_timeup"          // 時間切れ

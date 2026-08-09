@@ -34,18 +34,19 @@ final class CPUBattleSession: BattleSession {
     private var phase: RoomState.GamePhase = .question
     private var startDelayMS: Double = 0
     private var startedAtMS: Double = 0
-    private var buzzWinner: String?
     private var failedIDs: Set<String> = []
     private var answers: [RoomState.Answer] = []
     private var reveal: RoomState.Reveal?
+    /// この問題で実際に回答しうる参加者。参加を見送ったCPUは待っても答えないので除く
+    private var activeIDs: Set<String> = []
+    /// この問題を始めた時点の得点。回答のたびに「この値+確定した増減」へ置き直す
+    private var scoresAtQuestionStart: [String: Int] = [:]
     /// 回答受付の世代。仕切り直しごとに進め、古い予約タスクを無効化する
     private var answerRound = 0
 
     private var myResults: [String: Bool] = [:]
     private var hasSavedResults = false
     private var pendingTasks: [Task<Void, Never>] = []
-
-    private var isProgressiveChoice: Bool { settings.style.revealsProgressively }
 
     /// `strategy`・`timerScheduler` はテスト用の注入口。本番は既定値のまま使う
     init(nickname: String,
@@ -88,17 +89,13 @@ final class CPUBattleSession: BattleSession {
         questionIndex = 0
         phase = .question
         startDelayMS = 0
-        buzzWinner = nil
         failedIDs = []
         answers = []
         reveal = nil
+        activeIDs = []
+        scoresAtQuestionStart = [:]
         status = .waiting
         publish()
-    }
-
-    func buzz() {
-        guard !isProgressiveChoice else { return }
-        attemptBuzz(as: myID, round: answerRound)
     }
 
     func submitAnswer(_ choice: String, visibleCount: Int) {
@@ -127,22 +124,23 @@ final class CPUBattleSession: BattleSession {
         phase = .question
         startDelayMS = index == 0 ? BattleRules.matchStartDelayMS : 0
         startedAtMS = Date().timeIntervalSince1970 * 1000
-        buzzWinner = nil
         failedIDs = []
         answers = []
         reveal = nil
+        scoresAtQuestionStart = scores
         answerRound += 1
         publish()
         openAnswering()
     }
 
-    /// 回答受付を開始する(問題開始時と、即答型で誤答による仕切り直し時)
+    /// 問題開始後、CPUの回答と問題の制限時間を予約する
     private func openAnswering() {
         let currentRound = answerRound
         let startDelay = startDelayMS / 1_000
-        for cpu in cpus where !failedIDs.contains(cpu.id)
-            && !answers.contains(where: { $0.uid == cpu.id })
-            && strategy.participates(cpu) {
+        let participatingCPUs = cpus.filter { strategy.participates($0) }
+        // 参加を見送ったCPUは最後まで答えないので、待たずに発表へ進めるよう対象から外す
+        activeIDs = Set([myID] + participatingCPUs.map(\.id))
+        for cpu in participatingCPUs {
             scheduleCPUAction(cpu: cpu, round: currentRound, startDelay: startDelay)
         }
         schedule(after: startDelay + settings.timeLimit) { [weak self] in
@@ -153,46 +151,15 @@ final class CPUBattleSession: BattleSession {
     /// CPUの動き。いつ・何を答えるかの判断は `CPUAnswerStrategy` が決める
     private func scheduleCPUAction(cpu: CPUProfile, round: Int, startDelay: TimeInterval) {
         let question = questionPayloads[questionIndex]
-        guard isProgressiveChoice else {
-            let delay = strategy.buzzDelay(for: cpu, timeLimit: settings.timeLimit)
-            schedule(after: startDelay + delay) { [weak self] in
-                self?.attemptBuzz(as: cpu.id, round: round)
-            }
-            return
-        }
-
         let plan = strategy.progressivePlan(for: cpu, question: question, timeLimit: settings.timeLimit)
         schedule(after: startDelay + plan.delay) { [weak self] in
             self?.evaluate(uid: cpu.id, choice: plan.choice, visibleCount: plan.visibleCount, round: round)
         }
     }
 
-    // MARK: - 即答型:早押しボタン
-
-    /// 最初に押した1人に回答権を与える
-    private func attemptBuzz(as id: String, round: Int) {
-        guard status == .playing, phase == .question,
-              buzzWinner == nil, round == answerRound,
-              !failedIDs.contains(id) else { return }
-        buzzWinner = id
-        publish()
-
-        if let cpu = cpus.first(where: { $0.id == id }) {
-            let question = questionPayloads[questionIndex]
-            let plan = strategy.postBuzzPlan(for: cpu, question: question)
-            let total = question.text.count
-            schedule(after: plan.delay) { [weak self] in
-                self?.evaluate(uid: cpu.id, choice: plan.choice, visibleCount: total, round: round)
-            }
-        }
-        schedule(after: BattleRules.answerTimeLimit) { [weak self] in
-            self?.timeoutAnswer(winner: id, round: round)
-        }
-    }
-
     // MARK: - 採点
 
-    /// 正解+1でその問題の勝者。誤答−1で、そのプレイヤーはこの問題に再回答できない(要件 §5.1.2)
+    /// 回答を記録し、その時点で確定した得点をすぐ反映する(残りの回答を待つ間も結果が見える)
     private func evaluate(uid: String, choice: String, visibleCount: Int, round: Int) {
         guard status == .playing, phase == .question, round == answerRound,
               questionPayloads.indices.contains(questionIndex),
@@ -206,71 +173,69 @@ final class CPUBattleSession: BattleSession {
             answeredAtMS: Date().timeIntervalSince1970 * 1000,
             visibleCount: visibleCount
         ))
-        scores[uid, default: 0] += isCorrect ? BattleRules.correctPoint : BattleRules.wrongPoint
         if uid == myID {
             myResults[question.id] = isCorrect
         }
 
-        if isCorrect {
-            showReveal(RoomState.Reveal(correctAnswer: question.answer, scorerID: uid, byTimeout: false))
-            return
+        if !isCorrect {
+            failedIDs.insert(uid)
         }
-
-        failedIDs.insert(uid)
-        buzzWinner = nil
+        applyScoring(for: question)
         publish()
 
-        if everyoneFinishedAnswering {
-            // 全員が答え終えて正解が出なかった。待っても何も起きないので発表へ進む
-            showReveal(RoomState.Reveal(correctAnswer: question.answer, scorerID: nil, byTimeout: true))
-        } else if !isProgressiveChoice {
-            // 即答型は早押しからやり直す
-            startDelayMS = 0
-            startedAtMS = Date().timeIntervalSince1970 * 1000
-            answerRound += 1
-            publish()
-            openAnswering()
+        // 回答しうる全員が使い切ったら、制限時間を待たずに発表へ進む
+        if hasEveryoneAnswered {
+            finishQuestion(round: round)
         }
+    }
+
+    /// いま届いている回答だけで採点し、問題開始時の得点へ上書きする。
+    /// 毎回ゼロから計算し直すので、後から順位が入れ替わっても二重加算にならない
+    @discardableResult
+    private func applyScoring(for question: RoomState.QuestionPayload) -> BattleScoring.Result {
+        let scoring = BattleScoring.result(
+            answers: answers,
+            correctAnswer: question.answer,
+            participantIDs: participantIDs
+        )
+        scores = scoresAtQuestionStart
+        for (uid, pointChange) in scoring.pointChanges {
+            scores[uid, default: 0] += pointChange
+        }
+        return scoring
     }
 
     /// この問題にまだ回答できるか(未回答かつ誤答していない)
     private func canAnswer(uid: String) -> Bool {
         guard !failedIDs.contains(uid) else { return false }
-        if isProgressiveChoice {
-            return !answers.contains { $0.uid == uid }
-        }
-        return buzzWinner == uid
+        return !answers.contains { $0.uid == uid }
     }
 
-    private var everyoneFinishedAnswering: Bool {
-        let participants = [myID] + cpus.map(\.id)
-        return participants.allSatisfy { failedIDs.contains($0) }
+    private var participantIDs: [String] { [myID] + cpus.map(\.id) }
+
+    /// 回答しうる参加者が全員1回ずつ回答を終えたか(正誤は問わない)
+    private var hasEveryoneAnswered: Bool {
+        let answeredIDs = Set(answers.map(\.uid))
+        return activeIDs.allSatisfy(answeredIDs.contains)
     }
 
-    /// 回答権を持ったまま時間切れ(即答型のみ)
-    private func timeoutAnswer(winner: String, round: Int) {
-        guard status == .playing, phase == .question,
-              buzzWinner == winner, round == answerRound else { return }
-        let total = questionPayloads.indices.contains(questionIndex)
-            ? questionPayloads[questionIndex].text.count : 0
-        evaluate(uid: winner, choice: "", visibleCount: total, round: round)
-    }
-
-    /// 制限時間まで誰も正解しなかった → 問題が流れる
     private func timeoutQuestion(round: Int) {
+        finishQuestion(round: round)
+    }
+
+    /// 最終的な採点を確定して発表へ進む。制限時間切れと「全員が回答済み」の両方から呼ばれる。
+    /// 得点は回答のたびに反映済みだが、無回答者を含めた確定値をここで置き直す
+    private func finishQuestion(round: Int) {
         guard status == .playing, phase == .question, round == answerRound,
               questionPayloads.indices.contains(questionIndex) else { return }
-        showReveal(RoomState.Reveal(
-            correctAnswer: questionPayloads[questionIndex].answer,
-            scorerID: nil,
-            byTimeout: true
-        ))
+        let question = questionPayloads[questionIndex]
+        let scoring = applyScoring(for: question)
+        showReveal(RoomState.Reveal(correctAnswer: question.answer, correctIDs: scoring.correctIDs))
     }
 
     private func showReveal(_ newReveal: RoomState.Reveal) {
         phase = .reveal
         reveal = newReveal
-        buzzWinner = nil
         publish()
         let index = questionIndex
         schedule(after: BattleRules.revealDuration) { [weak self] in
@@ -304,10 +269,7 @@ final class CPUBattleSession: BattleSession {
                 phase: status == .finished ? .finished : phase,
                 startDelayMS: startDelayMS,
                 startedAtMS: startedAtMS,
-                buzzWinner: buzzWinner,
-                buzzQueue: [:],
                 failedIDs: failedIDs,
-                answer: nil,
                 answers: answers,
                 reveal: reveal
             )

@@ -1,9 +1,9 @@
 import Foundation
 import FirebaseDatabase
 
-/// ホスト端末が持つ進行の権威(採点・回答権移行・タイムアウト・問題送り)
+/// ホスト端末が持つ進行の権威(採点・タイムアウト・問題送り)
 /// 状態観測(apply)のたびに hostReact が呼ばれるため、各処理は多重実行されないよう
-/// マーカー(timedQuestion / answerTimerKey / revealScheduledIndex)でガードする
+/// マーカー(timedQuestion / revealScheduledIndex)でガードする
 extension OnlineBattleSession {
 
     func hostReact(to state: RoomState) {
@@ -15,26 +15,16 @@ extension OnlineBattleSession {
         switch game.phase {
         case .question:
             revealScheduledIndex = nil
-            guard !state.settings.style.revealsProgressively else {
-                // 文字送り型は早押しボタンが無く、届いた回答を早い順に採点していく
-                cancelAnswerTimer()
-                ensureQuestionTimer(game: game, timeLimit: state.settings.timeLimit)
-                judgeAnswers(state: state, game: game)
-                return
-            }
-            if let winner = game.buzzWinner {
-                cancelQuestionTimer()
-                ensureAnswerTimer(index: game.questionIndex, winner: winner)
-                if let answer = game.answer {
-                    evaluate(answer: answer, state: state, game: game)
-                }
+            ensureQuestionTimer(game: game, timeLimit: state.settings.timeLimit)
+            captureBaseScoresIfNeeded(state: state, game: game)
+            // 全員が回答権を使い切ったら、制限時間を待たずに採点して発表へ進む
+            if hasEveryoneAnswered(state: state, game: game) {
+                finishQuestion(index: game.questionIndex)
             } else {
-                cancelAnswerTimer()
-                ensureQuestionTimer(game: game, timeLimit: state.settings.timeLimit)
+                applyLiveScoring(state: state, game: game)
             }
         case .reveal:
             cancelQuestionTimer()
-            cancelAnswerTimer()
             scheduleAdvance(state: state, game: game)
         case .finished:
             stopHostTasks()
@@ -43,125 +33,72 @@ extension OnlineBattleSession {
 
     func stopHostTasks() {
         cancelQuestionTimer()
-        cancelAnswerTimer()
         revealTask?.cancel()
         revealTask = nil
         revealScheduledIndex = nil
+        // 再戦で問題番号が0に戻っても採点できるようにする
+        scoredQuestionIndex = nil
+        questionBaseScores = nil
     }
 
-    // MARK: - 文字送り型の採点(選択肢を押した順に判定する)
+    /// 参加者全員が1回ずつ回答を終えたか(正誤は問わない)
+    private func hasEveryoneAnswered(state: RoomState, game: RoomState.Game) -> Bool {
+        guard !state.players.isEmpty else { return false }
+        let answeredIDs = Set(game.answers.map(\.uid))
+        return state.players.allSatisfy { answeredIDs.contains($0.id) }
+    }
 
-    /// 届いた回答を**押した時刻の早い順**に1件ずつ採点する。
-    /// 最初に正解した人がその問題の勝者。誤答した人はこの問題に再回答できない
-    func judgeAnswers(state: RoomState, game: RoomState.Game) {
-        guard !isEvaluatingAnswer, state.questions.indices.contains(game.questionIndex) else { return }
+    // MARK: - 回答状態の反映
 
-        if judgedQuestionIndex != game.questionIndex {
-            judgedQuestionIndex = game.questionIndex
-            judgedUIDs = []
-        }
+    /// 問題を始めた時点の得点を控える。回答のたびにここから計算し直すことで、
+    /// スナップショットが何度届いても得点が二重に動かない
+    private func captureBaseScoresIfNeeded(state: RoomState, game: RoomState.Game) {
+        guard questionBaseScores?.index != game.questionIndex else { return }
+        questionBaseScores = (
+            game.questionIndex,
+            Dictionary(uniqueKeysWithValues: state.players.map { ($0.id, $0.score) })
+        )
+    }
 
-        let pending = game.answers.filter { !judgedUIDs.contains($0.uid) && !game.failedIDs.contains($0.uid) }
-        guard let target = pending.first else { return }
+    /// いま届いている回答だけで採点し、確定した得点とお手つきを即座に反映する。
+    /// 残りの回答を待つ間も、自分の結果が画面に出るようにするためのもの
+    private func applyLiveScoring(state: RoomState, game: RoomState.Game) {
+        guard let updates = scoringUpdates(state: state, game: game), !updates.isEmpty else { return }
+        write(updates, failureMessage: "回答の反映に失敗しました")
+    }
 
-        isEvaluatingAnswer = true
-        judgedUIDs.insert(target.uid)
-
+    /// 採点結果を、現在の状態と違う項目だけの差分にして返す。
+    /// 差分が無いときに書き込まないことで、自分の書き込みで再び観測が走る往復を止める
+    private func scoringUpdates(state: RoomState, game: RoomState.Game) -> [String: Any]? {
+        guard state.questions.indices.contains(game.questionIndex),
+              let base = questionBaseScores, base.index == game.questionIndex else { return nil }
         let question = state.questions[game.questionIndex]
-        if target.choice == question.answer {
-            applyCorrectAnswer(uid: target.uid, question: question, state: state)
-        } else {
-            applyWrongChoice(uid: target.uid, question: question, state: state, game: game)
+        let deadlineMS = game.effectiveStartedAtMS + state.settings.timeLimit * 1_000
+        let validAnswers = game.answers.filter { $0.answeredAtMS <= deadlineMS }
+        let scoring = BattleScoring.result(
+            answers: validAnswers,
+            correctAnswer: question.answer,
+            participantIDs: state.players.map(\.id)
+        )
+
+        var updates: [String: Any] = [:]
+        for player in state.players {
+            let baseScore = base.scores[player.id] ?? player.score
+            let newScore = baseScore + (scoring.pointChanges[player.id] ?? 0)
+            if newScore != player.score {
+                updates["players/\(player.id)/score"] = newScore
+            }
         }
+        for uid in scoring.wrongIDs where !game.failedIDs.contains(uid) {
+            updates["game/failed/\(uid)"] = true
+        }
+        return updates
     }
 
-    /// 誤答:−1点でこの問題から締め出す。全員が答え終えていたら待たずに発表へ進む
-    private func applyWrongChoice(uid: String, question: RoomState.QuestionPayload,
-                                  state: RoomState, game: RoomState.Game) {
-        let newScore = (player(for: uid)?.score ?? 0) + BattleRules.wrongPoint
-        var updates: [String: Any] = [
-            "players/\(uid)/score": newScore,
-            "game/buzz/failed/\(uid)": true
-        ]
-
-        let allFinished = state.players.allSatisfy { $0.id == uid || game.failedIDs.contains($0.id) }
-        if allFinished {
-            updates["game/phase"] = RoomState.GamePhase.reveal.rawValue
-            updates["game/reveal"] = [
-                "correctAnswer": question.answer,
-                "scorerID": "",
-                "byTimeout": true
-            ]
-        }
-
-        write(updates, failureMessage: "採点に失敗しました") { [weak self] in
-            self?.isEvaluatingAnswer = false
-        }
-    }
-
-    // MARK: - 採点と回答権移行(要件 §5.1.2)
-
-    private func evaluate(answer: (uid: String, choice: String), state: RoomState, game: RoomState.Game) {
-        guard !isEvaluatingAnswer,
-              answer.uid == game.buzzWinner,
-              state.questions.indices.contains(game.questionIndex) else { return }
-        isEvaluatingAnswer = true
-
-        let question = state.questions[game.questionIndex]
-        if answer.choice == question.answer {
-            applyCorrectAnswer(uid: answer.uid, question: question, state: state)
-        } else {
-            applyWrongAnswer(uid: answer.uid, state: state, game: game)
-        }
-    }
-
-    func applyCorrectAnswer(uid: String, question: RoomState.QuestionPayload, state: RoomState) {
-        let newScore = (player(for: uid)?.score ?? 0) + BattleRules.correctPoint
-        let updates: [String: Any] = [
-            "players/\(uid)/score": newScore,
-            "game/answer": NSNull(),
-            "game/phase": RoomState.GamePhase.reveal.rawValue,
-            "game/reveal": [
-                "correctAnswer": question.answer,
-                "scorerID": uid,
-                "byTimeout": false
-            ]
-        ]
-        write(updates, failureMessage: "採点に失敗しました") { [weak self] in
-            self?.isEvaluatingAnswer = false
-        }
-    }
-
-    /// 誤答(回答時間切れ含む):−1点で誤答者をロックし、押下順キューの次のプレイヤーへ回答権を移す。
-    /// 誰も残っていなければ出題タイマーを仕切り直して早押し受付に戻す
-    func applyWrongAnswer(uid: String, state: RoomState, game: RoomState.Game) {
-        let newScore = (player(for: uid)?.score ?? 0) + BattleRules.wrongPoint
-        let excluded = game.failedIDs.union([uid])
-        let nextWinner = game.buzzQueue
-            .filter { !excluded.contains($0.key) }
-            .min { $0.value < $1.value }?
-            .key
-
-        var updates: [String: Any] = [
-            "players/\(uid)/score": newScore,
-            "game/answer": NSNull(),
-            "game/buzz/failed/\(uid)": true,
-            "game/buzz/winner": nextWinner ?? NSNull()
-        ]
-        if nextWinner == nil {
-            // 残りのプレイヤーのために制限時間を仕切り直す
-            updates["game/startDelayMS"] = 0
-            updates["game/startedAt"] = ServerValue.timestamp()
-        }
-        write(updates, failureMessage: "回答権の移行に失敗しました") { [weak self] in
-            self?.isEvaluatingAnswer = false
-        }
-    }
-
-    // MARK: - 出題タイムアウト(誰も押さずに時間切れ → 問題が流れる)
+    // MARK: - 制限時間終了時の一括採点
 
     private func ensureQuestionTimer(game: RoomState.Game, timeLimit: TimeInterval) {
-        // 同じ問題・同じ開始時刻ならタイマー設定済み(誤答での仕切り直しはstartedAtが変わる)
+        // 同じ問題・同じ開始時刻ならタイマー設定済み
         if let timed = timedQuestion,
            timed.index == game.questionIndex,
            timed.effectiveStartedAtMS == game.effectiveStartedAtMS {
@@ -176,51 +113,37 @@ extension OnlineBattleSession {
         questionTimerTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
             guard !Task.isCancelled else { return }
-            self?.timeoutQuestion(index: index)
+            self?.finishQuestion(index: index)
         }
     }
 
-    private func timeoutQuestion(index: Int) {
+    /// 最終的な採点を確定して発表へ進む。制限時間切れと「全員が回答済み」の両方から呼ばれる。
+    /// 得点は回答のたびに反映済みなので、ここでは残りの差分と発表内容だけを書き込む
+    private func finishQuestion(index: Int) {
+        guard scoredQuestionIndex != index else { return }
         guard let state, state.status == .playing,
               let game = state.game,
               game.phase == .question,
               game.questionIndex == index,
-              game.buzzWinner == nil,
               state.questions.indices.contains(index) else { return }
+        scoredQuestionIndex = index
 
-        let updates: [String: Any] = [
-            "game/phase": RoomState.GamePhase.reveal.rawValue,
-            "game/reveal": [
-                "correctAnswer": state.questions[index].answer,
-                "scorerID": "",
-                "byTimeout": true
-            ]
+        let question = state.questions[index]
+        let deadlineMS = game.effectiveStartedAtMS + state.settings.timeLimit * 1_000
+        let validAnswers = game.answers.filter { $0.answeredAtMS <= deadlineMS }
+        let scoring = BattleScoring.result(
+            answers: validAnswers,
+            correctAnswer: question.answer,
+            participantIDs: state.players.map(\.id)
+        )
+
+        var updates: [String: Any] = scoringUpdates(state: state, game: game) ?? [:]
+        updates["game/phase"] = RoomState.GamePhase.reveal.rawValue
+        updates["game/reveal"] = [
+            "correctAnswer": question.answer,
+            "correctIDs": scoring.correctIDs
         ]
         write(updates, failureMessage: "問題の進行に失敗しました")
-    }
-
-    // MARK: - 回答時間切れ(回答権を持ったまま無回答 → 誤答扱い)
-
-    private func ensureAnswerTimer(index: Int, winner: String) {
-        let key = "\(index)-\(winner)"
-        guard answerTimerKey != key else { return }
-        cancelAnswerTimer()
-        answerTimerKey = key
-
-        answerTimerTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(BattleRules.answerTimeLimit * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            self?.timeoutAnswer(index: index, winner: winner)
-        }
-    }
-
-    private func timeoutAnswer(index: Int, winner: String) {
-        guard let state, state.status == .playing,
-              let game = state.game,
-              game.phase == .question,
-              game.questionIndex == index,
-              game.buzzWinner == winner else { return }
-        applyWrongAnswer(uid: winner, state: state, game: game)
     }
 
     // MARK: - 正解発表後の問題送り
@@ -256,8 +179,7 @@ extension OnlineBattleSession {
                 "game/phase": RoomState.GamePhase.question.rawValue,
                 "game/startDelayMS": 0,
                 "game/startedAt": ServerValue.timestamp(),
-                "game/buzz": NSNull(),
-                "game/answer": NSNull(),
+                "game/failed": NSNull(),
                 "game/answers": NSNull(),
                 "game/reveal": NSNull()
             ]
@@ -271,12 +193,6 @@ extension OnlineBattleSession {
         questionTimerTask?.cancel()
         questionTimerTask = nil
         timedQuestion = nil
-    }
-
-    private func cancelAnswerTimer() {
-        answerTimerTask?.cancel()
-        answerTimerTask = nil
-        answerTimerKey = nil
     }
 
     private func write(_ updates: [String: Any], failureMessage: String, completion: (() -> Void)? = nil) {

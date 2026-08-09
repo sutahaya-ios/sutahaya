@@ -3,7 +3,7 @@ import SwiftData
 
 /// CPU対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる
 struct CPUBattleSetupView: View {
-    private static let botCountRange = 1...3
+    private static let botCountRange = 1...(BattleRules.maxPlayers - 1)
 
     @AppStorage("nickname") private var nickname = "ゲスト"
     @Query private var allQuestions: [Question]
@@ -11,21 +11,12 @@ struct CPUBattleSetupView: View {
     @State private var difficulty = WordDifficulty.one
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
-    @State private var style = QuizDefaults.style
     @State private var cpuCount = 2
     @State private var session: CPUBattleSession?
     @State private var showRoom = false
 
     var body: some View {
         Form {
-            Section {
-                QuizStylePicker(style: $style)
-            } header: {
-                Text("対戦形式")
-            } footer: {
-                Text(style.detail)
-            }
-
             Section("対戦設定") {
                 Picker("ジャンル", selection: .constant(Genre.englishWord)) {
                     ForEach(Genre.allCases) { genre in
@@ -84,7 +75,6 @@ struct CPUBattleSetupView: View {
                 questionCount: min(questionCount, availableQuestionCount),
                 timeLimit: timeLimit,
                 genre: .englishWord,
-                style: style,
                 wordCategory: category,
                 wordDifficulty: difficulty
             ),
