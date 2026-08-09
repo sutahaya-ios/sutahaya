@@ -82,8 +82,15 @@ struct BattleView: View {
         BattleScoreBoard(
             players: session.state?.players ?? [],
             myID: session.myID,
-            scorerID: scorerID
+            scorerID: scorerID,
+            failedIDs: failedIDs
         )
+    }
+
+    /// 出題中だけ、誤答して回答権を失ったプレイヤーを返す(発表中は得点者の強調を優先する)
+    private var failedIDs: Set<String> {
+        guard let game = session.state?.game, game.phase == .question else { return [] }
+        return game.failedIDs
     }
 
     /// 発表中だけ、得点したプレイヤーを強調するために返す

@@ -28,6 +28,9 @@ struct BattleFlowView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        // ロビーからリザルトまでタブバーを隠す。対戦中に他タブへ抜けられると
+        // ルームに残ったまま迷子になるため、退出はツールバーの「退出」に一本化する
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
             if session.state?.status != .finished && session.state?.status != .closed {
                 ToolbarItem(placement: .topBarLeading) {
