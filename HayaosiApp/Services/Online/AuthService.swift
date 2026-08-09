@@ -51,37 +51,128 @@ final class AuthService {
     }
 
     private func ensureProfile(uid: String) async throws {
-        let doc = Firestore.firestore().collection("users").document(uid)
+        let db = Firestore.firestore()
+        let doc = db.collection("users").document(uid)
         let snapshot = try await doc.getDocument()
 
         if let data = snapshot.data(), let existingCode = data["friendCode"] as? String {
-            friendCode = existingCode
-            // ニックネームは端末側の設定を正として同期する
-            if data["nickname"] as? String != nickname {
-                try await doc.setData(["nickname": nickname], merge: true)
-            }
+            friendCode = try await ensureFriendCodeIndex(
+                uid: uid,
+                existingCode: existingCode,
+                userData: data,
+                userDocument: doc,
+                db: db
+            )
             return
         }
 
-        let code = try await generateUniqueFriendCode()
-        try await doc.setData([
-            "nickname": nickname,
-            "friendCode": code,
-            "createdAt": FieldValue.serverTimestamp()
-        ], merge: true)
-        friendCode = code
+        friendCode = try await createProfile(uid: uid, userDocument: doc, db: db)
     }
 
-    private func generateUniqueFriendCode() async throws -> String {
-        let users = Firestore.firestore().collection("users")
+    /// 本格ルールでは users と friendCodes を同じバッチで作る必要がある。
+    /// コード衝突時は索引の作成が失敗するため、別コードで再試行する。
+    private func createProfile(
+        uid: String,
+        userDocument: DocumentReference,
+        db: Firestore
+    ) async throws -> String {
         for _ in 0..<Self.codeAttempts {
-            let code = String((0..<Self.codeLength).compactMap { _ in Self.codeAlphabet.randomElement() })
-            let duplicated = try await users
-                .whereField("friendCode", isEqualTo: code)
-                .limit(to: 1)
-                .getDocuments()
-            if duplicated.isEmpty { return code }
+            let code = makeFriendCode()
+            let codeDocument = db.collection("friendCodes").document(code)
+            let codeSnapshot = try await codeDocument.getDocument()
+            guard !codeSnapshot.exists else { continue }
+
+            let batch = db.batch()
+            batch.setData([
+                "nickname": nickname,
+                "friendCode": code,
+                "createdAt": FieldValue.serverTimestamp()
+            ], forDocument: userDocument)
+            batch.setData(["uid": uid], forDocument: codeDocument)
+
+            do {
+                try await batch.commit()
+                return code
+            } catch {
+                // 同時に同じコードが確保された場合だけ再試行し、通信エラー等は呼び出し元へ返す。
+                if try await codeDocument.getDocument().exists { continue }
+                throw error
+            }
         }
         throw OnlineError.friendCodeGeneration
+    }
+
+    /// 暫定ルール時代に作られた users/{uid} に friendCodes 索引を補う。
+    /// 既に別ユーザーが同じコードを持つ異常系では、安全な新コードへ付け替える。
+    private func ensureFriendCodeIndex(
+        uid: String,
+        existingCode: String,
+        userData: [String: Any],
+        userDocument: DocumentReference,
+        db: Firestore
+    ) async throws -> String {
+        let codeDocument = db.collection("friendCodes").document(existingCode)
+        let codeSnapshot = try await codeDocument.getDocument()
+        let indexedUID = codeSnapshot.data()?["uid"] as? String
+
+        if indexedUID == uid {
+            // ニックネームは端末側の設定を正として同期する。
+            if userData["nickname"] as? String != nickname {
+                try await userDocument.setData(["nickname": nickname], merge: true)
+            }
+            return existingCode
+        }
+
+        if !codeSnapshot.exists {
+            let batch = db.batch()
+            if userData["nickname"] as? String != nickname {
+                batch.setData(["nickname": nickname], forDocument: userDocument, merge: true)
+            }
+            batch.setData(["uid": uid], forDocument: codeDocument)
+            do {
+                try await batch.commit()
+                return existingCode
+            } catch {
+                let latestIndex = try await codeDocument.getDocument()
+                if latestIndex.data()?["uid"] as? String == uid {
+                    return existingCode
+                }
+                if !latestIndex.exists { throw error }
+            }
+        }
+
+        return try await reassignFriendCode(uid: uid, userDocument: userDocument, db: db)
+    }
+
+    private func reassignFriendCode(
+        uid: String,
+        userDocument: DocumentReference,
+        db: Firestore
+    ) async throws -> String {
+        for _ in 0..<Self.codeAttempts {
+            let code = makeFriendCode()
+            let codeDocument = db.collection("friendCodes").document(code)
+            let codeSnapshot = try await codeDocument.getDocument()
+            guard !codeSnapshot.exists else { continue }
+
+            let batch = db.batch()
+            batch.setData([
+                "nickname": nickname,
+                "friendCode": code
+            ], forDocument: userDocument, merge: true)
+            batch.setData(["uid": uid], forDocument: codeDocument)
+            do {
+                try await batch.commit()
+                return code
+            } catch {
+                if try await codeDocument.getDocument().exists { continue }
+                throw error
+            }
+        }
+        throw OnlineError.friendCodeGeneration
+    }
+
+    private func makeFriendCode() -> String {
+        String((0..<Self.codeLength).compactMap { _ in Self.codeAlphabet.randomElement() })
     }
 }

@@ -108,6 +108,22 @@ describe("Cloud Firestore rules", () => {
     await assertSucceeds(batch.commit());
   });
 
+  it("allows a legacy profile to create its missing friend-code index atomically", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "legacy"), {
+        nickname: "Old Name",
+        friendCode: "LEGACY",
+        createdAt: new Date(),
+      });
+    });
+
+    const db = testEnv.authenticatedContext("legacy").firestore();
+    const batch = writeBatch(db);
+    batch.set(doc(db, "users", "legacy"), { nickname: "New Name" }, { merge: true });
+    batch.set(doc(db, "friendCodes", "LEGACY"), { uid: "legacy" });
+    await assertSucceeds(batch.commit());
+  });
+
   it("allows exact friend-code lookup but rejects index enumeration", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     const db = testEnv.authenticatedContext("bob").firestore();
@@ -144,6 +160,35 @@ describe("Cloud Firestore rules", () => {
     }));
     await assertSucceeds(getDoc(doc(bobDB, "users", "bob", "invites", "allowed")));
     await assertSucceeds(deleteDoc(doc(bobDB, "users", "bob", "invites", "allowed")));
+  });
+
+  it("allows the client-shaped profile, friend lookup, friend add, and invite flow", async () => {
+    await seedUser("bob", "BOB001", "Bob");
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+
+    const profileBatch = writeBatch(aliceDB);
+    profileBatch.set(doc(aliceDB, "users", "alice"), {
+      nickname: "Alice",
+      friendCode: "ALICE1",
+      createdAt: new Date(),
+    });
+    profileBatch.set(doc(aliceDB, "friendCodes", "ALICE1"), { uid: "alice" });
+    await assertSucceeds(profileBatch.commit());
+
+    const codeSnapshot = await getDoc(doc(aliceDB, "friendCodes", "BOB001"));
+    const friendUID = codeSnapshot.data().uid;
+    const profileSnapshot = await getDoc(doc(aliceDB, "users", friendUID));
+    await assertSucceeds(setDoc(doc(aliceDB, "users", "alice", "friends", friendUID), {
+      nickname: profileSnapshot.data().nickname,
+      friendCode: "BOB001",
+      addedAt: new Date(),
+    }));
+    await assertSucceeds(setDoc(doc(aliceDB, "users", friendUID, "invites", "client-flow"), {
+      roomCode: "1234",
+      fromUID: "alice",
+      fromNickname: "Alice",
+      createdAt: new Date(),
+    }));
   });
 });
 

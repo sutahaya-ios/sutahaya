@@ -9,6 +9,11 @@ import FirebaseFirestore
 final class FriendService {
     static let shared = FriendService()
 
+    private static let friendCodeLength = 6
+    private static let friendCodeCharacters = CharacterSet(
+        charactersIn: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    )
+
     private(set) var friends: [Friend] = []
     private(set) var invites: [RoomInvite] = []
 
@@ -75,21 +80,25 @@ final class FriendService {
     func addFriend(code: String) async throws {
         guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
         let normalized = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard normalized.count == Self.friendCodeLength,
+              normalized.unicodeScalars.allSatisfy(Self.friendCodeCharacters.contains) else {
+            throw OnlineError.friendNotFound
+        }
         guard normalized != AuthService.shared.friendCode else { throw OnlineError.cannotAddSelf }
         guard !friends.contains(where: { $0.friendCode == normalized }) else { throw OnlineError.alreadyFriend }
 
-        let result = try await db.collection("users")
-            .whereField("friendCode", isEqualTo: normalized)
-            .limit(to: 1)
-            .getDocuments()
-        guard let doc = result.documents.first, doc.documentID != myUID else {
+        let codeSnapshot = try await db.collection("friendCodes").document(normalized).getDocument()
+        guard let friendUID = codeSnapshot.data()?["uid"] as? String,
+              friendUID != myUID else {
             throw OnlineError.friendNotFound
         }
+        let profile = try await db.collection("users").document(friendUID).getDocument()
+        guard let profileData = profile.data() else { throw OnlineError.friendNotFound }
 
         try await db.collection("users").document(myUID)
-            .collection("friends").document(doc.documentID)
+            .collection("friends").document(friendUID)
             .setData([
-                "nickname": doc.data()["nickname"] as? String ?? "?",
+                "nickname": profileData["nickname"] as? String ?? "?",
                 "friendCode": normalized,
                 "addedAt": FieldValue.serverTimestamp()
             ])
@@ -107,10 +116,12 @@ final class FriendService {
 
     /// フレンドにルーム招待を送る(相手の invites に書き込む)
     func sendInvite(to friendUID: String, roomCode: String) async throws {
+        guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
         try await db.collection("users").document(friendUID)
             .collection("invites")
             .addDocument(data: [
                 "roomCode": roomCode,
+                "fromUID": myUID,
                 "fromNickname": AuthService.shared.nickname,
                 "createdAt": FieldValue.serverTimestamp()
             ])
