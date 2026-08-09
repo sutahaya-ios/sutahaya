@@ -150,6 +150,7 @@ extension OnlineBattleSession {
         ]
         if nextWinner == nil {
             // 残りのプレイヤーのために制限時間を仕切り直す
+            updates["game/startDelayMS"] = 0
             updates["game/startedAt"] = ServerValue.timestamp()
         }
         write(updates, failureMessage: "回答権の移行に失敗しました") { [weak self] in
@@ -162,14 +163,15 @@ extension OnlineBattleSession {
     private func ensureQuestionTimer(game: RoomState.Game, timeLimit: TimeInterval) {
         // 同じ問題・同じ開始時刻ならタイマー設定済み(誤答での仕切り直しはstartedAtが変わる)
         if let timed = timedQuestion,
-           timed.index == game.questionIndex, timed.startedAtMS == game.startedAtMS {
+           timed.index == game.questionIndex,
+           timed.effectiveStartedAtMS == game.effectiveStartedAtMS {
             return
         }
         cancelQuestionTimer()
-        timedQuestion = (game.questionIndex, game.startedAtMS)
+        timedQuestion = (game.questionIndex, game.effectiveStartedAtMS)
 
         let index = game.questionIndex
-        let elapsed = Date().timeIntervalSince1970 - game.startedAtMS / 1000
+        let elapsed = Date().timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000
         let remaining = max(0, timeLimit - elapsed)
         questionTimerTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
@@ -252,6 +254,7 @@ extension OnlineBattleSession {
             updates = [
                 "game/questionIndex": index + 1,
                 "game/phase": RoomState.GamePhase.question.rawValue,
+                "game/startDelayMS": 0,
                 "game/startedAt": ServerValue.timestamp(),
                 "game/buzz": NSNull(),
                 "game/answer": NSNull(),

@@ -14,6 +14,8 @@ enum ProgressiveReveal {
 
     /// 経過時間から、いま何文字目まで見えているかを求める
     static func visibleCount(totalCharacters: Int, elapsed: TimeInterval) -> Int {
+        guard totalCharacters > 0 else { return 0 }
+        guard elapsed >= 0 else { return 0 }
         guard totalCharacters > initialCharacters else { return max(0, totalCharacters) }
         guard characterInterval > 0, elapsed.isFinite else { return totalCharacters }
 

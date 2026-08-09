@@ -40,10 +40,10 @@ final class ProgressiveRevealTests: XCTestCase {
         XCTAssertEqual(previous, 12)
     }
 
-    func test_端末の時計がずれて経過時間がマイナスでも1文字は見える() {
+    func test_開始前はまだ文字を表示しない() {
         let count = ProgressiveReveal.visibleCount(totalCharacters: 7, elapsed: -5)
 
-        XCTAssertEqual(count, ProgressiveReveal.initialCharacters)
+        XCTAssertEqual(count, 0)
     }
 
     func test_1文字の単語は最初から全部見えている() {

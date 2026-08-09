@@ -110,14 +110,17 @@ final class CPUBattleSessionTests: XCTestCase {
     // MARK: - 対戦開始
 
     func test_開始すると第1問の出題中になる() async {
-        let session = makeSession(timer: ManualTimer())
+        let timer = ManualTimer()
+        let session = makeSession(timer: timer)
 
         await session.startGame(questions: makeQuestions(count: 3))
 
         XCTAssertEqual(session.state?.status, .playing)
         XCTAssertEqual(session.state?.game?.phase, .question)
         XCTAssertEqual(session.state?.game?.questionIndex, 0)
+        XCTAssertEqual(session.state?.game?.startDelayMS, BattleRules.matchStartDelayMS)
         XCTAssertEqual(session.state?.questions.count, 3)
+        XCTAssertEqual(timer.pending.first?.seconds, BattleRules.matchStartDelay + 20)
     }
 
     // MARK: - 採点
@@ -175,6 +178,7 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(session.state?.status, .playing)
         XCTAssertEqual(session.state?.game?.questionIndex, 1)
         XCTAssertEqual(session.state?.game?.phase, .question)
+        XCTAssertEqual(session.state?.game?.startDelayMS, 0, "開始演出は1問目の前だけ")
     }
 
     // MARK: - 順位(同点同順位)

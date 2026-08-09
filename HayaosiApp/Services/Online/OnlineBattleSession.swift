@@ -50,7 +50,7 @@ final class OnlineBattleSession: BattleSession {
     var questionTimerTask: Task<Void, Never>?
     var answerTimerTask: Task<Void, Never>?
     var revealTask: Task<Void, Never>?
-    var timedQuestion: (index: Int, startedAtMS: Double)?
+    var timedQuestion: (index: Int, effectiveStartedAtMS: Double)?
     var answerTimerKey: String?
     var revealScheduledIndex: Int?
     var isEvaluatingAnswer = false
@@ -155,6 +155,7 @@ final class OnlineBattleSession: BattleSession {
                 "game": [
                     "questionIndex": 0,
                     "phase": RoomState.GamePhase.question.rawValue,
+                    "startDelayMS": BattleRules.matchStartDelayMS,
                     "startedAt": ServerValue.timestamp()
                 ]
             ])
@@ -192,6 +193,7 @@ final class OnlineBattleSession: BattleSession {
     func buzz() {
         guard let game = currentGame,
               game.phase == .question,
+              Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS,
               game.buzzWinner == nil,
               !game.failedIDs.contains(myID) else { return }
 
@@ -210,6 +212,7 @@ final class OnlineBattleSession: BattleSession {
     /// 先着はサーバー時刻で決まるため、端末の時計のずれに影響されない
     func submitAnswer(_ choice: String, visibleCount: Int) {
         guard let state, let game = currentGame, game.phase == .question else { return }
+        guard Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS else { return }
 
         guard state.settings.style.revealsProgressively else {
             guard game.buzzWinner == myID else { return }

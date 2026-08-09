@@ -109,7 +109,7 @@ rooms/{4桁コード}
   │             wordCategory(junior_high/high_school), wordDifficulty(1〜5) }
   ├─ players/{uid} { nickname, score, joinedAt }
   ├─ questions [ { id, text, choices[4], answer } ]  ← 開始時にホストが配信
-  └─ game { questionIndex, phase(question/reveal/finished), startedAt,
+  └─ game { questionIndex, phase(question/reveal/finished), startedAt, startDelayMS(1問目のみ),
             answers/{uid} { choice, ts, visibleCount }   ← 文字送り型(標準)。押した瞬間の記録
             buzz { winner, queue/{uid}: ts, failed/{uid} }, answer   ← 速答型
             reveal }

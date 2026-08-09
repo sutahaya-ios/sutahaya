@@ -3,11 +3,14 @@ import SwiftData
 
 /// 対戦のコンテナ(オンライン・CPU共通)。ルーム状態(待機/対戦中/リザルト/解散)で画面を切り替える
 struct BattleFlowView: View {
+    private static let startCueTickInterval: TimeInterval = 0.05
+
     let session: any BattleSession
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var showLeaveDialog = false
+    @State private var matchStartObservedAt: Date?
 
     var body: some View {
         Group {
@@ -15,7 +18,7 @@ struct BattleFlowView: View {
             case .waiting:
                 BattleLobbyView(session: session)
             case .playing:
-                BattleView(session: session)
+                playingView
             case .finished:
                 BattleResultView(session: session, onLeave: leaveAndDismiss)
             case .closed:
@@ -51,11 +54,46 @@ struct BattleFlowView: View {
                 Text("対戦の途中で抜けます")
             }
         }
+        .onAppear {
+            updateMatchStartObservation(for: session.state?.status)
+        }
         .onChange(of: session.state?.status) { _, newStatus in
+            updateMatchStartObservation(for: newStatus)
             if newStatus == .finished {
                 SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var playingView: some View {
+        if let game = session.state?.game,
+           game.questionIndex == 0,
+           game.phase == .question,
+           game.startDelayMS > 0,
+           let observedAt = matchStartObservedAt {
+            TimelineView(.periodic(from: .now, by: Self.startCueTickInterval)) { timeline in
+                let remaining = BattleStartTiming.remainingDisplayTime(
+                    scheduledStartAtMS: game.effectiveStartedAtMS,
+                    observedAt: observedAt,
+                    now: timeline.date
+                )
+                if remaining > 0 {
+                    BattleStartView(progress: BattleStartTiming.progress(
+                        scheduledStartAtMS: game.effectiveStartedAtMS,
+                        observedAt: observedAt,
+                        now: timeline.date
+                    ))
+                } else {
+                    BattleView(session: session)
+                }
+            }
+        } else if (session.state?.game?.startDelayMS ?? 0) > 0,
+                  matchStartObservedAt == nil {
+            BattleStartView(progress: 0)
+        } else {
+            BattleView(session: session)
         }
     }
 
@@ -75,5 +113,13 @@ struct BattleFlowView: View {
     private func leaveAndDismiss() {
         session.leave()
         dismiss()
+    }
+
+    private func updateMatchStartObservation(for status: RoomState.Status?) {
+        if status == .playing {
+            matchStartObservedAt = matchStartObservedAt ?? .now
+        } else {
+            matchStartObservedAt = nil
+        }
     }
 }

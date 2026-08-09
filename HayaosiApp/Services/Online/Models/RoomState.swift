@@ -48,7 +48,10 @@ struct RoomState {
     struct Game {
         let questionIndex: Int
         let phase: GamePhase
+        /// `startedAtMS` から実際に1問目を始めるまでの猶予(ms)。旧ルームと2問目以降は0
+        let startDelayMS: Double
         let startedAtMS: Double
+        var effectiveStartedAtMS: Double { startedAtMS + startDelayMS }
         let buzzWinner: String?
         /// uid → サーバータイムスタンプ(ms)。押下順キュー(即答型。要件 §5.1.2)
         let buzzQueue: [String: Double]
@@ -218,6 +221,7 @@ struct RoomState {
         return Game(
             questionIndex: index,
             phase: phase,
+            startDelayMS: double(dict["startDelayMS"]) ?? 0,
             startedAtMS: double(dict["startedAt"]) ?? 0,
             buzzWinner: buzz["winner"] as? String,
             buzzQueue: queue,

@@ -73,7 +73,7 @@ struct BattleView: View {
         if state.settings.style.usesBuzzButton, game.buzzWinner != nil || !game.failedIDs.isEmpty {
             return .full
         }
-        return .progressing(startedAtMS: game.startedAtMS)
+        return .progressing(startedAtMS: game.effectiveStartedAtMS)
     }
 
     // MARK: - スコア・進行表示

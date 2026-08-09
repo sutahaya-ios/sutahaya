@@ -32,6 +32,7 @@ final class CPUBattleSession: BattleSession {
     // 進行中の問題の状態
     private var questionIndex = 0
     private var phase: RoomState.GamePhase = .question
+    private var startDelayMS: Double = 0
     private var startedAtMS: Double = 0
     private var buzzWinner: String?
     private var failedIDs: Set<String> = []
@@ -86,6 +87,7 @@ final class CPUBattleSession: BattleSession {
         questionPayloads = []
         questionIndex = 0
         phase = .question
+        startDelayMS = 0
         buzzWinner = nil
         failedIDs = []
         answers = []
@@ -123,6 +125,7 @@ final class CPUBattleSession: BattleSession {
     private func beginQuestion(_ index: Int) {
         questionIndex = index
         phase = .question
+        startDelayMS = index == 0 ? BattleRules.matchStartDelayMS : 0
         startedAtMS = Date().timeIntervalSince1970 * 1000
         buzzWinner = nil
         failedIDs = []
@@ -136,29 +139,30 @@ final class CPUBattleSession: BattleSession {
     /// 回答受付を開始する(問題開始時と、即答型で誤答による仕切り直し時)
     private func openAnswering() {
         let currentRound = answerRound
+        let startDelay = startDelayMS / 1_000
         for cpu in cpus where !failedIDs.contains(cpu.id)
             && !answers.contains(where: { $0.uid == cpu.id })
             && strategy.participates(cpu) {
-            scheduleCPUAction(cpu: cpu, round: currentRound)
+            scheduleCPUAction(cpu: cpu, round: currentRound, startDelay: startDelay)
         }
-        schedule(after: settings.timeLimit) { [weak self] in
+        schedule(after: startDelay + settings.timeLimit) { [weak self] in
             self?.timeoutQuestion(round: currentRound)
         }
     }
 
     /// CPUの動き。いつ・何を答えるかの判断は `CPUAnswerStrategy` が決める
-    private func scheduleCPUAction(cpu: CPUProfile, round: Int) {
+    private func scheduleCPUAction(cpu: CPUProfile, round: Int, startDelay: TimeInterval) {
         let question = questionPayloads[questionIndex]
         guard isProgressiveChoice else {
             let delay = strategy.buzzDelay(for: cpu, timeLimit: settings.timeLimit)
-            schedule(after: delay) { [weak self] in
+            schedule(after: startDelay + delay) { [weak self] in
                 self?.attemptBuzz(as: cpu.id, round: round)
             }
             return
         }
 
         let plan = strategy.progressivePlan(for: cpu, question: question, timeLimit: settings.timeLimit)
-        schedule(after: plan.delay) { [weak self] in
+        schedule(after: startDelay + plan.delay) { [weak self] in
             self?.evaluate(uid: cpu.id, choice: plan.choice, visibleCount: plan.visibleCount, round: round)
         }
     }
@@ -221,6 +225,7 @@ final class CPUBattleSession: BattleSession {
             showReveal(RoomState.Reveal(correctAnswer: question.answer, scorerID: nil, byTimeout: true))
         } else if !isProgressiveChoice {
             // 即答型は早押しからやり直す
+            startDelayMS = 0
             startedAtMS = Date().timeIntervalSince1970 * 1000
             answerRound += 1
             publish()
@@ -297,6 +302,7 @@ final class CPUBattleSession: BattleSession {
             game = RoomState.Game(
                 questionIndex: questionIndex,
                 phase: status == .finished ? .finished : phase,
+                startDelayMS: startDelayMS,
                 startedAtMS: startedAtMS,
                 buzzWinner: buzzWinner,
                 buzzQueue: [:],

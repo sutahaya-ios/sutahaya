@@ -43,13 +43,14 @@ extension BattleSession {
               state.settings.style.revealsProgressively,
               game.phase == .question else { return question.text.count }
 
-        let elapsed = date.timeIntervalSince1970 - game.startedAtMS / 1000
+        let elapsed = date.timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000
         return ProgressiveReveal.visibleCount(totalCharacters: question.text.count, elapsed: elapsed)
     }
 
     /// 自分がこの問題にまだ回答できるか(未回答かつ誤答していない)
     var canAnswerNow: Bool {
         guard let game = state?.game, game.phase == .question else { return false }
+        guard Date().timeIntervalSince1970 * 1_000 >= game.effectiveStartedAtMS else { return false }
         guard !game.failedIDs.contains(myID) else { return false }
         return !game.answers.contains { $0.uid == myID }
     }
@@ -57,7 +58,7 @@ extension BattleSession {
     /// 表示用の残り時間(開始タイムスタンプ基準の近似値)
     func remainingTime(at date: Date) -> TimeInterval {
         guard let state, let game = state.game, game.phase == .question else { return 0 }
-        let elapsed = date.timeIntervalSince1970 - game.startedAtMS / 1000
+        let elapsed = max(0, date.timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000)
         return max(0, state.settings.timeLimit - elapsed)
     }
 }
