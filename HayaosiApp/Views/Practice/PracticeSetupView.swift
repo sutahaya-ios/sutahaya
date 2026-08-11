@@ -37,6 +37,7 @@ struct PracticeSetupView: View {
                 Button("スタート") {
                     start()
                 }
+                .buttonStyle(SoundButtonStyle())
                 .disabled(availableQuestions.isEmpty)
             } footer: {
                 Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問")

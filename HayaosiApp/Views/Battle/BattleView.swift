@@ -40,12 +40,8 @@ struct BattleView: View {
         .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
         .animation(BattleAnimation.reveal, value: session.state?.game?.questionIndex)
-        .onAppear {
-            SoundPlayer.shared.play(.questionStart)
-        }
         .onChange(of: session.state?.game?.questionIndex) { _, _ in
             submittedChoice = nil
-            SoundPlayer.shared.play(.questionStart)
         }
         .onChange(of: session.state?.game?.failedIDs.count) { oldCount, newCount in
             if let oldCount, let newCount, newCount > oldCount {

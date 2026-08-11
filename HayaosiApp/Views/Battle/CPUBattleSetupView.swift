@@ -41,6 +41,7 @@ struct CPUBattleSetupView: View {
                 Button("ロビーへ") {
                     start()
                 }
+                .buttonStyle(SoundButtonStyle())
                 .disabled(availableQuestions.isEmpty)
             } footer: {
                 Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")

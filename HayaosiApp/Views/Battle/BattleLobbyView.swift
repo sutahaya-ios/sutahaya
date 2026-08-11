@@ -120,6 +120,7 @@ struct BattleLobbyView: View {
                 Button("対戦を開始") {
                     Task { await start(state: state) }
                 }
+                .buttonStyle(SoundButtonStyle())
                 .disabled(state.players.count < BattleRules.minPlayersToStart)
             } else {
                 Label("ホストの開始を待っています…", systemImage: "hourglass")

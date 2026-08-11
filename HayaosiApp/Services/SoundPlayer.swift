@@ -5,10 +5,10 @@ import AVFoundation
 @MainActor
 final class SoundPlayer {
     enum Effect: String, CaseIterable {
+        case button = "se_button"          // 決定・画面遷移
         case correct = "se_correct"        // 正解(ピンポン)
         case wrong = "se_wrong"            // 不正解(ブブー)
         case timeUp = "se_timeup"          // 時間切れ
-        case questionStart = "se_question" // 出題
         case fanfare = "se_fanfare"        // リザルト
     }
 

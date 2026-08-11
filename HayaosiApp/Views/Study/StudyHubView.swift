@@ -39,7 +39,7 @@ struct StudyHubView: View {
                     color: .blue
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SoundButtonStyle())
 
             NavigationLink {
                 ReviewListView()
@@ -51,7 +51,7 @@ struct StudyHubView: View {
                     color: .green
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SoundButtonStyle())
         }
     }
 

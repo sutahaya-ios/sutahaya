@@ -50,6 +50,7 @@ struct RoomCreateView: View {
                         Text("ルームを作成")
                     }
                 }
+                .buttonStyle(SoundButtonStyle())
                 .disabled(isCreating || availableQuestions.isEmpty)
             } footer: {
                 Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")

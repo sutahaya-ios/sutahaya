@@ -34,6 +34,7 @@ struct RoomJoinView: View {
                         Text("入室する")
                     }
                 }
+                .buttonStyle(SoundButtonStyle())
                 .disabled(code.count < Self.minCodeLength || isJoining)
             } footer: {
                 Text("ホストに教えてもらったコードを入力してください")

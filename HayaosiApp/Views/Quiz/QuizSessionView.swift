@@ -54,13 +54,10 @@ struct QuizSessionView: View {
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
         }
-        .onAppear {
-            SoundPlayer.shared.play(.questionStart)
-        }
         .onChange(of: session.phase) { _, newPhase in
             switch newPhase {
             case .answering:
-                SoundPlayer.shared.play(.questionStart)
+                break
             case .feedback:
                 playFeedbackSound()
             case .finished:

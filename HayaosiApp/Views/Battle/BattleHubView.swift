@@ -76,7 +76,7 @@ struct BattleHubView: View {
                     color: .orange
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SoundButtonStyle())
 
             Button {
                 showOnlineMenu = true
@@ -88,7 +88,7 @@ struct BattleHubView: View {
                     color: .blue
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SoundButtonStyle())
         }
     }
 

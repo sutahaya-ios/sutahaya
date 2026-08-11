@@ -17,7 +17,7 @@ struct OnlineModeMenuView: View {
                         color: .green
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SoundButtonStyle())
 
                 NavigationLink {
                     RoomJoinView()
@@ -29,7 +29,7 @@ struct OnlineModeMenuView: View {
                         color: .purple
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SoundButtonStyle())
             }
             .padding()
         }
