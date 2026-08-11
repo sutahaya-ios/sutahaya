@@ -43,9 +43,7 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Claude(たける側) | `Views/MyPage/MyPageView.swift`, `Views/Settings/SettingsView.swift`, `Views/Friend/FriendProfileCard.swift`, `Views/Friend/FriendsView.swift`, `Views/Components/AvatarCircle.swift`, `Services/Online/Models/Friend.swift`, `Services/Online/FriendService.swift` | プロフィール機能の強化:絵文字アイコン選択+自己紹介文(ローカル保持)、フレンド側は`icon`/`bio`フィールドの読み取りだけ先行対応 | 2026-08-11 |
-
-**トキヤ氏への依頼**:`firestore.rules` の `validUserDocument` に `icon`(String, 絵文字1文字)・`bio`(String, 140字以内)を追加できるようにしてほしい。入り次第、`AuthService` に書き込み(nicknameと同じmergeパターン)を追加してフレンド同期を有効化する。
+| Codex(たける側) | `HayaosiApp/Models/StudyTimeTotal.swift`, `HayaosiApp/Services/CategoryProficiencySummary.swift`, `HayaosiApp/Services/ResultRecorder.swift`, `HayaosiApp/App/HayaosiAppApp.swift`, `HayaosiApp/Views/Quiz/QuizSessionView.swift`, `HayaosiApp/Views/Practice/PracticeSetupView.swift`, `HayaosiApp/Views/Review/ReviewListView.swift`, `HayaosiApp/Views/Root/RootTabView.swift`, `HayaosiApp/Views/Study/StudyHubView.swift`, `HayaosiApp/Views/Study/CategorySummaryView.swift`, `HayaosiApp/Views/Study/CategoryHeatmapView.swift`, `Tests/CategoryProficiencySummaryTests.swift`, `Tests/ResultRecorderTests.swift`, `STATUS.md` | 学習カテゴリ別サマリー・ヒートマップ・練習導線とカテゴリ別累計学習時間を実装 | 2026-08-11 |
 
 ---
 
