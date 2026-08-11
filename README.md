@@ -1,6 +1,6 @@
-# マナビート(リポジトリ名:HayaosiApp)
+# スタはや(リポジトリ名:HayaosiApp)
 
-勉強系早押し対戦iOSアプリ。App Storeでの表示名は「マナビート」、リポジトリ名・ターゲット名・Bundle IDは `HayaosiApp` のままです(変更するとApp Store上で別アプリ扱いになるため)。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) / [CLAUDE.md](CLAUDE.md) / [STATUS.md](STATUS.md) を参照。
+勉強系早押し対戦iOSアプリ。App Storeでの表示名は「スタはや」、リポジトリ名・ターゲット名・Bundle IDは `HayaosiApp` のままです(変更するとApp Store上で別アプリ扱いになるため)。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) / [CLAUDE.md](CLAUDE.md) / [STATUS.md](STATUS.md) を参照。
 
 ## 前提
 

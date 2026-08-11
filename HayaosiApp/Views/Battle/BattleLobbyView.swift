@@ -4,7 +4,7 @@ import SwiftData
 /// 待機ロビー:参加者一覧・設定確認・フレンド招待。ホストが開始する(要件 §9-4)
 /// CPU対戦時は参加コード・招待などオンライン専用UIを出さない
 struct BattleLobbyView: View {
-    private static let inviteTitle = "マナビートで対戦しよう!"
+    private static let inviteTitle = "スタはやで対戦しよう!"
     private static let roomCodeLabel = "ルームコード"
     private static let appStoreLabel = "アプリはこちら"
     private static let inviteShareButtonTitle = "招待リンクを共有"

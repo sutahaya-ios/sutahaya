@@ -35,7 +35,7 @@ struct FriendProfileCard: View {
                     }
                     .buttonStyle(.bordered)
 
-                    ShareLink(item: "マナビートでフレンドになろう!マイコード:\(friendCode)") {
+                    ShareLink(item: "スタはやでフレンドになろう!マイコード:\(friendCode)") {
                         Label("シェア", systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)

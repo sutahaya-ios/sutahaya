@@ -1,6 +1,6 @@
 # HayaosiApp 開発ルール
 
-勉強系早押し対戦iOSアプリ **「マナビート」**(App Storeでの表示名)。
+勉強系早押し対戦iOSアプリ **「スタはや」**(App Storeでの表示名)。
 
 **このファイルはルールだけを置く。** 手順・現状・構成の説明は書かず、下の表の行き先へ移す。
 
@@ -16,7 +16,7 @@
 
 ## 変えてはいけないもの
 
-- **リポジトリ名・ターゲット名・Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる)。変えてよいのは表示名「マナビート」だけ
+- **リポジトリ名・ターゲット名・Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる)。変えてよいのは表示名「スタはや」だけ
 - **`.xcodeproj`**:XcodeGenの生成物で **git管理外**(コンフリクトしない)。手編集しない。ファイル・リソースを増減したら `xcodegen generate`。**`git pull` の後も必要**(忘れるとビルドが落ちる)
 - **`GoogleService-Info.plist` / `Config/local.xcconfig`**:git管理外。`git add` しても無言で無視される。受け渡しはファイルを直接送る(`FIREBASE_SETUP.md` §3)
 
