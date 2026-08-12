@@ -5,12 +5,20 @@ import SwiftData
 struct PracticeSetupView: View {
     @Query private var allQuestions: [Question]
     @State private var genre: Genre = .englishWord
-    @State private var category = WordCategory.juniorHigh
-    @State private var difficulty = WordDifficulty.one
+    @State private var category: WordCategory
+    @State private var difficulty: WordDifficulty
     @State private var questionCount = QuizDefaults.questionCount
     @State private var timeLimit = QuizDefaults.timeLimit
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
+
+    init(
+        initialCategory: WordCategory = .juniorHigh,
+        initialDifficulty: WordDifficulty = .one
+    ) {
+        _category = State(initialValue: initialCategory)
+        _difficulty = State(initialValue: initialDifficulty)
+    }
 
     var body: some View {
         Form {
@@ -65,5 +73,5 @@ struct PracticeSetupView: View {
     NavigationStack {
         PracticeSetupView()
     }
-    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self], inMemory: true)
+    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self], inMemory: true)
 }

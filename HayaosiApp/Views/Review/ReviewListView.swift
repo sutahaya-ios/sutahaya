@@ -5,14 +5,20 @@ import SwiftData
 struct ReviewListView: View {
     private static let timeLimit: TimeInterval = 20
 
+    let category: WordCategory?
+
     @Query(sort: \ReviewItem.wrongCount, order: .reverse) private var reviewItems: [ReviewItem]
     @Query private var allQuestions: [Question]
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
 
+    init(category: WordCategory? = nil) {
+        self.category = category
+    }
+
     var body: some View {
         Group {
-            if reviewItems.isEmpty {
+            if filteredReviewItems.isEmpty {
                 ContentUnavailableView(
                     "復習する問題はありません",
                     systemImage: "checkmark.circle",
@@ -21,7 +27,7 @@ struct ReviewListView: View {
             } else {
                 List {
                     Section {
-                        ForEach(reviewItems) { item in
+                        ForEach(filteredReviewItems) { item in
                             reviewRow(item: item)
                         }
                     } footer: {
@@ -30,9 +36,9 @@ struct ReviewListView: View {
                 }
             }
         }
-        .navigationTitle("復習リスト")
+        .navigationTitle(navigationTitle)
         .safeAreaInset(edge: .bottom) {
-            if !reviewItems.isEmpty {
+            if !filteredReviewItems.isEmpty {
                 Button("復習を始める(\(reviewQuestions.count)問)") {
                     start()
                 }
@@ -50,8 +56,21 @@ struct ReviewListView: View {
         Dictionary(uniqueKeysWithValues: allQuestions.map { ($0.id, $0) })
     }
 
+    private var filteredReviewItems: [ReviewItem] {
+        ReviewListFilter.filter(
+            reviewItems: reviewItems,
+            questions: allQuestions,
+            category: category
+        )
+    }
+
     private var reviewQuestions: [Question] {
-        reviewItems.compactMap { questionsByID[$0.questionID] }
+        filteredReviewItems.compactMap { questionsByID[$0.questionID] }
+    }
+
+    private var navigationTitle: String {
+        guard let category else { return "復習リスト" }
+        return "\(category.displayName)の復習"
     }
 
     private func reviewRow(item: ReviewItem) -> some View {
@@ -80,5 +99,5 @@ struct ReviewListView: View {
     NavigationStack {
         ReviewListView()
     }
-    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self], inMemory: true)
+    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self], inMemory: true)
 }

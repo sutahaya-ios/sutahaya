@@ -14,6 +14,7 @@ struct QuizSessionView: View {
     @State private var session: QuizSession
     @State private var hasRecorded = false
     @State private var showAbortDialog = false
+    @State private var sessionStartedAt: Date?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
@@ -53,6 +54,11 @@ struct QuizSessionView: View {
         }
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
+        }
+        .onAppear {
+            if sessionStartedAt == nil {
+                sessionStartedAt = .now
+            }
         }
         .onChange(of: session.phase) { _, newPhase in
             switch newPhase {
@@ -140,12 +146,19 @@ struct QuizSessionView: View {
     private func recordIfNeeded() {
         guard !hasRecorded, !session.entries.isEmpty else { return }
         hasRecorded = true
-        ResultRecorder.record(entries: session.entries, mode: mode, context: modelContext)
+        let elapsedSeconds = sessionStartedAt.map { Date.now.timeIntervalSince($0) }
+        ResultRecorder.record(
+            entries: session.entries,
+            mode: mode,
+            elapsedSeconds: elapsedSeconds,
+            context: modelContext
+        )
     }
 
     private func retry() {
         session = QuizSession(questions: sourceQuestions.shuffled(), timeLimit: timeLimit)
         hasRecorded = false
+        sessionStartedAt = .now
     }
 }
 

@@ -1,93 +1,75 @@
 import SwiftUI
 import SwiftData
 
-/// 学習タブ。一人練習・復習・学習成果を1か所にまとめる
+/// 学習タブ。カテゴリから学習内容を選ぶ入口
 struct StudyHubView: View {
-    @Query private var records: [AnswerRecord]
-
-    private var totalCount: Int { records.count }
-    private var correctCount: Int { records.filter(\.isCorrect).count }
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                learningMenu
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("これまでの成績")
-                        .font(.title3.bold())
-                    statsCard
-                }
+            VStack(alignment: .leading, spacing: 12) {
+                Text("学習メニュー")
+                    .font(.title3.bold())
+                categorySelection
             }
             .padding()
         }
         .navigationTitle("学習")
     }
 
-    private var learningMenu: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("学習メニュー")
-                .font(.title3.bold())
-
+    private var categorySelection: some View {
+        VStack(spacing: 10) {
             NavigationLink {
-                PracticeSetupView()
+                CategorySummaryView(category: .juniorHigh)
             } label: {
-                MenuCard(
-                    title: "一人練習",
-                    subtitle: "オフラインでサクッと練習",
-                    systemImage: "person.fill",
-                    color: .blue
+                StudyCategoryCard(
+                    title: WordCategory.juniorHigh.displayName,
+                    subtitle: "基礎から積み上げる",
+                    systemImage: "books.vertical.fill",
+                    accentColor: .blue,
+                    backgroundColor: Color.blue.opacity(0.1)
                 )
             }
-            .buttonStyle(SoundButtonStyle())
+            .buttonStyle(.plain)
 
             NavigationLink {
-                ReviewListView()
+                CategorySummaryView(category: .highSchool)
             } label: {
-                MenuCard(
-                    title: "復習リスト",
-                    subtitle: "間違えた問題をもう一度",
-                    systemImage: "arrow.counterclockwise",
-                    color: .green
+                StudyCategoryCard(
+                    title: WordCategory.highSchool.displayName,
+                    subtitle: "受験レベルまで対応",
+                    systemImage: "graduationcap.fill",
+                    accentColor: .orange,
+                    backgroundColor: Color.orange.opacity(0.1)
                 )
             }
-            .buttonStyle(SoundButtonStyle())
+            .buttonStyle(.plain)
         }
     }
+}
 
-    private var statsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if totalCount == 0 {
-                Text("まだ解答がありません。一人練習から始めてみよう!")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                HStack(spacing: 24) {
-                    statItem(value: "\(totalCount)", label: "総解答数")
-                    statItem(value: "\(correctCount)", label: "正解数")
-                    statItem(value: "\(correctRate)%", label: "正答率")
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(.secondarySystemBackground)))
-    }
+private struct StudyCategoryCard: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let accentColor: Color
+    let backgroundColor: Color
 
-    private var correctRate: Int {
-        guard totalCount > 0 else { return 0 }
-        return Int(Double(correctCount) / Double(totalCount) * 100)
-    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.system(size: 22))
+                .foregroundStyle(accentColor)
 
-    private func statItem(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-                .monospacedDigit()
-            Text(label)
-                .font(.caption)
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.primary)
+
+            Text(subtitle)
+                .font(.system(size: 12))
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(RoundedRectangle(cornerRadius: 14).fill(backgroundColor))
     }
 }
 
@@ -95,5 +77,5 @@ struct StudyHubView: View {
     NavigationStack {
         StudyHubView()
     }
-    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self], inMemory: true)
+    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self], inMemory: true)
 }
