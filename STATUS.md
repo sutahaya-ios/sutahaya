@@ -44,6 +44,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | Codex(たける側) | `HayaosiApp/Models/StudyTimeTotal.swift`, `HayaosiApp/Services/CategoryProficiencySummary.swift`, `HayaosiApp/Services/ResultRecorder.swift`, `HayaosiApp/App/HayaosiAppApp.swift`, `HayaosiApp/Views/Quiz/QuizSessionView.swift`, `HayaosiApp/Views/Practice/PracticeSetupView.swift`, `HayaosiApp/Views/Review/ReviewListView.swift`, `HayaosiApp/Views/Root/RootTabView.swift`, `HayaosiApp/Views/Study/StudyHubView.swift`, `HayaosiApp/Views/Study/CategorySummaryView.swift`, `HayaosiApp/Views/Study/CategoryHeatmapView.swift`, `Tests/CategoryProficiencySummaryTests.swift`, `Tests/ResultRecorderTests.swift`, `STATUS.md` | 学習カテゴリ別サマリー・ヒートマップ・練習導線とカテゴリ別累計学習時間を実装 | 2026-08-11 |
+| Codex(たける側) | `HayaosiApp/Models/WordEntry.swift`, `HayaosiApp/Resources/junior_high.json`, `HayaosiApp/Resources/high_school.json`, `docs/CODING.md`, `STATUS.md` | 単語データから未使用の`definition`フィールドを完全に削除 | 2026-08-12 |
 
 ---
 
