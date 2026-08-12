@@ -43,6 +43,7 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
+| Codex(たける側) | `HayaosiApp/Models/WordClassification.swift`, `HayaosiApp/Resources/toeic.json`, `HayaosiApp/Services/QuestionSeeder.swift`, `HayaosiApp/Views/Study/StudyHubView.swift`, `Tests/WordClassificationTests.swift`, `docs/CODING.md`, `docs/screenshots/toeic-study-tab.png`, `STATUS.md` | TOEICカテゴリと動作確認用20語を追加 | 2026-08-12 |
 ---
 
 ## 最新更新(2026年8月12日)
@@ -54,7 +55,6 @@
   - 原因調査:Simulatorでは`users/{uid}`取得後の`friendCodes/{code}`索引確認だけが、初回・自動再試行・手動再試行のすべてで`permissionDenied`。リポジトリ内ルールは両方を同じ`signedIn()`条件で許可するため、**本番ルールの未デプロイ/旧版が最有力**。`.firebaserc`・Firebase CLI・ログイン情報が無く、デプロイ済みルールの直接確認は未検証
   - **トキヤ氏への依頼**:Firebase Consoleで本番`firestore.rules`の公開内容と匿名認証プロバイダを確認し、必要ならテスト済みのリポジトリ版ルールを公開してほしい(本作業ではFirebase設定ファイル・本番環境とも変更なし)
   - 検証:Simulator向けビルド成功、テスト59件パス。iPhone 17 Simulatorでマイページ→フレンド画面の遷移、再試行ボタンの表示・タップ・失敗時の再表示、強化ログと自動再試行1回を確認。**ルール公開後のフレンドコード発行は未検証**
-
 - Claude(たける側): **プロフィール機能の強化(第一弾:ローカル完結分)**。絵文字プリセットからアイコンを選べるようにし、自己紹介文(140字以内)を追加。ともに`AppStorage`保持で、今のところ自分のマイページにのみ表示される
   - `AvatarCircle`を拡張してicon(絵文字)表示に対応、`ProfileIconPicker`を新設。`SettingsView`にアイコン選択+自己紹介欄を追加
   - フレンド側は`Friend`モデル・`FriendService`に`icon`/`bio`の**読み取り**だけ先行対応(`firestore.rules`が書き込みを許可するまでは常にnil)
