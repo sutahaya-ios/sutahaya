@@ -43,12 +43,23 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Codex(たける側) | `HayaosiApp/Models/StudyTimeTotal.swift`, `HayaosiApp/Services/CategoryProficiencySummary.swift`, `HayaosiApp/Services/ResultRecorder.swift`, `HayaosiApp/App/HayaosiAppApp.swift`, `HayaosiApp/Views/Quiz/QuizSessionView.swift`, `HayaosiApp/Views/Practice/PracticeSetupView.swift`, `HayaosiApp/Views/Review/ReviewListView.swift`, `HayaosiApp/Views/Root/RootTabView.swift`, `HayaosiApp/Views/Study/StudyHubView.swift`, `HayaosiApp/Views/Study/CategorySummaryView.swift`, `HayaosiApp/Views/Study/CategoryHeatmapView.swift`, `Tests/CategoryProficiencySummaryTests.swift`, `Tests/ResultRecorderTests.swift`, `STATUS.md` | 学習カテゴリ別サマリー・ヒートマップ・練習導線とカテゴリ別累計学習時間を実装 | 2026-08-11 |
-| Codex(たける側) | `HayaosiApp/Models/WordEntry.swift`, `HayaosiApp/Resources/junior_high.json`, `HayaosiApp/Resources/high_school.json`, `docs/CODING.md`, `STATUS.md` | 単語データから未使用の`definition`フィールドを完全に削除 | 2026-08-12 |
-
 ---
 
-## 最新更新(2026年8月11日)
+## 最新更新(2026年8月12日)
+
+- Codex(たける側): **単語データから未使用の`definition`フィールドを完全に削除**。`WordEntry`のプロパティ、`junior_high.json` 17件、`high_school.json` 183件、`docs/CODING.md`の保持指示、決定事項メモを削除。JSONは構文・必須6キー・件数を検証し、削除後ファイルのSHA-256が事前に算出した`definition`行除外版と一致したため、他フィールドは変更なし。`QuestionSeeder.dataVersion`は6のまま。xcodegen実行、Simulator向けビルド成功、全66テスト成功(「収録データは2カテゴリ各難易度を含みIDと単語が重複しない」を含む)。検証専用iPhone 17 Simulatorで中学英単語★1の一人練習4問を流し、各問の4択・正解表示と4/4問正解のリザルトを確認。スクリーンショットなし。本作業では`STATUS_ARCHIVE.md`・Firebase関連ファイルを変更していない
+- Codex(たける側): **学習タブの入口をカテゴリ2枚へ統合し、復習リストをカテゴリサマリーへ移動**。トップの一人練習/復習カードを削除し、見出し「学習メニュー」と中学/高校カードだけに整理。復習項目は問題IDからカテゴリを判定し、不明な問題IDを除外。カテゴリ内0件では導線を隠し、1件以上なら件数付きのセカンダリ導線、カテゴリ名入りタイトル、絞り込み後件数の開始ボタンを表示。引数なしの全カテゴリ表示も維持。`MenuCard`はオンライン対戦で使用中のため残置。xcodegen実行、ビルド成功、テスト66件パス。iPhone 17 Pro Simulatorで学習→中学→学習→★1→練習設定(問題数/制限時間を確認)と、4問を復習登録後の学習→中学→復習リスト(中学4問のみ)の2経路、0件時の導線非表示、トップがカテゴリ2枚だけであること、最終スクリーンショット1枚を検証済み。Firebase関連ファイルは変更なし
+- Codex(たける側): **学習タブをカテゴリ選択→サマリー→難易度別ヒートマップ→練習設定の導線へ改訂**。習得率はカテゴリ内の全単語数に対する1回以上正解したユニーク単語数で算出し、同じ単語への複数回答は重複計上しない。難易度別表示は解答単位の正答率を維持。`.practice`のみ累計学習時間を記録し、未学習・60秒未満は「0分」と表示。ビルド成功・テスト63件パス。iPhone 17 Simulatorで未学習の高校英単語が「全183語のうち0語を正解済み」「習得率0%」「学習時間0分」と表示されること、およびカテゴリ選択→サマリー→ヒートマップ→練習設定の遷移、ライト/ダーク表示、既存データを保持した上書き移行、最終スクリーンショット1枚を検証済み
+- Codex(たける側): **プロフィール読み込み失敗時の診断・復旧導線を改善**。Firebaseエラーのdomain/codeとFirestore/Auth種別を記録し、`ensureSignedIn()`を500ms後に1回だけ自動再試行。マイページの失敗表示へ手動の「再試行」ボタンを追加
+  - 原因調査:Simulatorでは`users/{uid}`取得後の`friendCodes/{code}`索引確認だけが、初回・自動再試行・手動再試行のすべてで`permissionDenied`。リポジトリ内ルールは両方を同じ`signedIn()`条件で許可するため、**本番ルールの未デプロイ/旧版が最有力**。`.firebaserc`・Firebase CLI・ログイン情報が無く、デプロイ済みルールの直接確認は未検証
+  - **トキヤ氏への依頼**:Firebase Consoleで本番`firestore.rules`の公開内容と匿名認証プロバイダを確認し、必要ならテスト済みのリポジトリ版ルールを公開してほしい(本作業ではFirebase設定ファイル・本番環境とも変更なし)
+  - 検証:Simulator向けビルド成功、テスト59件パス。iPhone 17 Simulatorでマイページ→フレンド画面の遷移、再試行ボタンの表示・タップ・失敗時の再表示、強化ログと自動再試行1回を確認。**ルール公開後のフレンドコード発行は未検証**
+
+- Claude(たける側): **プロフィール機能の強化(第一弾:ローカル完結分)**。絵文字プリセットからアイコンを選べるようにし、自己紹介文(140字以内)を追加。ともに`AppStorage`保持で、今のところ自分のマイページにのみ表示される
+  - `AvatarCircle`を拡張してicon(絵文字)表示に対応、`ProfileIconPicker`を新設。`SettingsView`にアイコン選択+自己紹介欄を追加
+  - フレンド側は`Friend`モデル・`FriendService`に`icon`/`bio`の**読み取り**だけ先行対応(`firestore.rules`が書き込みを許可するまでは常にnil)
+  - **トキヤ氏への依頼**:`firestore.rules`の`validUserDocument`に`icon`(絵文字1文字)・`bio`(140字以内)を追加してほしい。入り次第`AuthService`に書き込みを追加してフレンド同期を有効化する
+  - 検証:ビルド成功・テスト59件パス。Simulatorでアイコン選択・自己紹介入力・マイページへの反映を確認
 
 - Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team(atokiya@icloud.com)側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(LL98RL72H4)での実機ビルドは引き続き不可
 
@@ -80,12 +91,6 @@
   - CPU対戦は、参加を見送ったCPUを待ち対象から外した(以前は不参加CPUが1体でもいると必ず制限時間まで待っていた。CPU7体なら7割以上の問題が該当)
   - 出題中も確定した正誤を○/×で表示する(得点が同時に動くため、正誤だけ伏せても意味がない)。正解音は発表時ではなく回答時に鳴らし、発表では誰も取れなかった時だけ時間切れ音を鳴らす
   - 検証:テスト59件パス(即時加点・即時減点・順位の置き直し・不参加CPUを待たない、の4件を追加/書き換え)。**Simulatorでの通し確認とオンライン実機2台は未検証**
-
-- Claude(たける側): **制限時間の既定を5秒にし、全員が回答し終えたら制限時間を待たずに発表へ進むようにした**(たけるの指示による修正)
-  - `QuizDefaults.timeLimit` を5秒、選択肢を5/10/20/30秒に変更(Codex実装時の25秒は取り違え)
-  - CPU対戦は `finishQuestion` を時間切れと「全員回答済み」で共有。オンラインもホストが同じ判定で採点し、スナップショットが複数回届いても二重加算しないよう `scoredQuestionIndex` でガード
-  - 全員が回答権を使い切ったかは正誤を問わず `game.answers` の顔ぶれで判定する(誤答も回答済みとして数える)
-  - 検証:テスト57件パス(「全員回答で制限時間前に発表」1件追加)。SimulatorでCPU対戦4問を完走し、CPU回答時の順位バッジ・×印・並び替え・リザルトまで確認。**オンライン実機2台は未検証**
 
 これより古い更新は `STATUS_ARCHIVE.md` にある。
 
@@ -140,7 +145,6 @@
 - **得点は回答のたびに、その時点で確定したぶんを反映する**(発表まで待たせない)。毎回ゼロから計算し直して問題開始時の得点へ置き直すので二重加算しない。発表へ進むのは「制限時間切れ」か「回答しうる全員が答え終えた」時。CPU対戦では参加を見送ったCPUを待ち対象に含めない
 - 文字送りの表示量は経過時間だけから計算する(`ProgressiveReveal`)。端末間で表示を同期する通信は持たない。全文表示になるのは発表時
 - 回答時に「選択肢・時刻・表示文字数(`visibleCount`)」を記録する。学習履歴への保存はタスク6で対応予定
-- 問題データの `definition` は現在の出題では未使用(将来のジャンル拡張・入力式用に保持)
 - 署名(`DEVELOPMENT_TEAM`)は `project.yml` に書かず `Config/local.xcconfig`(git管理外)で各自が指定する
 - テストはロジックのみ(`Tests/`)。通信層はユニットテスト対象外にし、実機の通し確認で担保する
 - 文書の役割:要件定義書=スコープと意図の正 / 本節=実装詳細の正 / `STATUS_ARCHIVE.md`=完了した過去記録
