@@ -1,20 +1,29 @@
 import SwiftUI
 
-/// 自分の「会員証」風カード:アバター・ニックネーム・フレンドコード・コピー/シェア
+/// 自分の「会員証」風カード:アバター・ニックネーム・自己紹介・フレンドコード・コピー/シェア
 struct FriendProfileCard: View {
     private static let copiedResetDelay: TimeInterval = 2
 
     let nickname: String
     let friendCode: String?
+    var icon: String = ProfileIcon.none
+    var bio: String = ""
 
     @State private var copied = false
 
     var body: some View {
         VStack(spacing: 8) {
-            AvatarCircle(name: nickname, size: 64, color: .accentColor)
+            AvatarCircle(name: nickname, icon: icon, size: 64, color: .accentColor)
 
             Text(nickname)
                 .font(.headline)
+
+            if !bio.isEmpty {
+                Text(bio)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
 
             Text(friendCode ?? "------")
                 .font(.system(.title, design: .monospaced).bold())

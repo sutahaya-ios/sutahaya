@@ -135,7 +135,7 @@ private struct FriendTile: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            AvatarCircle(name: friend.nickname, size: 48, color: AvatarCircle.stableColor(for: friend.id))
+            AvatarCircle(name: friend.nickname, icon: friend.icon ?? ProfileIcon.none, size: 48, color: AvatarCircle.stableColor(for: friend.id))
             Text(friend.nickname)
                 .font(.caption)
                 .lineLimit(1)

@@ -16,6 +16,7 @@ final class AuthService {
     private static let codeAlphabet = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
     private static let codeLength = 6
     private static let codeAttempts = 5
+    private static let signInRetryDelayNanoseconds: UInt64 = 500_000_000
 
     private init() {}
 
@@ -29,6 +30,23 @@ final class AuthService {
         guard OnlineService.isConfigured else { throw OnlineError.notConfigured }
         if let uid, friendCode != nil { return uid }
 
+        do {
+            return try await signInAndEnsureProfile()
+        } catch {
+            logFirebaseError(context: "サインイン・プロフィール準備の初回試行", error: error)
+        }
+
+        try await Task.sleep(nanoseconds: Self.signInRetryDelayNanoseconds)
+
+        do {
+            return try await signInAndEnsureProfile()
+        } catch {
+            logFirebaseError(context: "サインイン・プロフィール準備の再試行", error: error)
+            throw error
+        }
+    }
+
+    private func signInAndEnsureProfile() async throws -> String {
         let user: User
         if let current = Auth.auth().currentUser {
             user = current
@@ -46,27 +64,43 @@ final class AuthService {
             try await Firestore.firestore().collection("users").document(uid)
                 .setData(["nickname": newNickname], merge: true)
         } catch {
-            print("ニックネームの同期に失敗: \(error)")
+            logFirebaseError(context: "ニックネームの同期", error: error)
         }
     }
 
     private func ensureProfile(uid: String) async throws {
         let db = Firestore.firestore()
         let doc = db.collection("users").document(uid)
-        let snapshot = try await doc.getDocument()
+        let snapshot: DocumentSnapshot
+        do {
+            snapshot = try await doc.getDocument()
+        } catch {
+            logFirebaseError(context: "プロフィール文書の取得", error: error)
+            throw error
+        }
 
         if let data = snapshot.data(), let existingCode = data["friendCode"] as? String {
-            friendCode = try await ensureFriendCodeIndex(
-                uid: uid,
-                existingCode: existingCode,
-                userData: data,
-                userDocument: doc,
-                db: db
-            )
+            do {
+                friendCode = try await ensureFriendCodeIndex(
+                    uid: uid,
+                    existingCode: existingCode,
+                    userData: data,
+                    userDocument: doc,
+                    db: db
+                )
+            } catch {
+                logFirebaseError(context: "フレンドコード索引の確認", error: error)
+                throw error
+            }
             return
         }
 
-        friendCode = try await createProfile(uid: uid, userDocument: doc, db: db)
+        do {
+            friendCode = try await createProfile(uid: uid, userDocument: doc, db: db)
+        } catch {
+            logFirebaseError(context: "プロフィールの新規作成", error: error)
+            throw error
+        }
     }
 
     /// 本格ルールでは users と friendCodes を同じバッチで作る必要がある。
@@ -93,10 +127,15 @@ final class AuthService {
             do {
                 try await batch.commit()
                 return code
-            } catch {
+            } catch let commitError {
+                logFirebaseError(context: "プロフィール作成バッチの書き込み", error: commitError)
                 // 同時に同じコードが確保された場合だけ再試行し、通信エラー等は呼び出し元へ返す。
-                if try await codeDocument.getDocument().exists { continue }
-                throw error
+                do {
+                    if try await codeDocument.getDocument().exists { continue }
+                } catch {
+                    logFirebaseError(context: "プロフィール作成失敗後の索引確認", error: error)
+                }
+                throw commitError
             }
         }
         throw OnlineError.friendCodeGeneration
@@ -132,12 +171,19 @@ final class AuthService {
             do {
                 try await batch.commit()
                 return existingCode
-            } catch {
-                let latestIndex = try await codeDocument.getDocument()
+            } catch let commitError {
+                logFirebaseError(context: "既存フレンドコード索引の作成", error: commitError)
+                let latestIndex: DocumentSnapshot
+                do {
+                    latestIndex = try await codeDocument.getDocument()
+                } catch {
+                    logFirebaseError(context: "索引作成失敗後の再取得", error: error)
+                    throw commitError
+                }
                 if latestIndex.data()?["uid"] as? String == uid {
                     return existingCode
                 }
-                if !latestIndex.exists { throw error }
+                if !latestIndex.exists { throw commitError }
             }
         }
 
@@ -164,9 +210,14 @@ final class AuthService {
             do {
                 try await batch.commit()
                 return code
-            } catch {
-                if try await codeDocument.getDocument().exists { continue }
-                throw error
+            } catch let commitError {
+                logFirebaseError(context: "フレンドコード再発行バッチの書き込み", error: commitError)
+                do {
+                    if try await codeDocument.getDocument().exists { continue }
+                } catch {
+                    logFirebaseError(context: "再発行失敗後の索引確認", error: error)
+                }
+                throw commitError
             }
         }
         throw OnlineError.friendCodeGeneration
@@ -174,5 +225,59 @@ final class AuthService {
 
     private func makeFriendCode() -> String {
         String((0..<Self.codeLength).compactMap { _ in Self.codeAlphabet.randomElement() })
+    }
+
+    private func logFirebaseError(context: String, error: Error) {
+        let nsError = error as NSError
+        var details = [
+            "domain=\(nsError.domain)",
+            "code=\(nsError.code)"
+        ]
+
+        if let firestoreCode = firestoreErrorName(for: nsError) {
+            details.append("firestoreCode=\(firestoreCode)")
+        }
+        if nsError.domain == AuthErrors.domain {
+            let authCode = nsError.userInfo[AuthErrors.userInfoNameKey] as? String
+                ?? AuthErrorCode(rawValue: nsError.code).map(String.init(describing:))
+            if let authCode {
+                details.append("authCode=\(authCode)")
+            }
+        }
+        if let underlyingError = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            details.append("underlyingDomain=\(underlyingError.domain)")
+            details.append("underlyingCode=\(underlyingError.code)")
+        }
+        details.append("message=\(nsError.localizedDescription)")
+
+        print("[AuthService] \(context): \(details.joined(separator: ", "))")
+    }
+
+    private func firestoreErrorName(for error: NSError) -> String? {
+        guard error.domain == FirestoreErrorDomain,
+              let code = FirestoreErrorCode.Code(rawValue: error.code) else {
+            return nil
+        }
+
+        switch code {
+        case .OK: return "ok"
+        case .cancelled: return "cancelled"
+        case .unknown: return "unknown"
+        case .invalidArgument: return "invalidArgument"
+        case .deadlineExceeded: return "deadlineExceeded"
+        case .notFound: return "notFound"
+        case .alreadyExists: return "alreadyExists"
+        case .permissionDenied: return "permissionDenied"
+        case .resourceExhausted: return "resourceExhausted"
+        case .failedPrecondition: return "failedPrecondition"
+        case .aborted: return "aborted"
+        case .outOfRange: return "outOfRange"
+        case .unimplemented: return "unimplemented"
+        case .internal: return "internal"
+        case .unavailable: return "unavailable"
+        case .dataLoss: return "dataLoss"
+        case .unauthenticated: return "unauthenticated"
+        @unknown default: return "unknown(\(code.rawValue))"
+        }
     }
 }

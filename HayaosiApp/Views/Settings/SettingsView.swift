@@ -5,8 +5,12 @@ import SwiftData
 struct SettingsView: View {
     /// 連続入力中に毎回Firestoreへ書き込まないための待ち時間
     private static let nicknameSyncDelay: TimeInterval = 1.0
+    /// 自己紹介の最大文字数(将来Firestoreへ同期する際の上限とも一致させる)
+    private static let bioMaxLength = 140
 
     @AppStorage("nickname") private var nickname = "ゲスト"
+    @AppStorage("profileIcon") private var profileIcon = ProfileIcon.none
+    @AppStorage("profileBio") private var bio = ""
     @AppStorage(SoundPlayer.enabledKey) private var soundEnabled = true
     @AppStorage(Haptics.enabledKey) private var hapticsEnabled = true
     @Environment(\.modelContext) private var modelContext
@@ -17,10 +21,16 @@ struct SettingsView: View {
         Form {
             Section {
                 TextField("ニックネーム", text: $nickname)
+
+                ProfileIconPicker(selection: $profileIcon)
+                    .padding(.vertical, 4)
+
+                TextField("自己紹介(任意)", text: $bio, axis: .vertical)
+                    .lineLimit(2...4)
             } header: {
                 Text("プロフィール")
             } footer: {
-                Text("対戦時に他の参加者へ表示される名前です")
+                Text("対戦時に他の参加者へ表示される名前です。アイコン・自己紹介は今のところ自分のマイページにのみ表示されます")
             }
 
             Section {
@@ -45,6 +55,11 @@ struct SettingsView: View {
         .navigationTitle("設定")
         .onChange(of: nickname) { _, newNickname in
             scheduleNicknameSync(newNickname)
+        }
+        .onChange(of: bio) { _, newBio in
+            if newBio.count > Self.bioMaxLength {
+                bio = String(newBio.prefix(Self.bioMaxLength))
+            }
         }
         .confirmationDialog(
             "解答履歴と復習リストをすべて削除しますか?",

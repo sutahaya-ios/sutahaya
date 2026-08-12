@@ -42,7 +42,9 @@ final class FriendService {
                         Friend(
                             id: doc.documentID,
                             nickname: doc.data()["nickname"] as? String ?? "?",
-                            friendCode: doc.data()["friendCode"] as? String ?? ""
+                            friendCode: doc.data()["friendCode"] as? String ?? "",
+                            icon: doc.data()["icon"] as? String,
+                            bio: doc.data()["bio"] as? String
                         )
                     } ?? []
                 }

@@ -5,6 +5,8 @@ struct MyPageView: View {
     private static let privacyPolicyURLString = "https://saikyo-app-team.github.io/app-privacy/"
 
     @AppStorage("nickname") private var nickname = "ゲスト"
+    @AppStorage("profileIcon") private var profileIcon = ProfileIcon.none
+    @AppStorage("profileBio") private var profileBio = ""
     @State private var signInFailed = false
 
     private var auth: AuthService { .shared }
@@ -60,16 +62,28 @@ struct MyPageView: View {
 
     private var profileContent: some View {
         VStack(spacing: 12) {
-            FriendProfileCard(nickname: nickname, friendCode: auth.friendCode)
+            FriendProfileCard(nickname: nickname, friendCode: auth.friendCode, icon: profileIcon, bio: profileBio)
 
             if !OnlineService.isConfigured {
                 Label("オンライン設定後にフレンドコードが発行されます", systemImage: "wifi.slash")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else if signInFailed {
-                Label("プロフィールを読み込めませんでした", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                VStack(spacing: 8) {
+                    Label("プロフィールを読み込めませんでした", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+
+                    Button {
+                        Task {
+                            await prepareOnlineProfile()
+                        }
+                    } label: {
+                        Label("再試行", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
             } else if auth.friendCode == nil {
                 ProgressView("プロフィールを読み込み中…")
                     .font(.caption)
@@ -80,11 +94,13 @@ struct MyPageView: View {
 
     private func prepareOnlineProfile() async {
         guard OnlineService.isConfigured, auth.friendCode == nil else { return }
+        signInFailed = false
+
         do {
             let uid = try await auth.ensureSignedIn()
             friendService.startListening(uid: uid)
         } catch {
-            print("プロフィールの読み込みに失敗: \(error)")
+            guard !Task.isCancelled else { return }
             signInFailed = true
         }
     }
