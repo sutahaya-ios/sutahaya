@@ -34,5 +34,5 @@ struct RootTabView: View {
 
 #Preview {
     RootTabView()
-        .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self], inMemory: true)
+        .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self], inMemory: true)
 }

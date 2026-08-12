@@ -43,11 +43,12 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Codex(たける側) | `STATUS.md` / `HayaosiApp/Models/StudyTimeTotal.swift`(削除) / `HayaosiApp/Models/DailyStudyTime.swift`(追加) / `HayaosiApp/Services/ResultRecorder.swift` / `HayaosiApp/Services/StudyTimeHeatmap.swift`(追加) / `HayaosiApp/App/HayaosiAppApp.swift` / `HayaosiApp/Views/Root/RootTabView.swift` / `HayaosiApp/Views/Study/StudyHubView.swift` / `HayaosiApp/Views/Study/CategorySummaryView.swift` / `HayaosiApp/Views/Study/CategoryHeatmapView.swift` / `HayaosiApp/Views/Practice/PracticeSetupView.swift` / `HayaosiApp/Views/Review/ReviewListView.swift` / `Tests/ResultRecorderTests.swift` / `Tests/StudyTimeHeatmapTests.swift` / `docs/screenshots/category-summary-heatmap.png` | カテゴリサマリーを習得率リング・日別学習時間ヒートマップへ刷新し、SwiftData学習時間モデルを日別記録へ差し替える | 2026-08-12 |
 ---
-
 ## 最新更新(2026年8月12日)
 
+- Codex(たける側): **難易度別正答率セルを56pt・線幅6ptの円環プログレスリングへ変更**。12時位置から時計回りに進捗を描き、中央へ正答率、下へ★1〜★5を表示。既存の緑80%以上/黄55〜79%/赤54%以下/データ無しグレー、5列の等間隔、タップ挙動、問題0件時のopacity 0.4と遷移無効化は維持。xcodegen実行、Simulator向けビルド成功、全70テスト成功。検証専用iPhone 17 Proへ100%/66%/33%/0%/未回答の一時履歴を入れ、ライト/ダーク双方で緑・黄・赤・背景グレー・未回答を識別できることを確認後、一時履歴を削除。スクリーンショットは`docs/screenshots/difficulty-rings-light.png`と`difficulty-rings-dark.png`。本作業ではFirebase関連ファイル・本番環境を変更していない
+- Codex(たける側): **難易度セルのタップから設定画面を挟まず一人練習を即時開始するよう変更**。英単語かつ選択カテゴリ・難易度に一致する問題をシャッフルし、`QuizDefaults`の既定問題数・制限時間、`.practice`で`QuizSessionView`を構築する。該当問題0件のセルは淡色の非リンクとして表示。到達不能になった`PracticeSetupView.swift`は削除。xcodegen実行、Simulator向けビルド成功、iPhone 17 Proで全70テスト成功。**Simulatorで難易度セルから即座に第1問へ進む操作確認は、テスト終了の指示により未検証**。本作業ではFirebase関連ファイル・本番環境を変更していない
+- Codex(たける側): **カテゴリサマリーを習得率リング・直近12週の日別学習時間ヒートマップへ刷新**。最上部へ全幅の「学習」ボタン、60pt・`#378ADD`の習得率リング、日曜〜土曜×12週の青系5段階グリッド・合計・グリッド単位の読み上げを配置。マスは14pt角・間隔3ptの固定サイズで左寄せし、凡例は置かない。未来日は集計データ上`nil`で返し、UIでは同じサイズの透明プレースホルダにして右上が欠ける形を保つ。復習リスト導線は難易度別画面の下部へ移し、カテゴリ内0件では非表示、1件以上では件数付き行を表示する。難易度別の緑/黄/赤は変更なし。`StudyTimeTotal`を削除して日付＋カテゴリ一意キーの`DailyStudyTime`へ差し替え、同日加算・日跨ぎ分離に変更。**既存の累計学習時間データはモデル差し替えで失われるが、未リリースで実データが無いため許容**。xcodegen実行、Simulator向けビルド成功、全70テスト成功(同日累積・日跨ぎ・空データ・未来日`nil`・9/10分および34/35分境界を含む)。検証専用iPhone 17 Proで3カテゴリ表示、中学・高校・TOEICの空サマリーが習得率0%・計0分であること、TOEIC難易度画面で0件時に復習導線が出ないことを確認。**最終調整後の一人練習後の当日だけの着色、復習導線の1件以上表示、ライト/ダーク双方での青5段階識別は、再確認終了の指示により未検証**。未来日`nil`はユニットテストで確認済み。最終スクリーンショットは`docs/screenshots/category-summary-heatmap.png`の1枚。本作業ではFirebase関連ファイル・本番環境を変更していない
 - Codex(たける側): **TOEICカテゴリと動作確認用20語を追加**。カテゴリ順は中学→高校→TOEIC、rawValue=`toeic`、表示名「TOEIC単語」。`tc_0001`〜`tc_0020`を6フィールドのみ・各難易度4語・3品詞・重複なしで追加し、`QuestionSeeder.dataVersion`を7へ更新。学習タブへ緑系のビジネスカードを追加し、テスト名・`tc_`接頭辞検証・ID文書・決定事項を追従。xcodegen実行、Simulator向けビルド成功、全66テスト成功。検証専用iPhone 17 Simulatorで3カードの順序、TOEICサマリー→ヒートマップ→★1練習、4問すべての4択・正解表示・カテゴリ横断の誤答・4/4リザルト、さらにTOEICのCPU対戦を設定→ロビー→4問→リザルトまで確認。最終スクリーンショットは`docs/screenshots/toeic-study-tab.png`の1枚のみ。**旧版互換のコード確認**:新アプリがホストなら問題文・4択・正答の完全なpayloadを配信するため旧版参加者も対戦進行可能だが、旧版は未知の`toeic`をnilへ復元しロビーで「単語範囲:すべて」と誤表示する。**旧版との実機オンライン対戦は未検証**。トキヤ氏へ:混在バージョンの実機確認と、必要なら最低対応バージョン/アップデート案内を検討してほしい。本作業ではFirebase関連ファイル・本番環境を変更していない
 - Codex(たける側): **単語データから未使用の`definition`フィールドを完全に削除**。`WordEntry`のプロパティ、`junior_high.json` 17件、`high_school.json` 183件、`docs/CODING.md`の保持指示、決定事項メモを削除。JSONは構文・必須6キー・件数を検証し、削除後ファイルのSHA-256が事前に算出した`definition`行除外版と一致したため、他フィールドは変更なし。`QuestionSeeder.dataVersion`は6のまま。xcodegen実行、Simulator向けビルド成功、全66テスト成功(「収録データは2カテゴリ各難易度を含みIDと単語が重複しない」を含む)。検証専用iPhone 17 Simulatorで中学英単語★1の一人練習4問を流し、各問の4択・正解表示と4/4問正解のリザルトを確認。スクリーンショットなし。本作業では`STATUS_ARCHIVE.md`・Firebase関連ファイルを変更していない
 - Codex(たける側): **学習タブの入口をカテゴリ2枚へ統合し、復習リストをカテゴリサマリーへ移動**。トップの一人練習/復習カードを削除し、見出し「学習メニュー」と中学/高校カードだけに整理。復習項目は問題IDからカテゴリを判定し、不明な問題IDを除外。カテゴリ内0件では導線を隠し、1件以上なら件数付きのセカンダリ導線、カテゴリ名入りタイトル、絞り込み後件数の開始ボタンを表示。引数なしの全カテゴリ表示も維持。`MenuCard`はオンライン対戦で使用中のため残置。xcodegen実行、ビルド成功、テスト66件パス。iPhone 17 Pro Simulatorで学習→中学→学習→★1→練習設定(問題数/制限時間を確認)と、4問を復習登録後の学習→中学→復習リスト(中学4問のみ)の2経路、0件時の導線非表示、トップがカテゴリ2枚だけであること、最終スクリーンショット1枚を検証済み。Firebase関連ファイルは変更なし
@@ -61,9 +62,7 @@
   - フレンド側は`Friend`モデル・`FriendService`に`icon`/`bio`の**読み取り**だけ先行対応(`firestore.rules`が書き込みを許可するまでは常にnil)
   - **トキヤ氏への依頼**:`firestore.rules`の`validUserDocument`に`icon`(絵文字1文字)・`bio`(140字以内)を追加してほしい。入り次第`AuthService`に書き込みを追加してフレンド同期を有効化する
   - 検証:ビルド成功・テスト59件パス。Simulatorでアイコン選択・自己紹介入力・マイページへの反映を確認
-
 - Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team(atokiya@icloud.com)側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(LL98RL72H4)での実機ビルドは引き続き不可
-
 - Claude(たける側): **効果音の実音源への差し替え**。正解・不正解・時間切れ・出題の4種を配布素材へ差し替え、決定ボタン音を新規追加(`se_button.wav`)。詳細は下記Codexの実装記録と合わせて参照
   - `se_correct.wav`/`se_wrong.wav`:「Quiz-Ding_Dong02」「Quiz-Buzzer02」シリーズより選定
   - `se_timeup.wav`:「Countdown06」よりカウントダウン末尾のブザー部分のみ切り出し(頭のカウント部分は発表タイミングと合わないため不使用)

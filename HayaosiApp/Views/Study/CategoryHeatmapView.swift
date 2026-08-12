@@ -12,6 +12,7 @@ struct CategoryHeatmapView: View {
 
     @Query private var records: [AnswerRecord]
     @Query private var questions: [Question]
+    @Query private var reviewItems: [ReviewItem]
 
     var body: some View {
         let proficiency = CategoryProficiencySummary.calculate(
@@ -19,6 +20,11 @@ struct CategoryHeatmapView: View {
             questions: questions,
             category: category
         )
+        let reviewItemCount = ReviewListFilter.filter(
+            reviewItems: reviewItems,
+            questions: questions,
+            category: category
+        ).count
 
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -28,64 +34,154 @@ struct CategoryHeatmapView: View {
 
                 LazyVGrid(columns: Self.difficultyColumns, spacing: 6) {
                     ForEach(WordDifficulty.allCases) { difficulty in
-                        NavigationLink {
-                            PracticeSetupView(
-                                initialCategory: category,
-                                initialDifficulty: difficulty
-                            )
-                        } label: {
+                        let matchingQuestions = practiceQuestions(for: difficulty)
+
+                        if matchingQuestions.isEmpty {
                             DifficultyAccuracyCell(
                                 difficulty: difficulty,
-                                accuracy: proficiency.accuracy(for: difficulty)
+                                accuracy: proficiency.accuracy(for: difficulty),
+                                isEnabled: false
                             )
+                            .accessibilityLabel("\(difficulty.starDisplay)、問題なし")
+                        } else {
+                            NavigationLink {
+                                QuizSessionView(
+                                    questions: Array(
+                                        matchingQuestions
+                                            .shuffled()
+                                            .prefix(QuizDefaults.questionCount)
+                                    ),
+                                    timeLimit: QuizDefaults.timeLimit,
+                                    mode: .practice
+                                )
+                            } label: {
+                                DifficultyAccuracyCell(
+                                    difficulty: difficulty,
+                                    accuracy: proficiency.accuracy(for: difficulty),
+                                    isEnabled: true
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
 
                 Text("\(category.displayName)・難易度別正答率")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
+
+                if reviewItemCount > 0 {
+                    Rectangle()
+                        .fill(Color(.separator))
+                        .frame(height: 0.5)
+
+                    NavigationLink {
+                        ReviewListView(category: category)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .foregroundStyle(Color.accentColor)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("復習リスト")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                Text("間違えた問題 \(reviewItemCount)問")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(.secondarySystemBackground))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(.separator), lineWidth: 0.5)
+                                }
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, -2)
+                }
             }
             .padding()
         }
         .navigationTitle(category.displayName)
     }
+
+    private func practiceQuestions(for difficulty: WordDifficulty) -> [Question] {
+        questions
+            .filter { $0.genre == .englishWord }
+            .matching(category: category, difficulty: difficulty)
+    }
 }
 
 private struct DifficultyAccuracyCell: View {
+    private static let ringDiameter: CGFloat = 56
+    private static let ringLineWidth: CGFloat = 6
+
     private struct Style {
         let text: String
-        let backgroundColor: Color
+        let ringColor: Color
         let foregroundColor: Color
     }
 
     let difficulty: WordDifficulty
     let accuracy: Double?
+    let isEnabled: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .stroke(
+                        Color(.secondarySystemBackground),
+                        lineWidth: Self.ringLineWidth
+                    )
+
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        style.ringColor,
+                        style: StrokeStyle(
+                            lineWidth: Self.ringLineWidth,
+                            lineCap: .round
+                        )
+                    )
+                    .rotationEffect(.degrees(-90))
+
+                Text(style.text)
+                    .font(.system(size: 13, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(style.foregroundColor)
+            }
+            .frame(width: Self.ringDiameter, height: Self.ringDiameter)
+
             Text("★\(difficulty.rawValue)")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
-
-            Text(style.text)
-                .font(.system(size: 13, weight: .medium))
-                .monospacedDigit()
-                .foregroundStyle(style.foregroundColor)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(RoundedRectangle(cornerRadius: 8).fill(style.backgroundColor))
         }
         .frame(maxWidth: .infinity)
+        .opacity(isEnabled ? 1 : 0.4)
+    }
+
+    private var progress: Double {
+        min(max(accuracy ?? 0, 0), 1)
     }
 
     private var style: Style {
         guard let accuracy else {
             return Style(
                 text: "－",
-                backgroundColor: Color(.secondarySystemBackground),
+                ringColor: .clear,
                 foregroundColor: .secondary
             )
         }
@@ -94,20 +190,20 @@ private struct DifficultyAccuracyCell: View {
         if percentage >= 80 {
             return Style(
                 text: "\(percentage)%",
-                backgroundColor: .proficiencyGreen,
+                ringColor: .proficiencyGreen,
                 foregroundColor: .proficiencyGreenText
             )
         }
         if percentage >= 55 {
             return Style(
                 text: "\(percentage)%",
-                backgroundColor: .proficiencyYellow,
+                ringColor: .proficiencyYellow,
                 foregroundColor: .proficiencyYellowText
             )
         }
         return Style(
             text: "\(percentage)%",
-            backgroundColor: .proficiencyRed,
+            ringColor: .proficiencyRed,
             foregroundColor: .proficiencyRedText
         )
     }
@@ -151,7 +247,7 @@ private extension Color {
         CategoryHeatmapView(category: .juniorHigh)
     }
     .modelContainer(
-        for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self],
+        for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self],
         inMemory: true
     )
 }

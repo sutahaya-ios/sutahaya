@@ -1,0 +1,162 @@
+[
+  {
+    "id": "tc_0001",
+    "word": "office",
+    "meaning": "オフィス、事務所",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 1
+  },
+  {
+    "id": "tc_0002",
+    "word": "meeting",
+    "meaning": "会議",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 1
+  },
+  {
+    "id": "tc_0003",
+    "word": "confirm",
+    "meaning": "〜を確認する",
+    "pos": "動詞",
+    "category": "toeic",
+    "difficulty": 1
+  },
+  {
+    "id": "tc_0004",
+    "word": "available",
+    "meaning": "利用できる、都合がつく",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 1
+  },
+  {
+    "id": "tc_0005",
+    "word": "invoice",
+    "meaning": "請求書",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 2
+  },
+  {
+    "id": "tc_0006",
+    "word": "schedule",
+    "meaning": "予定、日程",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 2
+  },
+  {
+    "id": "tc_0007",
+    "word": "negotiate",
+    "meaning": "〜を交渉する",
+    "pos": "動詞",
+    "category": "toeic",
+    "difficulty": 2
+  },
+  {
+    "id": "tc_0008",
+    "word": "annual",
+    "meaning": "年1回の、年間の",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 2
+  },
+  {
+    "id": "tc_0009",
+    "word": "reimburse",
+    "meaning": "〜に払い戻す、精算する",
+    "pos": "動詞",
+    "category": "toeic",
+    "difficulty": 3
+  },
+  {
+    "id": "tc_0010",
+    "word": "shipment",
+    "meaning": "発送品、出荷",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 3
+  },
+  {
+    "id": "tc_0011",
+    "word": "mandatory",
+    "meaning": "義務的な、必須の",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 3
+  },
+  {
+    "id": "tc_0012",
+    "word": "eligible",
+    "meaning": "資格がある",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 3
+  },
+  {
+    "id": "tc_0013",
+    "word": "subsidiary",
+    "meaning": "子会社",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 4
+  },
+  {
+    "id": "tc_0014",
+    "word": "procurement",
+    "meaning": "調達",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 4
+  },
+  {
+    "id": "tc_0015",
+    "word": "allocate",
+    "meaning": "〜を割り当てる",
+    "pos": "動詞",
+    "category": "toeic",
+    "difficulty": 4
+  },
+  {
+    "id": "tc_0016",
+    "word": "tentative",
+    "meaning": "仮の、暫定的な",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 4
+  },
+  {
+    "id": "tc_0017",
+    "word": "acquisition",
+    "meaning": "買収、取得",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 5
+  },
+  {
+    "id": "tc_0018",
+    "word": "consolidate",
+    "meaning": "〜を統合する",
+    "pos": "動詞",
+    "category": "toeic",
+    "difficulty": 5
+  },
+  {
+    "id": "tc_0019",
+    "word": "compliance",
+    "meaning": "法令遵守",
+    "pos": "名詞",
+    "category": "toeic",
+    "difficulty": 5
+  },
+  {
+    "id": "tc_0020",
+    "word": "lucrative",
+    "meaning": "もうかる、収益性の高い",
+    "pos": "形容詞",
+    "category": "toeic",
+    "difficulty": 5
+  }
+]

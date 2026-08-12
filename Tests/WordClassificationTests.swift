@@ -2,7 +2,7 @@ import XCTest
 import SwiftData
 @testable import HayaosiApp
 
-/// 中学・高校カテゴリと、各カテゴリ内の★1〜5の絞り込みを検証する
+/// 全カテゴリと、各カテゴリ内の★1〜5の絞り込みを検証する
 final class WordClassificationTests: XCTestCase {
     private var container: ModelContainer!
 
@@ -74,7 +74,7 @@ final class WordClassificationTests: XCTestCase {
             questionCount: 10,
             timeLimit: 20,
             genre: .englishWord,
-            wordCategory: .highSchool,
+            wordCategory: .toeic,
             wordDifficulty: .three
         )
 
@@ -83,7 +83,7 @@ final class WordClassificationTests: XCTestCase {
         XCTAssertEqual(restored.questionCount, 10)
         XCTAssertEqual(restored.timeLimit, 20)
         XCTAssertEqual(restored.genre, .englishWord)
-        XCTAssertEqual(restored.wordCategory, .highSchool)
+        XCTAssertEqual(restored.wordCategory, .toeic)
         XCTAssertEqual(restored.wordDifficulty, .three)
     }
 
@@ -106,7 +106,7 @@ final class WordClassificationTests: XCTestCase {
         XCTAssertEqual(WordDifficulty.five.starDisplay, "★★★★★")
     }
 
-    func test_収録データは2カテゴリ各難易度を含みIDと単語が重複しない() throws {
+    func test_収録データは全カテゴリ各難易度を含みIDと単語が重複しない() throws {
         let entries = try QuestionSeeder.loadEntries()
         XCTAssertFalse(entries.isEmpty)
         XCTAssertEqual(Set(entries.map(\.id)).count, entries.count, "問題IDが重複している")
@@ -133,6 +133,7 @@ final class WordClassificationTests: XCTestCase {
 
         XCTAssertTrue(entries.filter { $0.category == .juniorHigh }.allSatisfy { $0.id.hasPrefix("jh_") })
         XCTAssertTrue(entries.filter { $0.category == .highSchool }.allSatisfy { $0.id.hasPrefix("hs_") })
+        XCTAssertTrue(entries.filter { $0.category == .toeic }.allSatisfy { $0.id.hasPrefix("tc_") })
     }
 
     func test_旧IDの学習履歴と復習項目を同じ単語の新IDへ引き継ぐ() throws {

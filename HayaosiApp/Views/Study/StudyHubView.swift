@@ -42,6 +42,19 @@ struct StudyHubView: View {
                 )
             }
             .buttonStyle(.plain)
+
+            NavigationLink {
+                CategorySummaryView(category: .toeic)
+            } label: {
+                StudyCategoryCard(
+                    title: WordCategory.toeic.displayName,
+                    subtitle: "ビジネス英語に対応",
+                    systemImage: "briefcase.fill",
+                    accentColor: .green,
+                    backgroundColor: Color.green.opacity(0.1)
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 }
@@ -77,5 +90,5 @@ private struct StudyCategoryCard: View {
     NavigationStack {
         StudyHubView()
     }
-    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self], inMemory: true)
+    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self], inMemory: true)
 }

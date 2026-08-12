@@ -24,7 +24,7 @@ enum QuestionDataError: LocalizedError {
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 6
+    static let dataVersion = 7
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -83,7 +83,7 @@ enum QuestionSeeder {
         }
     }
 
-    /// 中学・高校の2ファイルを読み、カテゴリ内の重複とIDの一意性を検証する
+    /// 全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する
     static func loadEntries() throws -> [WordEntry] {
         var allEntries: [WordEntry] = []
         var allIDs: Set<String> = []

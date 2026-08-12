@@ -15,6 +15,7 @@ enum ResultRecorder {
         entries: [QuizSession.Entry],
         mode: PlayMode,
         elapsedSeconds: TimeInterval? = nil,
+        recordedAt: Date = .now,
         context: ModelContext
     ) {
         guard !entries.isEmpty else { return }
@@ -28,6 +29,7 @@ enum ResultRecorder {
                 elapsedSeconds: elapsedSeconds,
                 entries: entries,
                 mode: mode,
+                recordedAt: recordedAt,
                 context: context
             )
         }
@@ -50,6 +52,7 @@ enum ResultRecorder {
         elapsedSeconds: TimeInterval,
         entries: [QuizSession.Entry],
         mode: PlayMode,
+        recordedAt: Date,
         context: ModelContext
     ) {
         guard mode == .practice, elapsedSeconds > 0 else { return }
@@ -63,15 +66,25 @@ enum ResultRecorder {
             return
         }
 
-        let categoryRaw = category.rawValue
-        let descriptor = FetchDescriptor<StudyTimeTotal>(
-            predicate: #Predicate { $0.categoryRaw == categoryRaw }
+        let dayStart = Calendar.current.startOfDay(for: recordedAt)
+        let dayCategoryKey = DailyStudyTime.makeDayCategoryKey(
+            dayStart: dayStart,
+            category: category
+        )
+        let descriptor = FetchDescriptor<DailyStudyTime>(
+            predicate: #Predicate { $0.dayCategoryKey == dayCategoryKey }
         )
         do {
-            if let total = try context.fetch(descriptor).first {
-                total.totalSeconds += elapsedSeconds
+            if let dailyStudyTime = try context.fetch(descriptor).first {
+                dailyStudyTime.totalSeconds += elapsedSeconds
             } else {
-                context.insert(StudyTimeTotal(category: category, totalSeconds: elapsedSeconds))
+                context.insert(
+                    DailyStudyTime(
+                        dayStart: dayStart,
+                        category: category,
+                        totalSeconds: elapsedSeconds
+                    )
+                )
             }
         } catch {
             print("学習時間の更新に失敗: \(error)")

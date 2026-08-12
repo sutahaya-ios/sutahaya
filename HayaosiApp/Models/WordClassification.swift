@@ -4,6 +4,7 @@ import Foundation
 enum WordCategory: String, Codable, CaseIterable, Identifiable {
     case juniorHigh = "junior_high"
     case highSchool = "high_school"
+    case toeic = "toeic"
 
     var id: String { rawValue }
 
@@ -11,6 +12,7 @@ enum WordCategory: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .juniorHigh: return "中学英単語"
         case .highSchool: return "高校英単語"
+        case .toeic: return "TOEIC単語"
         }
     }
 }

@@ -11,6 +11,6 @@ struct HayaosiAppApp: App {
         WindowGroup {
             RootTabView()
         }
-        .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, StudyTimeTotal.self])
+        .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self])
     }
 }
