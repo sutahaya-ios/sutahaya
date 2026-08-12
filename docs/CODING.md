@@ -74,7 +74,7 @@ env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project
 - 効果音は `Resources/Sounds/se_*.wav`。正弦波合成の自作(著作権フリー)で、**同名ファイルを差し替えれば音が変わる**(コード変更不要)
 - 問題データを更新したら `QuestionSeeder.dataVersion` を上げる(次回起動時に再投入される)
 - **英単語を増やす手順**:`HayaosiApp/Resources/junior_high.json` または `high_school.json` へ既存要素と同じ形式で直接追記し、`QuestionSeeder.dataVersion` を上げる。
-  - 必須項目は `id` / `word` / `meaning` / `pos` / `category` / `difficulty`。`definition` も既存どおり保持する。カテゴリはファイル名と一致させ、難易度は整数の1〜5にする
+  - 必須項目は `id` / `word` / `meaning` / `pos` / `category` / `difficulty`。カテゴリはファイル名と一致させ、難易度は整数の1〜5にする
   - IDは中学=`jh_####`、高校=`hs_####`。同じファイル内ではIDと単語(大文字小文字を無視)を重複させない。中学・高校をまたぐ同じ単語は登録してよい
   - 品詞は `PartOfSpeech` の3種のみ(誤答を同じ品詞から作るため、表記がゆれるとグループが割れる)
 - SwiftDataモデル(`Models/`)にプロパティを足すときは Optional かデフォルト値付きにし、**アプリを削除せず上書きインストールで移行を確認する**(ユーザーの学習履歴が飛ぶ事故を防ぐ)

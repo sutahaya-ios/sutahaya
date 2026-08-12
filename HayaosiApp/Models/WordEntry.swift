@@ -5,7 +5,6 @@ struct WordEntry: Codable, Identifiable, Equatable {
     let id: String
     let word: String
     let meaning: String
-    let definition: String?
     let pos: PartOfSpeech
     let category: WordCategory
     let difficulty: WordDifficulty
