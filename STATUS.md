@@ -43,11 +43,12 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Codex(たける側) | `HayaosiApp/Models/WordClassification.swift`, `HayaosiApp/Resources/toeic.json`, `HayaosiApp/Services/QuestionSeeder.swift`, `HayaosiApp/Views/Study/StudyHubView.swift`, `Tests/WordClassificationTests.swift`, `docs/CODING.md`, `docs/screenshots/toeic-study-tab.png`, `STATUS.md` | TOEICカテゴリと動作確認用20語を追加 | 2026-08-12 |
+| Codex(たける側) | `STATUS.md` / `HayaosiApp/Models/StudyTimeTotal.swift`(削除) / `HayaosiApp/Models/DailyStudyTime.swift`(追加) / `HayaosiApp/Services/ResultRecorder.swift` / `HayaosiApp/Services/StudyTimeHeatmap.swift`(追加) / `HayaosiApp/App/HayaosiAppApp.swift` / `HayaosiApp/Views/Root/RootTabView.swift` / `HayaosiApp/Views/Study/StudyHubView.swift` / `HayaosiApp/Views/Study/CategorySummaryView.swift` / `HayaosiApp/Views/Study/CategoryHeatmapView.swift` / `HayaosiApp/Views/Practice/PracticeSetupView.swift` / `HayaosiApp/Views/Review/ReviewListView.swift` / `Tests/ResultRecorderTests.swift` / `Tests/StudyTimeHeatmapTests.swift` / `docs/screenshots/category-summary-heatmap.png` | カテゴリサマリーを習得率リング・日別学習時間ヒートマップへ刷新し、SwiftData学習時間モデルを日別記録へ差し替える | 2026-08-12 |
 ---
 
 ## 最新更新(2026年8月12日)
 
+- Codex(たける側): **TOEICカテゴリと動作確認用20語を追加**。カテゴリ順は中学→高校→TOEIC、rawValue=`toeic`、表示名「TOEIC単語」。`tc_0001`〜`tc_0020`を6フィールドのみ・各難易度4語・3品詞・重複なしで追加し、`QuestionSeeder.dataVersion`を7へ更新。学習タブへ緑系のビジネスカードを追加し、テスト名・`tc_`接頭辞検証・ID文書・決定事項を追従。xcodegen実行、Simulator向けビルド成功、全66テスト成功。検証専用iPhone 17 Simulatorで3カードの順序、TOEICサマリー→ヒートマップ→★1練習、4問すべての4択・正解表示・カテゴリ横断の誤答・4/4リザルト、さらにTOEICのCPU対戦を設定→ロビー→4問→リザルトまで確認。最終スクリーンショットは`docs/screenshots/toeic-study-tab.png`の1枚のみ。**旧版互換のコード確認**:新アプリがホストなら問題文・4択・正答の完全なpayloadを配信するため旧版参加者も対戦進行可能だが、旧版は未知の`toeic`をnilへ復元しロビーで「単語範囲:すべて」と誤表示する。**旧版との実機オンライン対戦は未検証**。トキヤ氏へ:混在バージョンの実機確認と、必要なら最低対応バージョン/アップデート案内を検討してほしい。本作業ではFirebase関連ファイル・本番環境を変更していない
 - Codex(たける側): **単語データから未使用の`definition`フィールドを完全に削除**。`WordEntry`のプロパティ、`junior_high.json` 17件、`high_school.json` 183件、`docs/CODING.md`の保持指示、決定事項メモを削除。JSONは構文・必須6キー・件数を検証し、削除後ファイルのSHA-256が事前に算出した`definition`行除外版と一致したため、他フィールドは変更なし。`QuestionSeeder.dataVersion`は6のまま。xcodegen実行、Simulator向けビルド成功、全66テスト成功(「収録データは2カテゴリ各難易度を含みIDと単語が重複しない」を含む)。検証専用iPhone 17 Simulatorで中学英単語★1の一人練習4問を流し、各問の4択・正解表示と4/4問正解のリザルトを確認。スクリーンショットなし。本作業では`STATUS_ARCHIVE.md`・Firebase関連ファイルを変更していない
 - Codex(たける側): **学習タブの入口をカテゴリ2枚へ統合し、復習リストをカテゴリサマリーへ移動**。トップの一人練習/復習カードを削除し、見出し「学習メニュー」と中学/高校カードだけに整理。復習項目は問題IDからカテゴリを判定し、不明な問題IDを除外。カテゴリ内0件では導線を隠し、1件以上なら件数付きのセカンダリ導線、カテゴリ名入りタイトル、絞り込み後件数の開始ボタンを表示。引数なしの全カテゴリ表示も維持。`MenuCard`はオンライン対戦で使用中のため残置。xcodegen実行、ビルド成功、テスト66件パス。iPhone 17 Pro Simulatorで学習→中学→学習→★1→練習設定(問題数/制限時間を確認)と、4問を復習登録後の学習→中学→復習リスト(中学4問のみ)の2経路、0件時の導線非表示、トップがカテゴリ2枚だけであること、最終スクリーンショット1枚を検証済み。Firebase関連ファイルは変更なし
 - Codex(たける側): **学習タブをカテゴリ選択→サマリー→難易度別ヒートマップ→練習設定の導線へ改訂**。習得率はカテゴリ内の全単語数に対する1回以上正解したユニーク単語数で算出し、同じ単語への複数回答は重複計上しない。難易度別表示は解答単位の正答率を維持。`.practice`のみ累計学習時間を記録し、未学習・60秒未満は「0分」と表示。ビルド成功・テスト63件パス。iPhone 17 Simulatorで未学習の高校英単語が「全183語のうち0語を正解済み」「習得率0%」「学習時間0分」と表示されること、およびカテゴリ選択→サマリー→ヒートマップ→練習設定の遷移、ライト/ダーク表示、既存データを保持した上書き移行、最終スクリーンショット1枚を検証済み
@@ -104,7 +105,7 @@
 2. **プロフィール機能の強化**:マイページのプロフィール表示・編集を充実させる。範囲(アイコン/自己紹介/戦績表示など)は着手前に決める。オンライン同期を伴う項目はトキヤ氏と調整
 3. **フレンド機能の強化**:フレンド一覧・招待まわりの使い勝手を上げる。Firestoreのデータ構造に触る変更はトキヤ氏と調整
 4. **広告の表示**:表示場所と頻度を先に決める。SDK追加で `project.yml` を触るため事前宣言が必要。プライバシーポリシーとApp Storeのデータ収集申告の更新も伴う(要件定義書の「v1.0は課金なし」方針との整合も確認する)
-5. **英単語のボリューム拡充**:`junior_high.json` / `high_school.json` へ、たける・トキヤが直接入力する。現200語はテストデータなので順次刷新し、各カテゴリのdifficulty 1〜5を充実させる
+5. **英単語のボリューム拡充**:`junior_high.json` / `high_school.json` / `toeic.json` へ、たける・トキヤが直接入力する。現220語はテストデータなので順次刷新し、各カテゴリのdifficulty 1〜5を充実させる
 6. **対戦結果の保存 →「直近の対戦」表示**:対戦タブに順位・正答数を出す
 7. **習熟度の可視化(v1.1)**:`visibleCount`を `AnswerRecord` へ保存し、学習タブに苦手順の一覧を出す
 8. 実機で音・振動を確認する
@@ -132,8 +133,8 @@
 - 復習リスト:不正解で登録・回数加算、正解すると自動で外れる(「克服したら卒業」方式)
 - ニックネームは `@AppStorage("nickname")` が正。サインイン済みなら `users/{uid}` に自動同期
 - 問題データ更新時は `QuestionSeeder.dataVersion` を上げると次回起動時に再投入される
-- 英単語は**カテゴリと難易度を分離**する。現在のカテゴリは `junior_high` / `high_school` の2つだけで、各カテゴリに `difficulty: 1...5` がある。大学英語は作らず、TOEIC・TOEFL・英検・IELTSは将来必要になった時に別カテゴリとして追加する
-- 正データは `Resources/junior_high.json` / `Resources/high_school.json`。IDは `jh_####` / `hs_####`。同じファイル内の単語重複は禁止し、中学・高校をまたぐ重複は許可する。アプリ内入力ツールは持たずJSONを直接編集する
+- 英単語は**カテゴリと難易度を分離**する。現在のカテゴリは `junior_high` / `high_school` / `toeic` の3つで、各カテゴリに `difficulty: 1...5` がある。大学英語は作らず、TOEFL・英検・IELTSは将来必要になった時に別カテゴリとして追加する
+- 正データは `Resources/junior_high.json` / `Resources/high_school.json` / `Resources/toeic.json`。IDは `jh_####` / `hs_####` / `tc_####`。同じファイル内の単語重複は禁止し、カテゴリをまたぐ重複は許可する。アプリ内入力ツールは持たずJSONを直接編集する
 - カテゴリ・難易度選択は一人練習・CPU対戦・オンライン対戦に対応。オンラインはRTDBの `settings.wordCategory` / `settings.wordDifficulty` で共有し、旧ルームで両方が無い場合だけ全問題を対象にする
 - 対戦中はタブバーを隠し、問題と対戦状況へ集中できる画面にする。試合開始前はCPU・オンライン共通の開始合図を1問目の前だけ表示し、時間は `BattleRules` で管理する
 - バックエンド全般(Firebase/Auth/DB/セキュリティルール/Cloud Functions等)は原則としてTOKIYA-YAMAMOTO氏が担当する。たける側の機能で変更が必要な場合は、独断で実装せず担当間で調整する
