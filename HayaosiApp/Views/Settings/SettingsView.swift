@@ -4,7 +4,7 @@ import SwiftData
 /// 設定(ニックネーム・学習データ管理)。要件 §9-7
 struct SettingsView: View {
     /// 連続入力中に毎回Firestoreへ書き込まないための待ち時間
-    private static let nicknameSyncDelay: TimeInterval = 1.0
+    private static let profileSyncDelay: TimeInterval = 1.0
     /// 自己紹介の最大文字数(将来Firestoreへ同期する際の上限とも一致させる)
     private static let bioMaxLength = 140
 
@@ -15,7 +15,7 @@ struct SettingsView: View {
     @AppStorage(Haptics.enabledKey) private var hapticsEnabled = true
     @Environment(\.modelContext) private var modelContext
     @State private var showDeleteDialog = false
-    @State private var nicknameSyncTask: Task<Void, Never>?
+    @State private var profileSyncTask: Task<Void, Never>?
 
     var body: some View {
         Form {
@@ -30,7 +30,7 @@ struct SettingsView: View {
             } header: {
                 Text("プロフィール")
             } footer: {
-                Text("対戦時に他の参加者へ表示される名前です。アイコン・自己紹介は今のところ自分のマイページにのみ表示されます")
+                Text("名前・アイコン・自己紹介はオンラインプロフィールへ反映されます")
             }
 
             Section {
@@ -53,13 +53,18 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("設定")
-        .onChange(of: nickname) { _, newNickname in
-            scheduleNicknameSync(newNickname)
+        .onChange(of: nickname) { _, _ in
+            scheduleProfileSync()
+        }
+        .onChange(of: profileIcon) { _, _ in
+            scheduleProfileSync()
         }
         .onChange(of: bio) { _, newBio in
             if newBio.count > Self.bioMaxLength {
                 bio = String(newBio.prefix(Self.bioMaxLength))
+                return
             }
+            scheduleProfileSync()
         }
         .confirmationDialog(
             "解答履歴と復習リストをすべて削除しますか?",
@@ -72,13 +77,24 @@ struct SettingsView: View {
         }
     }
 
-    /// オンラインプロフィール(users/{uid})へニックネームを反映する
-    private func scheduleNicknameSync(_ newNickname: String) {
-        nicknameSyncTask?.cancel()
-        nicknameSyncTask = Task {
-            try? await Task.sleep(nanoseconds: UInt64(Self.nicknameSyncDelay * 1_000_000_000))
+    /// オンラインプロフィール(users/{uid})へ連続入力をまとめて反映する
+    private func scheduleProfileSync() {
+        profileSyncTask?.cancel()
+        let latestNickname = nickname
+        let latestIcon = profileIcon
+        let latestBio = bio
+        profileSyncTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: UInt64(Self.profileSyncDelay * 1_000_000_000))
+            } catch {
+                return
+            }
             guard !Task.isCancelled else { return }
-            await AuthService.shared.updateNicknameIfSignedIn(newNickname)
+            await AuthService.shared.updateProfileIfSignedIn(
+                nickname: latestNickname,
+                icon: latestIcon,
+                bio: latestBio
+            )
         }
     }
 

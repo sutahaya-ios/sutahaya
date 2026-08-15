@@ -142,10 +142,12 @@ rooms/{4桁コード}
             reveal { correctAnswer, correctIDs[] }        ← 時間終了時に確定した正解者順 }
 
 Firestore:
-users/{uid} { nickname, friendCode, createdAt }
-  ├─ friends/{friendUid} { nickname, friendCode, addedAt }
+users/{uid} { nickname, friendCode, icon, bio, createdAt }
+  ├─ friends/{friendUid} { nickname, friendCode, icon, bio, addedAt }
   └─ invites/{autoId} { roomCode, fromNickname, createdAt }
 ```
+
+`icon` はアプリ内の絵文字プリセットまたは空文字、`bio` は140文字以内。プロフィール同期対応前に作成済みのフレンド文書には両フィールドが無い場合があるため、フレンド一覧を開いた時に各 `users/{friendUid}` を1回ずつ取得して最新表示へ補完する。常時監視とフレンド文書への書き戻しは行わない。
 
 ## 既知の制約(v1.0スコープ)
 

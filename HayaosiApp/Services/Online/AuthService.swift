@@ -17,11 +17,23 @@ final class AuthService {
     private static let codeLength = 6
     private static let codeAttempts = 5
     private static let signInRetryDelayNanoseconds: UInt64 = 500_000_000
+    private static let profileIconKey = "profileIcon"
+    private static let profileBioKey = "profileBio"
+    private static let bioMaxLength = 140
 
     private init() {}
 
     var nickname: String {
         UserDefaults.standard.string(forKey: "nickname") ?? "ゲスト"
+    }
+
+    private var profileIcon: String {
+        UserDefaults.standard.string(forKey: Self.profileIconKey) ?? ""
+    }
+
+    private var profileBio: String {
+        let value = UserDefaults.standard.string(forKey: Self.profileBioKey) ?? ""
+        return String(value.prefix(Self.bioMaxLength))
     }
 
     /// サインイン済みならそのuidを返し、未サインインなら匿名サインインしてプロフィールを用意する
@@ -58,13 +70,17 @@ final class AuthService {
         return user.uid
     }
 
-    func updateNicknameIfSignedIn(_ newNickname: String) async {
+    func updateProfileIfSignedIn(nickname: String, icon: String, bio: String) async {
         guard let uid else { return }
         do {
             try await Firestore.firestore().collection("users").document(uid)
-                .setData(["nickname": newNickname], merge: true)
+                .setData([
+                    "nickname": nickname,
+                    "icon": icon,
+                    "bio": String(bio.prefix(Self.bioMaxLength))
+                ], merge: true)
         } catch {
-            logFirebaseError(context: "ニックネームの同期", error: error)
+            logFirebaseError(context: "プロフィールの同期", error: error)
         }
     }
 
@@ -120,6 +136,8 @@ final class AuthService {
             batch.setData([
                 "nickname": nickname,
                 "friendCode": code,
+                "icon": profileIcon,
+                "bio": profileBio,
                 "createdAt": FieldValue.serverTimestamp()
             ], forDocument: userDocument)
             batch.setData(["uid": uid], forDocument: codeDocument)
@@ -155,17 +173,17 @@ final class AuthService {
         let indexedUID = codeSnapshot.data()?["uid"] as? String
 
         if indexedUID == uid {
-            // ニックネームは端末側の設定を正として同期する。
-            if userData["nickname"] as? String != nickname {
-                try await userDocument.setData(["nickname": nickname], merge: true)
+            // プロフィール表示値は端末側の設定を正として同期する。
+            if needsProfileUpdate(userData) {
+                try await userDocument.setData(currentProfileFields(), merge: true)
             }
             return existingCode
         }
 
         if !codeSnapshot.exists {
             let batch = db.batch()
-            if userData["nickname"] as? String != nickname {
-                batch.setData(["nickname": nickname], forDocument: userDocument, merge: true)
+            if needsProfileUpdate(userData) {
+                batch.setData(currentProfileFields(), forDocument: userDocument, merge: true)
             }
             batch.setData(["uid": uid], forDocument: codeDocument)
             do {
@@ -204,7 +222,9 @@ final class AuthService {
             let batch = db.batch()
             batch.setData([
                 "nickname": nickname,
-                "friendCode": code
+                "friendCode": code,
+                "icon": profileIcon,
+                "bio": profileBio
             ], forDocument: userDocument, merge: true)
             batch.setData(["uid": uid], forDocument: codeDocument)
             do {
@@ -221,6 +241,20 @@ final class AuthService {
             }
         }
         throw OnlineError.friendCodeGeneration
+    }
+
+    private func currentProfileFields() -> [String: Any] {
+        [
+            "nickname": nickname,
+            "icon": profileIcon,
+            "bio": profileBio
+        ]
+    }
+
+    private func needsProfileUpdate(_ userData: [String: Any]) -> Bool {
+        userData["nickname"] as? String != nickname
+            || userData["icon"] as? String != profileIcon
+            || userData["bio"] as? String != profileBio
     }
 
     private func makeFriendCode() -> String {

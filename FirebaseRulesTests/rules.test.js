@@ -170,6 +170,8 @@ describe("Cloud Firestore rules", () => {
     profileBatch.set(doc(aliceDB, "users", "alice"), {
       nickname: "Alice",
       friendCode: "ALICE1",
+      icon: "📚",
+      bio: "英単語を勉強中",
       createdAt: new Date(),
     });
     profileBatch.set(doc(aliceDB, "friendCodes", "ALICE1"), { uid: "alice" });
@@ -181,6 +183,8 @@ describe("Cloud Firestore rules", () => {
     await assertSucceeds(setDoc(doc(aliceDB, "users", "alice", "friends", friendUID), {
       nickname: profileSnapshot.data().nickname,
       friendCode: "BOB001",
+      icon: profileSnapshot.data().icon ?? "",
+      bio: profileSnapshot.data().bio ?? "",
       addedAt: new Date(),
     }));
     await assertSucceeds(setDoc(doc(aliceDB, "users", friendUID, "invites", "client-flow"), {
@@ -189,6 +193,19 @@ describe("Cloud Firestore rules", () => {
       fromNickname: "Alice",
       createdAt: new Date(),
     }));
+  });
+
+  it("validates profile icons and biography length", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    const db = testEnv.authenticatedContext("alice").firestore();
+    const profile = doc(db, "users", "alice");
+
+    await assertSucceeds(setDoc(profile, {
+      icon: "⭐️",
+      bio: "a".repeat(140),
+    }, { merge: true }));
+    await assertFails(setDoc(profile, { icon: "not-an-icon" }, { merge: true }));
+    await assertFails(setDoc(profile, { bio: "a".repeat(141) }, { merge: true }));
   });
 });
 

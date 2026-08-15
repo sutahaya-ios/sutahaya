@@ -40,6 +40,10 @@ struct FriendsView: View {
         } message: {
             Text("フレンドの追加・削除はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
         }
+        .task(id: friendService.friends.map(\.id)) {
+            guard OnlineService.isConfigured, auth.uid != nil else { return }
+            await friendService.refreshFriendProfiles()
+        }
     }
 
     private func friendContent(friends: [Friend], isPreview: Bool) -> some View {

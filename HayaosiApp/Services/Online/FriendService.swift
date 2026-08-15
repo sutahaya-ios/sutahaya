@@ -78,6 +78,35 @@ final class FriendService {
         invites = []
     }
 
+    /// フレンド一覧を開いた時に users/{friendUid} から最新プロフィールを取得する。
+    /// 常時監視や friends サブコレクションへの書き戻しは行わず、読み取りは表示時の1回に限定する。
+    func refreshFriendProfiles() async {
+        guard let expectedUID = listeningUID, !friends.isEmpty else { return }
+        let friendIDs = friends.map(\.id)
+        var refreshedProfiles: [String: Friend] = [:]
+
+        for friendID in friendIDs {
+            do {
+                let snapshot = try await db.collection("users").document(friendID).getDocument()
+                guard let data = snapshot.data() else { continue }
+                let storedFriend = friends.first { $0.id == friendID }
+                refreshedProfiles[friendID] = Friend(
+                    id: friendID,
+                    nickname: data["nickname"] as? String ?? storedFriend?.nickname ?? "?",
+                    friendCode: data["friendCode"] as? String ?? storedFriend?.friendCode ?? "",
+                    icon: data["icon"] as? String,
+                    bio: data["bio"] as? String
+                )
+            } catch {
+                print("フレンドプロフィールの取得に失敗(\(friendID)): \(error)")
+            }
+        }
+
+        // 取得中にサインイン先が変わった場合、古い結果を新しい一覧へ混ぜない。
+        guard listeningUID == expectedUID else { return }
+        friends = friends.map { refreshedProfiles[$0.id] ?? $0 }
+    }
+
     /// フレンドコードで検索して自分のリストに追加する
     func addFriend(code: String) async throws {
         guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
@@ -102,6 +131,8 @@ final class FriendService {
             .setData([
                 "nickname": profileData["nickname"] as? String ?? "?",
                 "friendCode": normalized,
+                "icon": profileData["icon"] as? String ?? "",
+                "bio": profileData["bio"] as? String ?? "",
                 "addedAt": FieldValue.serverTimestamp()
             ])
     }

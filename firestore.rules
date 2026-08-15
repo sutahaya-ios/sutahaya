@@ -14,12 +14,23 @@ service cloud.firestore {
       return code is string && code.matches('^[A-Z0-9]{6}$');
     }
 
+    function validProfileFields(data) {
+      return data.get('icon', '') is string
+        && data.get('icon', '') in [
+          '', '📚', '✏️', '🎯', '🔥', '⭐️', '🚀', '🐱', '🐶', '🦊', '🐼',
+          '🦁', '🐸', '🍀', '🌟', '⚡️', '🎓', '🧠', '🏆', '🎮', '🍩'
+        ]
+        && data.get('bio', '') is string
+        && data.get('bio', '').size() <= 140;
+    }
+
     function validUserDocument(uid) {
-      return request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'createdAt'])
+      return request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'createdAt', 'icon', 'bio'])
         && request.resource.data.nickname is string
         && request.resource.data.nickname.size() >= 1
         && request.resource.data.nickname.size() <= 30
         && validFriendCode(request.resource.data.friendCode)
+        && validProfileFields(request.resource.data)
         && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == uid;
     }
 
@@ -34,9 +45,10 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
           && friendUid != uid
-          && request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'addedAt', 'icon', 'bio'])
           && request.resource.data.nickname is string
-          && validFriendCode(request.resource.data.friendCode);
+          && validFriendCode(request.resource.data.friendCode)
+          && validProfileFields(request.resource.data);
         allow delete: if isOwner(uid);
       }
 
