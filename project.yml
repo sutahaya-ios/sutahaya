@@ -38,6 +38,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         # ホーム画面に出るアプリ名。ターゲット名・本番Bundle IDは変えない(要件 §10 #1)
         INFOPLIST_KEY_CFBundleDisplayName: スタはや
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
