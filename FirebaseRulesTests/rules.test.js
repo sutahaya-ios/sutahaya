@@ -220,8 +220,12 @@ describe("Realtime Database rules", () => {
         host: { nickname: "Host", score: 0, joinedAt: 1 },
       },
     };
-    await assertFails(set(ref(testEnv.unauthenticatedContext().database(), "rooms/1234"), room));
-    await assertSucceeds(set(ref(testEnv.authenticatedContext("host").database(), "rooms/1234"), room));
+    const unauthenticatedDB = testEnv.unauthenticatedContext().database();
+    const hostDB = testEnv.authenticatedContext("host").database();
+    await assertFails(get(ref(unauthenticatedDB, "rooms/1234")));
+    await assertSucceeds(get(ref(hostDB, "rooms/1234")));
+    await assertFails(set(ref(unauthenticatedDB, "rooms/1234"), room));
+    await assertSucceeds(set(ref(hostDB, "rooms/1234"), room));
     await assertFails(set(ref(testEnv.authenticatedContext("guest").database(), "rooms/5678"), room));
   });
 
@@ -248,6 +252,22 @@ describe("Realtime Database rules", () => {
     await assertSucceeds(remove(ref(guestDB, "rooms/1234/players/newGuest")));
   });
 
+  it("rejects joining after the match starts", async () => {
+    await seedRoom();
+    const lateGuestDB = testEnv.authenticatedContext("lateGuest").database();
+    await assertFails(set(ref(lateGuestDB, "rooms/1234/players/lateGuest"), {
+      nickname: "Late Guest",
+      score: 0,
+      joinedAt: 3,
+    }));
+  });
+
+  it("still lets a participant leave after the match starts", async () => {
+    await seedRoom();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+    await assertSucceeds(remove(ref(guestDB, "rooms/1234/players/guest")));
+  });
+
   it("allows only the host to update game state and scores", async () => {
     await seedRoom();
     const hostDB = testEnv.authenticatedContext("host").database();
@@ -258,5 +278,109 @@ describe("Realtime Database rules", () => {
     }));
     await assertFails(set(ref(guestDB, "rooms/1234/game/phase"), "finished"));
     await assertFails(set(ref(guestDB, "rooms/1234/players/guest/score"), 99));
+  });
+
+  it("allows the client-shaped flow from room creation through a guest answer", async () => {
+    const hostDB = testEnv.authenticatedContext("host").database();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+    const roomRef = ref(hostDB, "rooms/4321");
+
+    await assertSucceeds(get(roomRef));
+    await assertSucceeds(set(roomRef, {
+      hostID: "host",
+      status: "waiting",
+      createdAt: 1,
+      settings: {
+        questionCount: 5,
+        timeLimit: 5,
+        genre: "englishWord",
+        wordCategory: "junior_high",
+        wordDifficulty: 1,
+      },
+      players: {
+        host: { nickname: "Host", score: 0, joinedAt: 1 },
+      },
+    }));
+    await assertSucceeds(get(ref(guestDB, "rooms/4321")));
+    await assertSucceeds(set(ref(guestDB, "rooms/4321/players/guest"), {
+      nickname: "Guest",
+      score: 0,
+      joinedAt: 2,
+    }));
+    await assertSucceeds(update(roomRef, {
+      status: "playing",
+      questions: [{
+        id: "jh_0001",
+        text: "apple",
+        choices: ["りんご", "本", "水", "犬"],
+        answer: "りんご",
+      }],
+      game: {
+        questionIndex: 0,
+        phase: "question",
+        startDelayMS: 0,
+        startedAt: 10,
+      },
+    }));
+    await assertSucceeds(set(ref(guestDB, "rooms/4321/game/answers/guest"), {
+      choice: "りんご",
+      ts: 11,
+      visibleCount: 3,
+    }));
+    await assertSucceeds(update(roomRef, {
+      "players/guest/score": 20,
+      "game/phase": "reveal",
+      "game/reveal": {
+        correctAnswer: "りんご",
+        correctIDs: ["guest"],
+      },
+    }));
+    await assertSucceeds(update(roomRef, {
+      status: "finished",
+      "game/phase": "finished",
+    }));
+  });
+
+  it("lets a participant submit only their first well-formed answer during a question", async () => {
+    await seedRoom();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+    const answer = {
+      choice: "answer",
+      ts: 100,
+      visibleCount: 3,
+    };
+
+    await assertSucceeds(set(ref(guestDB, "rooms/1234/game/answers/guest"), answer));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      choice: "rewritten",
+    }));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/host"), answer));
+  });
+
+  it("rejects answers from outsiders, outside the question phase, and with invalid fields", async () => {
+    await seedRoom();
+    const answer = {
+      choice: "answer",
+      ts: 100,
+      visibleCount: 3,
+    };
+    const outsiderDB = testEnv.authenticatedContext("outsider").database();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+
+    await assertFails(set(ref(outsiderDB, "rooms/1234/game/answers/outsider"), answer));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      visibleCount: -1,
+    }));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      unexpected: true,
+    }));
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await set(ref(context.database(), "rooms/1234/game/phase"), "reveal");
+    });
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), answer));
   });
 });
