@@ -34,6 +34,8 @@ enum OnlineError: LocalizedError {
     case friendNotFound
     case cannotAddSelf
     case alreadyFriend
+    case friendRequestAlreadySent
+    case incomingFriendRequestExists
 
     var errorDescription: String? {
         switch self {
@@ -43,6 +45,8 @@ enum OnlineError: LocalizedError {
         case .friendNotFound: return "このコードのユーザーが見つかりません"
         case .cannotAddSelf: return "自分のコードは追加できません"
         case .alreadyFriend: return "すでにフレンドに追加済みです"
+        case .friendRequestAlreadySent: return "この相手には申請済みです"
+        case .incomingFriendRequestExists: return "この相手から申請が届いています。フレンド画面で承認してください"
         }
     }
 }

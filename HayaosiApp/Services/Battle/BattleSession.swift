@@ -18,11 +18,19 @@ protocol BattleSession: AnyObject, Observable {
     /// 回答する。選択肢を押した瞬間が回答にあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
     func submitAnswer(_ choice: String, visibleCount: Int)
+    /// 通信結果まで必要な画面向け。失敗時にローカルの回答ロックを解除できるよう成否を返す。
+    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void)
     func leave()
     func saveResultsIfNeeded(context: ModelContext)
 }
 
 extension BattleSession {
+    /// CPU対戦など同期的に回答できる実装は、従来の回答処理を呼んだ時点で成功とみなす。
+    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
+        submitAnswer(choice, visibleCount: visibleCount)
+        completion(true)
+    }
+
     var currentQuestion: RoomState.QuestionPayload? {
         guard let state, let game = state.game,
               state.questions.indices.contains(game.questionIndex) else { return nil }

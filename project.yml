@@ -29,13 +29,14 @@ targets:
         product: FirebaseFirestore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.n.HayaosiApp
+        # 共有の既定値は本番Bundle ID。共同開発者はgit管理外のlocal.xcconfigだけで上書きする
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_IDENTIFIER)
         MARKETING_VERSION: "0.9.0"
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
-        # ホーム画面に出るアプリ名。ターゲット名・Bundle IDは変えない(要件 §10 #1)
+        # ホーム画面に出るアプリ名。ターゲット名・本番Bundle IDは変えない(要件 §10 #1)
         INFOPLIST_KEY_CFBundleDisplayName: スタはや
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

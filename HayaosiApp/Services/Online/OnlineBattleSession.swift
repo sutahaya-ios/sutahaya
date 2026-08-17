@@ -190,17 +190,44 @@ final class OnlineBattleSession: BattleSession {
     /// 文字送り型は選択肢を押した瞬間が回答なので、押下時刻(サーバー時刻)と表示文字数を一緒に残す。
     /// 先着はサーバー時刻で決まるため、端末の時計のずれに影響されない
     func submitAnswer(_ choice: String, visibleCount: Int) {
-        guard let game = currentGame, game.phase == .question else { return }
+        submitAnswer(choice, visibleCount: visibleCount) { _ in }
+    }
+
+    /// Firebaseへの保存完了まで通知し、競合やフェーズ切替で拒否された場合は画面の回答ロックを戻す。
+    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
+        guard let game = currentGame, game.phase == .question else {
+            completion(false)
+            return
+        }
         let nowMS = Date().timeIntervalSince1970 * 1_000
         let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
-        guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else { return }
+        guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else {
+            completion(false)
+            return
+        }
 
-        guard canAnswerNow else { return }
-        roomRef.child("game/answers/\(myID)").setValue([
-            "choice": choice,
-            "ts": ServerValue.timestamp(),
-            "visibleCount": visibleCount
-        ])
+        guard canAnswerNow else {
+            completion(false)
+            return
+        }
+        Task { [weak self] in
+            guard let self else {
+                completion(false)
+                return
+            }
+            do {
+                try await roomRef.child("game/answers/\(myID)").setValue([
+                    "choice": choice,
+                    "ts": ServerValue.timestamp(),
+                    "visibleCount": visibleCount
+                ])
+                completion(true)
+            } catch {
+                lastError = "回答を送信できませんでした"
+                print("回答の送信に失敗: \(error)")
+                completion(false)
+            }
+        }
     }
 
     // MARK: - 状態参照ヘルパー

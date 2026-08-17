@@ -16,9 +16,9 @@
 
 ## 変えてはいけないもの
 
-- **リポジトリ名・ターゲット名・Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる)。変えてよいのは表示名「スタはや」だけ
+- **リポジトリ名・ターゲット名・共有設定の本番Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる)。共同開発者の実機検証に限り、git管理外の `Config/local.xcconfig` で開発用Bundle IDへ上書きしてよい。開発用の値を `project.yml` や共有ファイルへcommitしない
 - **`.xcodeproj`**:XcodeGenの生成物で **git管理外**(コンフリクトしない)。手編集しない。ファイル・リソースを増減したら `xcodegen generate`。**`git pull` の後も必要**(忘れるとビルドが落ちる)
-- **`GoogleService-Info.plist` / `Config/local.xcconfig`**:git管理外。`git add` しても無言で無視される。受け渡しはファイルを直接送る(`FIREBASE_SETUP.md` §3)
+- **`GoogleService-Info.plist` / `Config/local.xcconfig`**:git管理外。`git add` しても無言で無視される。各自の実効Bundle IDに対応するFirebase plistと署名設定を置き、相手の値を共有ファイルへ転記しない(`FIREBASE_SETUP.md` §3)
 
 ## Git
 

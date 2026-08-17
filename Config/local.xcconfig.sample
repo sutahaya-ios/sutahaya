@@ -2,3 +2,7 @@
 // チームIDの確認: Xcode → Settings → Accounts → 対象アカウント → チーム名の右側(10桁の英数字)
 // 実機ビルド・実機実行をしない場合(Simulatorだけ)は不要。
 DEVELOPMENT_TEAM = XXXXXXXXXX
+
+// 代表者は下を追加せず、共有の本番Bundle ID(com.n.HayaosiApp)を使う。
+// 共同開発者がPersonal Teamで実機検証する場合だけ、Firebaseへ登録した開発用Bundle IDを指定する。
+// APP_BUNDLE_IDENTIFIER = com.n.HayaosiApp.dev.tokiya

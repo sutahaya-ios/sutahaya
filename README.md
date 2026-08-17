@@ -1,6 +1,6 @@
 # スタはや(リポジトリ名:HayaosiApp)
 
-勉強系早押し対戦iOSアプリ。App Storeでの表示名は「スタはや」、リポジトリ名・ターゲット名・Bundle IDは `HayaosiApp` のままです(変更するとApp Store上で別アプリ扱いになるため)。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) / [CLAUDE.md](CLAUDE.md) / [STATUS.md](STATUS.md) を参照。
+勉強系早押し対戦iOSアプリ。App Storeでの表示名は「スタはや」、リポジトリ名・ターゲット名は `HayaosiApp`、本番Bundle IDは `com.n.HayaosiApp` のままです。共同開発者の実機検証だけ、git管理外のローカル設定で別Bundle IDを使用できます。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) / [CLAUDE.md](CLAUDE.md) / [STATUS.md](STATUS.md) を参照。
 
 ## 前提
 
@@ -29,11 +29,16 @@ open HayaosiApp.xcodeproj
 cp Config/local.xcconfig.sample Config/local.xcconfig
 ```
 
-コピーした `Config/local.xcconfig` の `DEVELOPMENT_TEAM` を自分のチームIDに書き換える(Xcode → Settings → Accounts → チーム名の右の10桁)。このファイルはgit管理外なので、開発者ごとに別の値を持てる。
+コピーした `Config/local.xcconfig` はgit管理外なので、次のように開発者ごとに別の値を持てる。
+
+- **代表者(本番・リリース担当):** `DEVELOPMENT_TEAM = LL98RL72H4` だけを設定する。Bundle IDは共有の既定値 `com.n.HayaosiApp` のまま
+- **共同開発者(Personal Teamで実機検証):** 自分の `DEVELOPMENT_TEAM` に加え、Firebaseへ登録した開発用Bundle IDを `APP_BUNDLE_IDENTIFIER = com.n.HayaosiApp.dev.tokiya` のように設定する
+
+チームIDは Xcode → Settings → Accounts → チーム名の右側(10桁)で確認する。開発用Bundle IDは本番用と別のアプリとして署名されるが、同じFirebaseプロジェクトへ登録すれば2台の通信対戦に同じAuth・Firestore・Realtime Databaseを使用できる。
 
 通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・CPU対戦はオフラインで動作する)。
 
-**このファイルはgit管理外なので `git pull` では降りてきません。** Firebase担当からファイルを直接受け取ってください(理由と手順は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3)。
+**このファイルはgit管理外なので `git pull` では降りてきません。** 各自が実効Bundle IDに一致するplistを配置してください。代表者用と共同開発者用を取り違えるとFirebase初期化に失敗します(理由と手順は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3)。
 
 ## GitHubの認証(初回のみ・pushできない場合)
 

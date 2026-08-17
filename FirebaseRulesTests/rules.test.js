@@ -12,6 +12,7 @@ const {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
   writeBatch,
 } = require("firebase/firestore");
@@ -162,9 +163,10 @@ describe("Cloud Firestore rules", () => {
     await assertSucceeds(deleteDoc(doc(bobDB, "users", "bob", "invites", "allowed")));
   });
 
-  it("allows the client-shaped profile, friend lookup, friend add, and invite flow", async () => {
+  it("allows the client-shaped profile, friend request, mutual acceptance, and invite flow", async () => {
     await seedUser("bob", "BOB001", "Bob");
     const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    const bobDB = testEnv.authenticatedContext("bob").firestore();
 
     const profileBatch = writeBatch(aliceDB);
     profileBatch.set(doc(aliceDB, "users", "alice"), {
@@ -179,20 +181,127 @@ describe("Cloud Firestore rules", () => {
 
     const codeSnapshot = await getDoc(doc(aliceDB, "friendCodes", "BOB001"));
     const friendUID = codeSnapshot.data().uid;
-    const profileSnapshot = await getDoc(doc(aliceDB, "users", friendUID));
-    await assertSucceeds(setDoc(doc(aliceDB, "users", "alice", "friends", friendUID), {
-      nickname: profileSnapshot.data().nickname,
-      friendCode: "BOB001",
-      icon: profileSnapshot.data().icon ?? "",
-      bio: profileSnapshot.data().bio ?? "",
-      addedAt: new Date(),
+    const requestRef = doc(aliceDB, "users", friendUID, "friendRequests", "alice");
+    await assertSucceeds(setDoc(requestRef, {
+      fromUID: "alice",
+      fromNickname: "Alice",
+      fromFriendCode: "ALICE1",
+      createdAt: serverTimestamp(),
     }));
+    await assertSucceeds(getDoc(requestRef));
+    await assertSucceeds(getDocs(collection(bobDB, "users", "bob", "friendRequests")));
+
+    const aliceProfile = (await getDoc(doc(bobDB, "users", "alice"))).data();
+    const bobProfile = (await getDoc(doc(bobDB, "users", "bob"))).data();
+    const acceptance = writeBatch(bobDB);
+    acceptance.set(doc(bobDB, "users", "bob", "friends", "alice"), {
+      nickname: aliceProfile.nickname,
+      friendCode: aliceProfile.friendCode,
+      icon: aliceProfile.icon ?? "",
+      bio: aliceProfile.bio ?? "",
+      addedAt: serverTimestamp(),
+    });
+    acceptance.set(doc(bobDB, "users", "alice", "friends", "bob"), {
+      nickname: bobProfile.nickname,
+      friendCode: bobProfile.friendCode,
+      icon: bobProfile.icon ?? "",
+      bio: bobProfile.bio ?? "",
+      addedAt: serverTimestamp(),
+    });
+    acceptance.delete(doc(bobDB, "users", "bob", "friendRequests", "alice"));
+    await assertSucceeds(acceptance.commit());
+
+    await assertSucceeds(getDoc(doc(aliceDB, "users", "alice", "friends", "bob")));
+    await assertSucceeds(getDoc(doc(bobDB, "users", "bob", "friends", "alice")));
     await assertSucceeds(setDoc(doc(aliceDB, "users", friendUID, "invites", "client-flow"), {
       roomCode: "1234",
       fromUID: "alice",
       fromNickname: "Alice",
       createdAt: new Date(),
     }));
+  });
+
+  it("rejects direct or spoofed friend creation and lets the receiver decline a request", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    await seedUser("bob", "BOB001", "Bob");
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    const bobDB = testEnv.authenticatedContext("bob").firestore();
+
+    await assertFails(setDoc(doc(aliceDB, "users", "alice", "friends", "bob"), {
+      nickname: "Bob",
+      friendCode: "BOB001",
+      icon: "",
+      bio: "",
+      addedAt: serverTimestamp(),
+    }));
+    await assertFails(setDoc(doc(aliceDB, "users", "bob", "friendRequests", "alice"), {
+      fromUID: "alice",
+      fromNickname: "Not Alice",
+      fromFriendCode: "ALICE1",
+      createdAt: serverTimestamp(),
+    }));
+
+    const request = doc(aliceDB, "users", "bob", "friendRequests", "alice");
+    await assertSucceeds(setDoc(request, {
+      fromUID: "alice",
+      fromNickname: "Alice",
+      fromFriendCode: "ALICE1",
+      createdAt: serverTimestamp(),
+    }));
+    await assertFails(deleteDoc(request));
+    await assertSucceeds(deleteDoc(doc(bobDB, "users", "bob", "friendRequests", "alice")));
+  });
+
+  it("removes both sides of a mutual friendship in one batch", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    await seedUser("bob", "BOB001", "Bob");
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      const addedAt = new Date();
+      await setDoc(doc(db, "users", "alice", "friends", "bob"), {
+        nickname: "Bob", friendCode: "BOB001", icon: "", bio: "", addedAt,
+      });
+      await setDoc(doc(db, "users", "bob", "friends", "alice"), {
+        nickname: "Alice", friendCode: "ALICE1", icon: "", bio: "", addedAt,
+      });
+    });
+
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    await assertFails(deleteDoc(doc(aliceDB, "users", "alice", "friends", "bob")));
+    const removal = writeBatch(aliceDB);
+    removal.delete(doc(aliceDB, "users", "alice", "friends", "bob"));
+    removal.delete(doc(aliceDB, "users", "bob", "friends", "alice"));
+    await assertSucceeds(removal.commit());
+  });
+
+  it("upgrades a legacy one-way friendship through request acceptance", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    await seedUser("bob", "BOB001", "Bob");
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "alice", "friends", "bob"), {
+        nickname: "Bob", friendCode: "BOB001", icon: "", bio: "", addedAt: new Date(),
+      });
+    });
+
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    const bobDB = testEnv.authenticatedContext("bob").firestore();
+    await assertSucceeds(getDoc(doc(bobDB, "users", "alice", "friends", "bob")));
+    await assertSucceeds(setDoc(doc(bobDB, "users", "alice", "friendRequests", "bob"), {
+      fromUID: "bob",
+      fromNickname: "Bob",
+      fromFriendCode: "BOB001",
+      createdAt: serverTimestamp(),
+    }));
+
+    const acceptance = writeBatch(aliceDB);
+    acceptance.set(doc(aliceDB, "users", "alice", "friends", "bob"), {
+      nickname: "Bob", friendCode: "BOB001", icon: "", bio: "", addedAt: serverTimestamp(),
+    });
+    acceptance.set(doc(aliceDB, "users", "bob", "friends", "alice"), {
+      nickname: "Alice", friendCode: "ALICE1", icon: "", bio: "", addedAt: serverTimestamp(),
+    });
+    acceptance.delete(doc(aliceDB, "users", "alice", "friendRequests", "bob"));
+    await assertSucceeds(acceptance.commit());
   });
 
   it("validates profile icons and biography length", async () => {

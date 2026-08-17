@@ -4,11 +4,23 @@
 
 対戦画面そのものの動作確認は、Firebaseを待たずに**対戦タブ →「ひとりで(CPU対戦)」**で通しでできる。
 
-## 1. Firebaseプロジェクト作成
+## 1. FirebaseプロジェクトとiOSアプリ
 
-1. https://console.firebase.google.com で新規プロジェクト作成(名前は任意、Analyticsは不要)
-2. iOSアプリを追加:バンドルID **`com.n.HayaosiApp`**
-3. `GoogleService-Info.plist` をダウンロード
+2人とも**既存の同じFirebaseプロジェクト `hayaosiapp`**を使う。Firebaseプロジェクトを分けると、Auth・Firestore・Realtime Databaseも別になり、2台で通信対戦できなくなる。
+
+同じFirebaseプロジェクト内に、実機署名で使うBundle IDごとのiOSアプリを登録する。
+
+| 用途 | Bundle ID | Apple Team |
+|---|---|---|
+| 本番・TestFlight・App Store | `com.n.HayaosiApp` | 代表者の有料Team |
+| 共同開発者の実機検証 | `com.n.HayaosiApp.dev.tokiya`など本番と異なる値 | 共同開発者のPersonal Team |
+
+1. Firebase Consoleでプロジェクト `hayaosiapp` を開く
+2. 本番担当は、既存iOSアプリのBundle IDが `com.n.HayaosiApp` であることを確認する
+3. 共同開発者は プロジェクトの設定 → 全般 → マイアプリ → アプリを追加 → iOS を開き、`Config/local.xcconfig` の `APP_BUNDLE_IDENTIFIER` と**完全に同じ**開発用Bundle IDを登録する
+4. 各iOSアプリから、それぞれに対応する `GoogleService-Info.plist` をダウンロードする
+
+Bundle IDが異なっても、同じFirebaseプロジェクト内のiOSアプリなら、既存の匿名認証・Firestore・Realtime Databaseと公開済みセキュリティルールを共有できる。
 
 ## 2. 機能の有効化(コンソール)
 
@@ -22,82 +34,38 @@
 
 **注意:** Realtime Database を作成した**後に** plist をダウンロードし直すこと(`DATABASE_URL` が含まれている必要がある。無い場合はアプリの対戦タブ(オンライン)に「Realtime Databaseの設定が見つかりません」と表示される)。
 
-## 3. plistの受け渡しと配置
+## 3. plistの管理と配置
 
 > ⚠️ **`GoogleService-Info.plist` は git では渡せません。**
 > `.gitignore` に入れているため、`git add` すると `The following paths are ignored by one of your .gitignore files` となってステージに乗らず、そのままコミットしても「変更なし」で終わります。
 > **赤いエラーが出ないので「コミットできない/pushできない」と誤解しやすい箇所です。** 環境や権限の問題ではありません。
 
-受け渡しは**ファイルを直接送る**(Slack・LINE・メール・AirDropなど何でもよい):
+各開発者は、自分の実効Bundle IDに対応するplistを使う。本番用と開発用は同じファイルではない。
 
-1. Firebase担当が plist をダウンロードする(**Realtime Databaseを作成した後に**。`DATABASE_URL` が必要)
-2. アプリ担当へファイルとして送る
-3. 受け取った側が下記に配置して `xcodegen generate` を実行する
+1. Firebase Consoleで自分が使うBundle IDのiOSアプリを開く
+2. plistをダウンロードする(**Realtime Database作成後**のものを使い、`DATABASE_URL` が含まれることを確認する)
+3. 下記へ `GoogleService-Info.plist` という名前で配置して `xcodegen generate` を実行する
 
 ```
 HayaosiApp/Resources/GoogleService-Info.plist
 ```
 
-リポジトリで管理する運用に変えたい場合は `.gitignore` から外す必要がある。plistの中身はアプリに埋め込まれて配布されるクライアント識別子であり秘密情報ではないため技術的には可能だが、**git履歴に永久に残る**ため、開発用と本番用でFirebaseプロジェクトを分けるときに厄介になる。方針の変更は人間が判断する。
+配置後、plist内の `BUNDLE_ID` が `Config/local.xcconfig` で指定した開発用Bundle ID、または共有既定値の本番Bundle IDと一致することを確認する。不一致のまま実行するとFirebase初期化や通信機能が失敗する。
+
+リポジトリで管理する運用に変えたい場合は `.gitignore` から外す必要がある。plistの中身はアプリに埋め込まれて配布されるクライアント識別子であり秘密情報ではないため技術的には可能だが、**本番用と開発用をGit経由で上書きし合う**ため、現在は管理外を維持する。
 
 ## 4. セキュリティルール
 
-> ⚠️ **以下は「開発中に動かすための暫定ルール」であり、リリースブロッカーです。**
-> 認証済みなら誰でも読み書きできるため、現状は**他人のルームのスコアを書き換えられる**。
-> v1.0公開前に §4-1 の強化を必ず終えること(担当:TOKIYA-YAMAMOTO氏。`STATUS.md` の「次のタスク」2番)。
+本格ルールは2026年8月17日にFirestore・Realtime Databaseの本番環境へ公開済み。暫定の「認証済みなら全ルームを読み書き可」ルールへ戻さない。
 
-### Realtime Database(ルール タブに貼り付け)
+Bundle IDごとにFirebase iOSアプリを追加しても、セキュリティルールは同じFirebaseプロジェクト内で共有される。共同開発者用iOSアプリの追加だけを理由に、ルールを再作成・緩和・再公開する必要はない。
 
-```json
-{
-  "rules": {
-    "rooms": {
-      "$roomId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
-    }
-  }
-}
-```
-
-### Firestore(ルール タブに貼り付け)
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
-      match /friends/{friendUid} {
-        allow read, write: if request.auth.uid == uid;
-      }
-      match /invites/{inviteId} {
-        allow read, delete: if request.auth.uid == uid;
-        allow create: if request.auth != null;
-      }
-    }
-  }
-}
-```
-
-### 4-1. リリース前に必要な強化(未着手)
-
-| # | 対象 | 現状の問題 | 対応案 |
-|---|---|---|---|
-| 1 | `rooms/{roomId}`(RTDB) | 認証済みなら誰でも書ける。他人の試合のスコア・進行を書き換え可能 | `players` に自分のuidがある人だけ書き込み可にする。`players/{uid}` は本人のみ、`game` はホストのみ |
-| 2 | `users/{uid}`(Firestore) | **フレンドコード検索を `users` コレクションへのクエリで実装しているため `list` を許可せざるを得ず、全ユーザーのニックネームとフレンドコードが列挙できる** | `friendCodes/{code} → { uid }` の逆引きコレクションを作り、検索はそこを1件 `get` する方式へ変更。`users` は `get` のみ許可し `list` を禁止する。副産物としてフレンドコードの一意性もトランザクションで保証できる(現状は同時生成で理論上重複しうる) |
-| 3 | `users/{uid}/invites` | 認証済みなら誰にでも招待を作れる(スパム招待が可能) | 送信元がフレンド関係にあることを条件に加える、または招待にレート制限を入れる |
-
-※ #2 はアプリ側(`AuthService` / `FriendService`)の変更も伴うため、着手前に `STATUS.md` の「作業中宣言」で調整すること。
-
-### 4-2. ルールファイルとローカル自動テスト
+### 4-1. ルールファイルとローカル自動テスト
 
 本格ルールの目標仕様は、リポジトリ内の次のファイルで管理する。
 
 - `database.rules.json`: Realtime Database。待機中の部屋は参加前のコード確認を許可し、対戦開始後は参加者だけが読める。ゲーム進行と得点はホストだけが更新できる
-- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、招待は送信者が登録済みフレンドへ送る場合だけ許可する
+- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、フレンド申請の承認時だけ双方のフレンド文書を同時作成できる。ルーム招待は送信者が登録済みフレンドへ送る場合だけ許可する
 - `firebase.json`: 上記ルールとLocal Emulator Suiteの設定
 - `FirebaseRulesTests/rules.test.js`: 許可する操作と拒否する操作の自動テスト
 
@@ -115,7 +83,7 @@ npm install
 npm run test:firebase-rules
 ```
 
-> ⚠️ `firestore.rules` は `friendCodes/{code}` と招待の `fromUID` を前提にしている。`AuthService` / `FriendService` の対応と実機確認が完了するまで、Firebase Consoleへ公開しないこと。
+`firestore.rules` は `friendCodes/{code}` と招待の `fromUID`、`database.rules.json` は現在の回答・得点更新経路を前提にしている。ルール変更時はアプリ側の通信経路と不整合がないか確認し、Local Emulatorの全テストを通す。
 
 本番公開は外部状態を変更するため、差分・テスト結果・Swift側の対応を確認し、担当者の明示的な許可を得た後にだけ行う。公開対象を限定するコマンドは `firebase deploy --only firestore:rules,database`。
 
@@ -144,10 +112,13 @@ rooms/{4桁コード}
 Firestore:
 users/{uid} { nickname, friendCode, icon, bio, createdAt }
   ├─ friends/{friendUid} { nickname, friendCode, icon, bio, addedAt }
+  ├─ friendRequests/{senderUid} { fromUID, fromNickname, fromFriendCode, createdAt }
   └─ invites/{autoId} { roomCode, fromNickname, createdAt }
 ```
 
 `icon` はアプリ内の絵文字プリセットまたは空文字、`bio` は140文字以内。プロフィール同期対応前に作成済みのフレンド文書には両フィールドが無い場合があるため、フレンド一覧を開いた時に各 `users/{friendUid}` を1回ずつ取得して最新表示へ補完する。常時監視とフレンド文書への書き戻しは行わない。
+
+フレンドコード入力時は相手の `friendRequests/{自分のuid}` へ申請だけを作成する。受信者が承認すると、Firestoreのバッチ処理で双方の `friends` を作成して申請を削除する。拒否時は申請だけを削除し、フレンド文書は作らない。
 
 ## 既知の制約(v1.0スコープ)
 

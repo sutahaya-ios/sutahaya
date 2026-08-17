@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// フレンドコード入力でフレンドを追加するシート
+/// フレンドコード入力でフレンド申請を送るシート
 struct AddFriendSheet: View {
     private static let codeLength = 6
 
@@ -29,13 +29,13 @@ struct AddFriendSheet: View {
                 }
 
                 Section {
-                    Button(isWorking ? "追加中…" : "追加する") {
+                    Button(isWorking ? "申請中…" : "申請する") {
                         Task { await add() }
                     }
                     .disabled(code.count != Self.codeLength || isWorking)
                 }
             }
-            .navigationTitle("フレンドを追加")
+            .navigationTitle("フレンド申請")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -51,7 +51,7 @@ struct AddFriendSheet: View {
         errorMessage = nil
         defer { isWorking = false }
         do {
-            try await FriendService.shared.addFriend(code: code)
+            try await FriendService.shared.sendFriendRequest(code: code)
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

@@ -3,10 +3,14 @@ import SwiftUI
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct BattleView: View {
     private static let tickInterval: TimeInterval = 0.1
+    private static let wrongFeedbackDuration: TimeInterval = 1.2
 
     let session: any BattleSession
 
-    @State private var submittedChoice: String?
+    @State private var pendingAnswer: PendingAnswer?
+    @State private var answerErrorMessage: String?
+    @State private var wrongFeedbackQuestionIndex: Int?
+    @State private var wrongFeedbackTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -40,12 +44,30 @@ struct BattleView: View {
         .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
         .animation(BattleAnimation.reveal, value: session.state?.game?.questionIndex)
-        .onChange(of: session.state?.game?.questionIndex) { _, _ in
-            submittedChoice = nil
+        .overlay {
+            if wrongFeedbackQuestionIndex == session.state?.game?.questionIndex {
+                WrongAnswerFeedback()
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
         }
-        .onChange(of: session.state?.game?.failedIDs.count) { oldCount, newCount in
-            if let oldCount, let newCount, newCount > oldCount {
+        .onChange(of: questionKey) { _, _ in
+            pendingAnswer = nil
+            answerErrorMessage = nil
+        }
+        .onChange(of: failedIDs) { oldIDs, newIDs in
+            if !newIDs.subtracting(oldIDs).isEmpty {
                 SoundPlayer.shared.play(.wrong)
+            }
+            if !oldIDs.contains(session.myID), newIDs.contains(session.myID),
+               let questionIndex = session.state?.game?.questionIndex {
+                pendingAnswer = nil
+                showWrongFeedback(for: questionIndex)
+            }
+        }
+        .onChange(of: myAnswerChoice) { _, newChoice in
+            if newChoice != nil {
+                pendingAnswer = nil
+                answerErrorMessage = nil
             }
         }
         // 正解も回答した時点で鳴らす。発表まで待たせると手応えが遅れて伝わるため
@@ -59,6 +81,9 @@ struct BattleView: View {
             if let newReveal, newReveal.correctIDs.isEmpty {
                 SoundPlayer.shared.play(.timeUp)
             }
+        }
+        .onDisappear {
+            wrongFeedbackTask?.cancel()
         }
     }
 
@@ -83,6 +108,16 @@ struct BattleView: View {
     /// 誤答済みのプレイヤー。発表中も残して、その問題の結果を確認できるようにする
     private var failedIDs: Set<String> {
         session.state?.game?.failedIDs ?? []
+    }
+
+    private var questionKey: QuestionKey? {
+        guard let game = session.state?.game else { return nil }
+        return QuestionKey(index: game.questionIndex, startedAtMS: game.effectiveStartedAtMS)
+    }
+
+    private var myAnswerChoice: String? {
+        guard let game = session.state?.game else { return nil }
+        return myAnswer(in: game)?.choice
     }
 
     /// 正解者。出題中も、届いた回答から確定したぶんはその場で見せる
@@ -125,7 +160,11 @@ struct BattleView: View {
     /// 文字送り型の操作エリア。4択は最初から出ていて、押した瞬間が回答になる
     private func progressiveChoiceArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
         VStack(spacing: 10) {
-            if game.failedIDs.contains(session.myID) {
+            if let answerErrorMessage {
+                Label(answerErrorMessage, systemImage: "wifi.exclamationmark")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.red)
+            } else if game.failedIDs.contains(session.myID) {
                 Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(.red)
@@ -133,16 +172,33 @@ struct BattleView: View {
                 Label("回答しました(\(mine.visibleCount)文字目)", systemImage: "checkmark.circle")
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
+            } else if pendingAnswer?.questionIndex == game.questionIndex {
+                Label("回答を送信中…", systemImage: "arrow.up.circle")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.orange)
             }
 
             BattleChoiceList(
                 choices: question.choices,
-                myChoice: myAnswer(in: game)?.choice ?? submittedChoice,
-                canAnswer: session.canAnswerNow && submittedChoice == nil
+                myChoice: myAnswer(in: game)?.choice ?? pendingAnswer?.choice,
+                canAnswer: session.canAnswerNow && pendingAnswer == nil
             ) { choice in
                 Haptics.impact(.heavy)
-                submittedChoice = choice
-                session.submitAnswer(choice, visibleCount: session.visibleCharacterCount(at: .now))
+                let pending = PendingAnswer(questionIndex: game.questionIndex, choice: choice)
+                pendingAnswer = pending
+                answerErrorMessage = nil
+                session.submitAnswer(
+                    choice,
+                    visibleCount: session.visibleCharacterCount(at: .now)
+                ) { succeeded in
+                    guard pendingAnswer == pending else { return }
+                    if !succeeded {
+                        pendingAnswer = nil
+                        if questionKey?.index == pending.questionIndex {
+                            answerErrorMessage = "回答を送信できませんでした。もう一度お試しください"
+                        }
+                    }
+                }
             }
         }
     }
@@ -155,4 +211,41 @@ struct BattleView: View {
         session.player(for: playerID)?.nickname
     }
 
+    private func showWrongFeedback(for questionIndex: Int) {
+        wrongFeedbackTask?.cancel()
+        withAnimation(BattleAnimation.reveal) {
+            wrongFeedbackQuestionIndex = questionIndex
+        }
+        wrongFeedbackTask = Task {
+            try? await Task.sleep(for: .seconds(Self.wrongFeedbackDuration))
+            guard !Task.isCancelled else { return }
+            withAnimation(BattleAnimation.reveal) {
+                wrongFeedbackQuestionIndex = nil
+            }
+        }
+    }
+
+}
+
+private struct PendingAnswer: Equatable {
+    let questionIndex: Int
+    let choice: String
+}
+
+private struct QuestionKey: Equatable {
+    let index: Int
+    let startedAtMS: Double
+}
+
+private struct WrongAnswerFeedback: View {
+    var body: some View {
+        Label("不正解", systemImage: "xmark.circle.fill")
+            .font(.title.bold())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 18)
+            .background(.red.gradient, in: RoundedRectangle(cornerRadius: 18))
+            .shadow(radius: 8)
+            .accessibilityLabel("不正解")
+    }
 }

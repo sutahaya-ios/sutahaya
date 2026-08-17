@@ -24,6 +24,33 @@ service cloud.firestore {
         && data.get('bio', '').size() <= 140;
     }
 
+    function validFriendDocument(friendUid, data) {
+      return data.keys().hasOnly(['nickname', 'friendCode', 'addedAt', 'icon', 'bio'])
+        && data.nickname == get(/databases/$(database)/documents/users/$(friendUid)).data.nickname
+        && data.friendCode == get(/databases/$(database)/documents/users/$(friendUid)).data.friendCode
+        && data.get('icon', '') == get(/databases/$(database)/documents/users/$(friendUid)).data.get('icon', '')
+        && data.get('bio', '') == get(/databases/$(database)/documents/users/$(friendUid)).data.get('bio', '')
+        && data.addedAt is timestamp
+        && validFriendCode(data.friendCode)
+        && validProfileFields(data);
+    }
+
+    function acceptsFriendRequest(receiverUid, senderUid) {
+      return signedIn()
+        && request.auth.uid == receiverUid
+        && exists(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(senderUid))
+        && !existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(senderUid))
+        && existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friends/$(senderUid))
+        && existsAfter(/databases/$(database)/documents/users/$(senderUid)/friends/$(receiverUid));
+    }
+
+    function removesMutualFriend(removerUid, otherUid) {
+      return signedIn()
+        && request.auth.uid == removerUid
+        && !existsAfter(/databases/$(database)/documents/users/$(removerUid)/friends/$(otherUid))
+        && !existsAfter(/databases/$(database)/documents/users/$(otherUid)/friends/$(removerUid));
+    }
+
     function validUserDocument(uid) {
       return request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'createdAt', 'icon', 'bio'])
         && request.resource.data.nickname is string
@@ -42,14 +69,39 @@ service cloud.firestore {
         && !existsAfter(/databases/$(database)/documents/friendCodes/$(resource.data.friendCode));
 
       match /friends/{friendUid} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow get: if isOwner(uid) || (signedIn() && request.auth.uid == friendUid);
+        allow list: if isOwner(uid);
+        allow create, update: if signedIn()
           && friendUid != uid
-          && request.resource.data.keys().hasOnly(['nickname', 'friendCode', 'addedAt', 'icon', 'bio'])
-          && request.resource.data.nickname is string
-          && validFriendCode(request.resource.data.friendCode)
-          && validProfileFields(request.resource.data);
+          && validFriendDocument(friendUid, request.resource.data)
+          && (acceptsFriendRequest(uid, friendUid) || acceptsFriendRequest(friendUid, uid));
+        allow delete: if (isOwner(uid)
+            && (!exists(/databases/$(database)/documents/users/$(friendUid)/friends/$(uid))
+              || removesMutualFriend(uid, friendUid)))
+          || (signedIn() && request.auth.uid == friendUid && removesMutualFriend(friendUid, uid));
+      }
+
+      match /friendRequests/{senderUid} {
+        allow get: if isOwner(uid) || (signedIn() && request.auth.uid == senderUid);
+        allow list: if isOwner(uid);
+        allow create: if signedIn()
+          && request.auth.uid == senderUid
+          && uid != senderUid
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && request.resource.data.keys().hasOnly([
+            'fromUID', 'fromNickname', 'fromFriendCode', 'createdAt'
+          ])
+          && request.resource.data.fromUID == senderUid
+          && request.resource.data.fromNickname
+            == get(/databases/$(database)/documents/users/$(senderUid)).data.nickname
+          && request.resource.data.fromFriendCode
+            == get(/databases/$(database)/documents/users/$(senderUid)).data.friendCode
+          && request.resource.data.createdAt == request.time
+          && (!exists(/databases/$(database)/documents/users/$(uid)/friends/$(senderUid))
+            || !exists(/databases/$(database)/documents/users/$(senderUid)/friends/$(uid)))
+          && !exists(/databases/$(database)/documents/users/$(senderUid)/friendRequests/$(uid));
         allow delete: if isOwner(uid);
+        allow update: if false;
       }
 
       match /invites/{inviteId} {

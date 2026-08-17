@@ -9,3 +9,10 @@ struct Friend: Identifiable, Equatable {
     var icon: String? = nil
     var bio: String? = nil
 }
+
+/// 受信したフレンド申請(users/{uid}/friendRequests/{senderUid})
+struct FriendRequest: Identifiable, Equatable {
+    let id: String       // 申請者のuid
+    let nickname: String
+    let friendCode: String
+}

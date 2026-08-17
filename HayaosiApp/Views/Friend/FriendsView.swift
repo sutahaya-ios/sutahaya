@@ -11,6 +11,8 @@ struct FriendsView: View {
     @State private var showAddSheet = false
     @State private var showPreviewAlert = false
     @State private var signInFailed = false
+    @State private var processingRequestIDs: Set<String> = []
+    @State private var requestErrorMessage: String?
 
     private var auth: AuthService { .shared }
     private var friendService: FriendService { .shared }
@@ -40,6 +42,11 @@ struct FriendsView: View {
         } message: {
             Text("フレンドの追加・削除はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
         }
+        .alert("フレンド申請を処理できませんでした", isPresented: requestErrorIsPresented) {
+            Button("閉じる", role: .cancel) {}
+        } message: {
+            Text(requestErrorMessage ?? "通信環境を確認して、もう一度お試しください")
+        }
         .task(id: friendService.friends.map(\.id)) {
             guard OnlineService.isConfigured, auth.uid != nil else { return }
             await friendService.refreshFriendProfiles()
@@ -51,6 +58,8 @@ struct FriendsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 if isPreview {
                     OnlinePreviewBanner()
+                } else if !friendService.friendRequests.isEmpty {
+                    friendRequestList
                 }
 
                 friendGrid(friends: friends, isPreview: isPreview)
@@ -81,9 +90,49 @@ struct FriendsView: View {
                 addTile(isPreview: isPreview)
             }
 
-            Text("フレンドは片方向です(追加した相手が自分のリストに表示されます)。削除は長押しから。")
+            Text("フレンド申請は相手の承認後に双方のリストへ表示されます。削除は長押しから。")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var friendRequestList: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("届いた申請(\(friendService.friendRequests.count))")
+                .font(.headline)
+
+            ForEach(friendService.friendRequests) { request in
+                FriendRequestRow(
+                    request: request,
+                    isWorking: processingRequestIDs.contains(request.id),
+                    onAccept: { process(request, accept: true) },
+                    onDecline: { process(request, accept: false) }
+                )
+            }
+        }
+    }
+
+    private var requestErrorIsPresented: Binding<Bool> {
+        Binding(
+            get: { requestErrorMessage != nil },
+            set: { if !$0 { requestErrorMessage = nil } }
+        )
+    }
+
+    private func process(_ request: FriendRequest, accept: Bool) {
+        guard !processingRequestIDs.contains(request.id) else { return }
+        processingRequestIDs.insert(request.id)
+        Task {
+            defer { processingRequestIDs.remove(request.id) }
+            do {
+                if accept {
+                    try await friendService.acceptFriendRequest(request)
+                } else {
+                    try await friendService.declineFriendRequest(request)
+                }
+            } catch {
+                requestErrorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -130,6 +179,41 @@ struct FriendsView: View {
             print("サインインに失敗: \(error)")
             signInFailed = true
         }
+    }
+}
+
+private struct FriendRequestRow: View {
+    let request: FriendRequest
+    let isWorking: Bool
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            AvatarCircle(
+                name: request.nickname,
+                icon: ProfileIcon.none,
+                size: 44,
+                color: AvatarCircle.stableColor(for: request.id)
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(request.nickname)
+                    .font(.subheadline.bold())
+                    .lineLimit(1)
+                Text(request.friendCode)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("拒否", role: .destructive, action: onDecline)
+                .buttonStyle(.borderless)
+            Button("承認", action: onAccept)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+        .disabled(isWorking)
+        .opacity(isWorking ? 0.6 : 1)
     }
 }
 

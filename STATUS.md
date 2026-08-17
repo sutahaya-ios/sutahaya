@@ -27,7 +27,6 @@
 | スクリーンショット | 未着手 |
 | App Store URL | 未確定。確定したら `Services/AppLinks.swift` の `appStoreURL` に設定(招待文面に自動で載る) |
 | Apple Developer Program | 有効(チーム `LL98RL72H4`) |
-
 ---
 
 ## 担当分担(2026年8月8日 変更)
@@ -46,6 +45,7 @@
 ---
 ## 最新更新(2026年8月17日)
 
+- TOKIYA-YAMAMOTO(Codex): **フレンド申請・同時誤答・回答送信失敗を改善**。フレンドは申請を相手が承認すると双方へ原子的に登録し、拒否・相互削除・既存の片方向フレンドからの移行に対応。回答送信失敗時は端末側の回答済み状態を解除して再送可能にし、次の問題まで回答不能になる状態を防止。同時に近い誤答でも本人の不正解表示を一定時間維持する。Swiftテスト全70件、Local EmulatorのFirestore/RTDB Rulesテスト全20件に成功し、2026年8月17日に本番Firestoreルールを公開。**新方式の実機2台確認は未実施**
 - TOKIYA-YAMAMOTO(Codex): **RTDB本格ルールと実装済み通信経路の不整合を修正**。未使用ルームコードの確認読み取り、待機中の本人入室、対戦中の本人退出、参加者本人の初回回答、ホストの進行・得点更新を許可し、対戦開始後の途中参加、他人の回答、再回答、部外者、回答フェーズ外、不正な回答形式を拒否。ルーム作成→ゲスト入室→開始→回答→採点→終了を含むLocal EmulatorのRulesテスト全17件成功。2026年8月17日に本番RTDBルールを公開し、Firebase Console再読込後も修正版3条件の反映を確認。**実機2台は未検証**
 - TOKIYA-YAMAMOTO(Codex): **プロフィールのicon・bioをFirestoreへ同期**。`users/{uid}`への保存と新規フレンド文書へのコピーに対応し、ルールでアイコンをプリセット20種または空文字、自己紹介を140文字以内に制限。既存フレンドも一覧表示時に各プロフィールを1回取得して最新表示へ補完
   - Local EmulatorのRulesテスト12件、Swiftテスト70件、Simulator向けビルドに成功。2026年8月17日にFirestore本番ルールを公開し、iPhone 17 Pro Simulatorで6桁コード取得、`users/{uid}`のnickname・friendCode・icon・bio更新、`friendCodes/{code}`索引、空のフレンド一覧表示を実在Firebaseで確認。**実機2台・通信対戦は未検証**
@@ -66,7 +66,8 @@
   - フレンド側は`Friend`モデル・`FriendService`に`icon`/`bio`の**読み取り**だけ先行対応(`firestore.rules`が書き込みを許可するまでは常にnil)
   - **トキヤ氏への依頼**:`firestore.rules`の`validUserDocument`に`icon`(絵文字1文字)・`bio`(140字以内)を追加してほしい。入り次第`AuthService`に書き込みを追加してフレンド同期を有効化する
   - 検証:ビルド成功・テスト59件パス。Simulatorでアイコン選択・自己紹介入力・マイページへの反映を確認
-- Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team(atokiya@icloud.com)側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(LL98RL72H4)での実機ビルドは引き続き不可
+- TOKIYA-YAMAMOTO(Codex): **本番設定を維持した開発者別Bundle ID・Signing・Firebase構成へ更新**。共有既定値は本番Bundle ID `com.n.HayaosiApp`、共同開発者はgit管理外の`Config/local.xcconfig`だけでPersonal Teamと開発用Bundle IDを上書きする。2つのiOSアプリは同じFirebaseプロジェクトを共有し、各自が実効Bundle IDに一致するgit管理外のplistを使用する。Firebaseプロジェクト`hayaosiapp`へ開発用iOSアプリ`com.n.HayaosiApp.dev.tokiya`を登録し、対応plistとPersonal Teamをローカルへ設定。XcodeGen生成、実効Bundle ID・Teamの確認、Simulatorビルド、Personal Teamでの実機署名・iPhoneへのインストール・起動に成功。**実機上のFirebase疎通と実機2台通信は未検証**。本番Bundle ID・本番Firebaseルール・既存データは変更していない
+- Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team(atokiya@icloud.com)側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(LL98RL72H4)での実機ビルドは引き続き不可。**これは当時の記録であり、現在は上記の開発者別Bundle ID方式へ移行**
 - Claude(たける側): **効果音の実音源への差し替え**。正解・不正解・時間切れ・出題の4種を配布素材へ差し替え、決定ボタン音を新規追加(`se_button.wav`)。詳細は下記Codexの実装記録と合わせて参照
   - `se_correct.wav`/`se_wrong.wav`:「Quiz-Ding_Dong02」「Quiz-Buzzer02」シリーズより選定
   - `se_timeup.wav`:「Countdown06」よりカウントダウン末尾のブザー部分のみ切り出し(頭のカウント部分は発表タイミングと合わないため不使用)
@@ -74,7 +75,6 @@
   - `se_question.wav`も「Quiz-Question01」へ差し替え済みだが、**Codex実装で出題音の発火自体が削除されたため現在未使用**(たけるの判断でこの方針を採用。ファイルは将来の再利用に備えて残置)
   - 各素材のライセンス(商用利用・クレジット表記の要否)は**たけるが配布元で確認済み**
   - 検証:ビルド成功・テスト59件パス。**音の聴取確認とSimulator通し操作はこの環境では未検証**
-
 - Codex(たける側): **画面遷移・決定操作に決定音を追加**
   - `SoundPlayer.Effect` に `se_button` を追加。見た目を変えない共通の `SoundButtonStyle` を新設し、「ひとりで」「オンライン」、ルーム作成/参加、練習開始、ロビー開始など指定の画面遷移・決定操作だけへ適用。戻る・閉じる・トグル・招待など対象外には適用していない
   - 出題音は対戦・一人練習の両方から削除し、対戦中の4択は触覚フィードバックだけを残して回答タップ音を削除。既存の効果音ON/OFF設定に従う
@@ -139,12 +139,12 @@
 - バックエンド全般(Firebase/Auth/DB/セキュリティルール/Cloud Functions等)は原則としてTOKIYA-YAMAMOTO氏が担当する。たける側の機能で変更が必要な場合は、独断で実装せず担当間で調整する
 - 通信対戦の進行権威はホスト端末(v1.0)。Cloud Functions採点はv1.5で検討
 - 対戦の出題はホストが端末内の問題からシャッフルしてRTDBに配信(全員同じ選択肢順)
-- フレンドは片方向フォロー方式(相互承認なし)。招待は相手の `invites` サブコレクションに書き込む
+- フレンドは申請を相手が承認した時に双方へ登録する相互承認方式。申請は相手の `friendRequests`、ルーム招待は相手の `invites` サブコレクションに書き込む
 - 対戦ルール定数は `Services/Battle/BattleRules.swift`、文字送りの間隔は `ProgressiveReveal.characterInterval` が唯一の出典(ドキュメントに数値を書かない)
 - **対戦は文字送り型のみ**:問題文を1文字ずつ表示し、4択は全員に最初から見せる。選択肢タップが回答となる。正解者内の回答時刻順で+20/+10/+5/4位以降+1、不正解−10、無回答0
 - **得点は回答のたびに、その時点で確定したぶんを反映する**(発表まで待たせない)。毎回ゼロから計算し直して問題開始時の得点へ置き直すので二重加算しない。発表へ進むのは「制限時間切れ」か「回答しうる全員が答え終えた」時。CPU対戦では参加を見送ったCPUを待ち対象に含めない
 - 文字送りの表示量は経過時間だけから計算する(`ProgressiveReveal`)。端末間で表示を同期する通信は持たない。全文表示になるのは発表時
 - 回答時に「選択肢・時刻・表示文字数(`visibleCount`)」を記録する。学習履歴への保存はタスク6で対応予定
-- 署名(`DEVELOPMENT_TEAM`)は `project.yml` に書かず `Config/local.xcconfig`(git管理外)で各自が指定する
+- 共有設定の本番Bundle IDは `com.n.HayaosiApp`。署名(`DEVELOPMENT_TEAM`)と共同開発者用Bundle ID(`APP_BUNDLE_IDENTIFIER`)は `Config/local.xcconfig`(git管理外)で各自が指定し、本番設定を上書きしてcommitしない
 - テストはロジックのみ(`Tests/`)。通信層はユニットテスト対象外にし、実機の通し確認で担保する
 - 文書の役割:要件定義書=スコープと意図の正 / 本節=実装詳細の正 / `STATUS_ARCHIVE.md`=完了した過去記録
