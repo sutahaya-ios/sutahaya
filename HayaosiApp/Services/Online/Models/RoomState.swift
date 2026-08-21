@@ -38,6 +38,8 @@ struct RoomState {
     /// 文字送り型の回答1件。選択肢を押した瞬間を記録する(要件 §5.1.2)
     struct Answer: Equatable {
         let uid: String
+        /// 回答した問題番号。遅れて届いた前問の回答を次問へ混ぜないために使う
+        let questionIndex: Int
         let choice: String
         /// 押した時刻(サーバータイムスタンプ・ms)。先着はこの値で決まる
         let answeredAtMS: Double
@@ -174,13 +176,20 @@ struct RoomState {
               let phaseRaw = dict["phase"] as? String,
               let phase = GamePhase(rawValue: phaseRaw) else { return nil }
 
-        let failed = Set((dict["failed"] as? [String: Any] ?? [:]).keys)
+        // お手付きにも問題番号を持たせる。前問の遅延書き込みがクリア後に届いても、
+        // 現在の問題番号と違えば回答不能にはしない。
+        let failed = Set((dict["failed"] as? [String: [String: Any]] ?? [:]).compactMap { uid, value in
+            int(value["questionIndex"]) == index ? uid : nil
+        })
 
         let answers = (dict["answers"] as? [String: [String: Any]] ?? [:])
             .compactMap { uid, value -> Answer? in
-                guard let choice = value["choice"] as? String else { return nil }
+                guard let answerQuestionIndex = int(value["questionIndex"]),
+                      answerQuestionIndex == index,
+                      let choice = value["choice"] as? String else { return nil }
                 return Answer(
                     uid: uid,
+                    questionIndex: answerQuestionIndex,
                     choice: choice,
                     answeredAtMS: double(value["ts"]) ?? 0,
                     visibleCount: int(value["visibleCount"]) ?? 0

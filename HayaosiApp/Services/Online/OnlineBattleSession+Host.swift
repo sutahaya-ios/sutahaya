@@ -39,6 +39,8 @@ extension OnlineBattleSession {
         // 再戦で問題番号が0に戻っても採点できるようにする
         scoredQuestionIndex = nil
         questionBaseScores = nil
+        hostWriteTask?.cancel()
+        hostWriteTask = nil
     }
 
     /// 参加者全員が1回ずつ回答を終えたか(正誤は問わない)
@@ -90,7 +92,7 @@ extension OnlineBattleSession {
             }
         }
         for uid in scoring.wrongIDs where !game.failedIDs.contains(uid) {
-            updates["game/failed/\(uid)"] = true
+            updates["game/failed/\(uid)"] = ["questionIndex": game.questionIndex]
         }
         return updates
     }
@@ -196,11 +198,14 @@ extension OnlineBattleSession {
     }
 
     private func write(_ updates: [String: Any], failureMessage: String, completion: (() -> Void)? = nil) {
-        Task { [weak self] in
+        let previousWrite = hostWriteTask
+        hostWriteTask = Task { [weak self] in
+            await previousWrite?.value
+            guard !Task.isCancelled, let self else { return }
             do {
-                try await self?.roomRef.updateChildValues(updates)
+                try await roomRef.updateChildValues(updates)
             } catch {
-                self?.lastError = failureMessage
+                lastError = failureMessage
                 print("\(failureMessage): \(error)")
             }
             completion?()

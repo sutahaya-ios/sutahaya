@@ -55,6 +55,8 @@ final class OnlineBattleSession: BattleSession {
     var scoredQuestionIndex: Int?
     /// 問題を始めた時点の得点。回答が届くたびに「この値+確定した増減」へ置き直すため保持する
     var questionBaseScores: (index: Int, scores: [String: Int])?
+    /// ホストの採点・問題送りをFirebaseへ書く順番。前問の遅延書き込みが次問へ追い越さないよう直列化する
+    var hostWriteTask: Task<Void, Never>?
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
 
@@ -210,6 +212,7 @@ final class OnlineBattleSession: BattleSession {
             completion(false)
             return
         }
+        let questionIndex = game.questionIndex
         Task { [weak self] in
             guard let self else {
                 completion(false)
@@ -217,6 +220,7 @@ final class OnlineBattleSession: BattleSession {
             }
             do {
                 try await roomRef.child("game/answers/\(myID)").setValue([
+                    "questionIndex": questionIndex,
                     "choice": choice,
                     "ts": ServerValue.timestamp(),
                     "visibleCount": visibleCount

@@ -208,8 +208,8 @@ extension BattleScoreBoard {
         ],
         hostID: "host",
         answers: [
-            .init(uid: "cpu-normal", choice: "誤答", answeredAtMS: 100, visibleCount: 3),
-            .init(uid: "host", choice: "正答", answeredAtMS: 200, visibleCount: 4)
+            .init(uid: "cpu-normal", questionIndex: 0, choice: "誤答", answeredAtMS: 100, visibleCount: 3),
+            .init(uid: "host", questionIndex: 0, choice: "正答", answeredAtMS: 200, visibleCount: 4)
         ],
         failedIDs: ["cpu-normal"],
         correctIDs: ["host"]

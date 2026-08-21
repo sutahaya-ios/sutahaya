@@ -28,7 +28,10 @@
           "answers": {
             "$uid": {
               ".write": "auth != null && auth.uid == $uid && root.child('rooms').child($roomId).child('players').child(auth.uid).exists() && root.child('rooms').child($roomId).child('status').val() == 'playing' && root.child('rooms').child($roomId).child('game').child('phase').val() == 'question' && !data.exists()",
-              ".validate": "newData.hasChildren(['choice', 'ts', 'visibleCount'])",
+              ".validate": "newData.hasChildren(['questionIndex', 'choice', 'ts', 'visibleCount'])",
+              "questionIndex": {
+                ".validate": "newData.isNumber() && newData.val() == root.child('rooms').child($roomId).child('game').child('questionIndex').val()"
+              },
               "choice": {
                 ".validate": "newData.isString()"
               },
@@ -37,6 +40,17 @@
               },
               "visibleCount": {
                 ".validate": "newData.isNumber() && newData.val() >= 0"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "failed": {
+            "$uid": {
+              ".validate": "newData.hasChildren(['questionIndex'])",
+              "questionIndex": {
+                ".validate": "newData.isNumber() && newData.val() == root.child('rooms').child($roomId).child('game').child('questionIndex').val()"
               },
               "$other": {
                 ".validate": false

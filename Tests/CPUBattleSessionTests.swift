@@ -281,8 +281,8 @@ final class CPUBattleSessionTests: XCTestCase {
             RoomState.Player(id: "second", nickname: "次", score: 1, joinedAtMS: 20)
         ]
         let answers = [
-            RoomState.Answer(uid: "first", choice: "誤答", answeredAtMS: 100, visibleCount: 2),
-            RoomState.Answer(uid: "second", choice: "正答", answeredAtMS: 200, visibleCount: 3)
+            RoomState.Answer(uid: "first", questionIndex: 0, choice: "誤答", answeredAtMS: 100, visibleCount: 2),
+            RoomState.Answer(uid: "second", questionIndex: 0, choice: "正答", answeredAtMS: 200, visibleCount: 3)
         ]
 
         let entries = BattleScoreBoard.entries(

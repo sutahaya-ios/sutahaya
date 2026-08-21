@@ -432,6 +432,7 @@ describe("Realtime Database rules", () => {
       },
     }));
     await assertSucceeds(set(ref(guestDB, "rooms/4321/game/answers/guest"), {
+      questionIndex: 0,
       choice: "りんご",
       ts: 11,
       visibleCount: 3,
@@ -454,6 +455,7 @@ describe("Realtime Database rules", () => {
     await seedRoom();
     const guestDB = testEnv.authenticatedContext("guest").database();
     const answer = {
+      questionIndex: 0,
       choice: "answer",
       ts: 100,
       visibleCount: 3,
@@ -470,6 +472,7 @@ describe("Realtime Database rules", () => {
   it("rejects answers from outsiders, outside the question phase, and with invalid fields", async () => {
     await seedRoom();
     const answer = {
+      questionIndex: 0,
       choice: "answer",
       ts: 100,
       visibleCount: 3,
@@ -491,5 +494,29 @@ describe("Realtime Database rules", () => {
       await set(ref(context.database(), "rooms/1234/game/phase"), "reveal");
     });
     await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), answer));
+  });
+
+  it("rejects an answer that belongs to a previous question", async () => {
+    await seedRoom();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      questionIndex: -1,
+      choice: "late answer",
+      ts: 100,
+      visibleCount: 3,
+    }));
+  });
+
+  it("accepts only an お手つき tagged for the current question", async () => {
+    await seedRoom();
+    const hostDB = testEnv.authenticatedContext("host").database();
+
+    await assertSucceeds(set(ref(hostDB, "rooms/1234/game/failed/guest"), {
+      questionIndex: 0,
+    }));
+    await assertFails(set(ref(hostDB, "rooms/1234/game/failed/host"), {
+      questionIndex: -1,
+    }));
   });
 });

@@ -169,6 +169,7 @@ final class CPUBattleSession: BattleSession {
         let isCorrect = choice == question.answer
         answers.append(RoomState.Answer(
             uid: uid,
+            questionIndex: questionIndex,
             choice: choice,
             answeredAtMS: Date().timeIntervalSince1970 * 1000,
             visibleCount: visibleCount

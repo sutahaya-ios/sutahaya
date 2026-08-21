@@ -85,7 +85,30 @@ final class BattleScoringTests: XCTestCase {
         XCTAssertEqual(room?.game?.reveal?.correctIDs, ["first", "second"])
     }
 
+    func test_RoomStateが前問から遅れて届いた回答とお手つきを無視する() {
+        let room = RoomState(code: "1234", dict: [
+            "hostID": "host",
+            "status": RoomState.Status.playing.rawValue,
+            "game": [
+                "questionIndex": 1,
+                "phase": RoomState.GamePhase.question.rawValue,
+                "startedAt": 1_000,
+                "answers": [
+                    "host": ["questionIndex": 0, "choice": "前問", "ts": 900, "visibleCount": 1],
+                    "guest": ["questionIndex": 1, "choice": "今問", "ts": 1_100, "visibleCount": 2]
+                ],
+                "failed": [
+                    "host": ["questionIndex": 0],
+                    "guest": ["questionIndex": 1]
+                ]
+            ]
+        ])
+
+        XCTAssertEqual(room?.game?.answers.map(\.uid), ["guest"])
+        XCTAssertEqual(room?.game?.failedIDs, ["guest"])
+    }
+
     private func answer(uid: String, choice: String, time: Double) -> RoomState.Answer {
-        RoomState.Answer(uid: uid, choice: choice, answeredAtMS: time, visibleCount: 1)
+        RoomState.Answer(uid: uid, questionIndex: 0, choice: choice, answeredAtMS: time, visibleCount: 1)
     }
 }
