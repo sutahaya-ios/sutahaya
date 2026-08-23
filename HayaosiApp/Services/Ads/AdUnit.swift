@@ -6,9 +6,8 @@ enum AdUnit {
     private static let testBanner = "ca-app-pub-3940256099942544/2934735716"
     private static let testInterstitial = "ca-app-pub-3940256099942544/4411468910"
 
-    // TODO: AdMobでアプリを登録して本番の広告ユニットIDに差し替える(STATUS.md タスク4)
-    private static let productionBanner = testBanner
-    private static let productionInterstitial = testInterstitial
+    private static let productionBanner = "ca-app-pub-7792161969727895/5370561920"
+    private static let productionInterstitial = "ca-app-pub-7792161969727895/7743619994"
 
     static var banner: String {
         #if DEBUG
