@@ -13,6 +13,7 @@ struct FriendsView: View {
     @State private var signInFailed = false
     @State private var processingRequestIDs: Set<String> = []
     @State private var requestErrorMessage: String?
+    @State private var friendPendingRemoval: Friend?
 
     private var auth: AuthService { .shared }
     private var friendService: FriendService { .shared }
@@ -42,7 +43,7 @@ struct FriendsView: View {
         } message: {
             Text("フレンドの追加・削除はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
         }
-        .alert("フレンド申請を処理できませんでした", isPresented: requestErrorIsPresented) {
+        .alert("フレンドを処理できませんでした", isPresented: requestErrorIsPresented) {
             Button("閉じる", role: .cancel) {}
         } message: {
             Text(requestErrorMessage ?? "通信環境を確認して、もう一度お試しください")
@@ -50,6 +51,19 @@ struct FriendsView: View {
         .task(id: friendService.friends.map(\.id)) {
             guard OnlineService.isConfigured, auth.uid != nil else { return }
             await friendService.refreshFriendProfiles()
+        }
+        .confirmationDialog(
+            "\(friendPendingRemoval?.nickname ?? "このフレンド")を削除しますか？",
+            isPresented: removalConfirmationIsPresented,
+            titleVisibility: .visible
+        ) {
+            Button("フレンドから削除", role: .destructive) {
+                guard let friend = friendPendingRemoval else { return }
+                remove(friend)
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("相手のフレンド一覧からも削除されます")
         }
     }
 
@@ -81,7 +95,7 @@ struct FriendsView: View {
                                 if isPreview {
                                     showPreviewAlert = true
                                 } else {
-                                    Task { await friendService.removeFriend(id: friend.id) }
+                                    friendPendingRemoval = friend
                                 }
                             }
                         }
@@ -119,6 +133,13 @@ struct FriendsView: View {
         )
     }
 
+    private var removalConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { friendPendingRemoval != nil },
+            set: { if !$0 { friendPendingRemoval = nil } }
+        )
+    }
+
     private func process(_ request: FriendRequest, accept: Bool) {
         guard !processingRequestIDs.contains(request.id) else { return }
         processingRequestIDs.insert(request.id)
@@ -130,6 +151,17 @@ struct FriendsView: View {
                 } else {
                     try await friendService.declineFriendRequest(request)
                 }
+            } catch {
+                requestErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func remove(_ friend: Friend) {
+        friendPendingRemoval = nil
+        Task {
+            do {
+                try await friendService.removeFriend(id: friend.id)
             } catch {
                 requestErrorMessage = error.localizedDescription
             }

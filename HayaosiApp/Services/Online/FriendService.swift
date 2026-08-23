@@ -208,20 +208,16 @@ final class FriendService {
             .collection("friendRequests").document(request.id).delete()
     }
 
-    func removeFriend(id: String) async {
-        guard let myUID = AuthService.shared.uid else { return }
-        do {
-            let batch = db.batch()
-            batch.deleteDocument(
-                db.collection("users").document(myUID).collection("friends").document(id)
-            )
-            batch.deleteDocument(
-                db.collection("users").document(id).collection("friends").document(myUID)
-            )
-            try await batch.commit()
-        } catch {
-            print("フレンドの削除に失敗: \(error)")
-        }
+    func removeFriend(id: String) async throws {
+        guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
+        let batch = db.batch()
+        batch.deleteDocument(
+            db.collection("users").document(myUID).collection("friends").document(id)
+        )
+        batch.deleteDocument(
+            db.collection("users").document(id).collection("friends").document(myUID)
+        )
+        try await batch.commit()
     }
 
     private func friendDocument(from profile: [String: Any]) -> [String: Any] {

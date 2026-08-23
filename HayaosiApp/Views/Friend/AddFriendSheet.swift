@@ -7,39 +7,55 @@ struct AddFriendSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var code = ""
     @State private var isWorking = false
+    @State private var didSendRequest = false
     @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("フレンドコード(6桁)", text: $code)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .font(.title3.monospaced())
-                } footer: {
-                    Text("友達のフレンドタブに表示されているコードを入力してください")
-                }
-
-                if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundStyle(.red)
+            Group {
+                if didSendRequest {
+                    ContentUnavailableView {
+                        Label("申請を送信しました", systemImage: "paperplane.fill")
+                    } description: {
+                        Text("相手が承認すると、お互いのフレンド一覧に表示されます")
+                    } actions: {
+                        Button("閉じる") { dismiss() }
+                            .buttonStyle(.borderedProminent)
                     }
-                }
+                } else {
+                    Form {
+                        Section {
+                            TextField("フレンドコード(6桁)", text: $code)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .font(.title3.monospaced())
+                        } footer: {
+                            Text("友達のフレンドタブに表示されているコードを入力してください")
+                        }
 
-                Section {
-                    Button(isWorking ? "申請中…" : "申請する") {
-                        Task { await add() }
+                        if let errorMessage {
+                            Section {
+                                Text(errorMessage)
+                                    .foregroundStyle(.red)
+                            }
+                        }
+
+                        Section {
+                            Button(isWorking ? "申請中…" : "申請する") {
+                                Task { await add() }
+                            }
+                            .disabled(code.count != Self.codeLength || isWorking)
+                        }
                     }
-                    .disabled(code.count != Self.codeLength || isWorking)
                 }
             }
-            .navigationTitle("フレンド申請")
+            .navigationTitle(didSendRequest ? "申請完了" : "フレンド申請")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
+                    if !didSendRequest {
+                        Button("閉じる") { dismiss() }
+                    }
                 }
             }
         }
@@ -52,7 +68,7 @@ struct AddFriendSheet: View {
         defer { isWorking = false }
         do {
             try await FriendService.shared.sendFriendRequest(code: code)
-            dismiss()
+            didSendRequest = true
         } catch {
             errorMessage = error.localizedDescription
         }
