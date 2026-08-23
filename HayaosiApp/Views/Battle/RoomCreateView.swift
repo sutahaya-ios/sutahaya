@@ -17,11 +17,7 @@ struct RoomCreateView: View {
     var body: some View {
         Form {
             Section {
-                Picker("ジャンル", selection: .constant(Genre.englishWord)) {
-                    ForEach(Genre.allCases) { genre in
-                        Text(genre.displayName).tag(genre)
-                    }
-                }
+                LabeledContent("ジャンル", value: Genre.englishWord.displayName)
                 WordClassificationPicker(category: $category, difficulty: $difficulty)
                 Picker("問題数", selection: $questionCount) {
                     ForEach(QuizDefaults.questionCountOptions, id: \.self) { count in
