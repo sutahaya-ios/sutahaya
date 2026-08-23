@@ -48,6 +48,12 @@ final class CPUBattleSession: BattleSession {
     private var hasSavedResults = false
     private var pendingTasks: [Task<Void, Never>] = []
 
+    var wrongQuestionIDs: Set<String> {
+        Set(myResults.compactMap { questionID, isCorrect in
+            isCorrect ? nil : questionID
+        })
+    }
+
     /// `strategy`・`timerScheduler` はテスト用の注入口。本番は既定値のまま使う
     init(nickname: String,
          settings: RoomState.Settings,

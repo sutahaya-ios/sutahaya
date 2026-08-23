@@ -51,6 +51,24 @@ final class ReviewListFilterTests: XCTestCase {
         XCTAssertEqual(result.map(\.questionID), [validQuestion.id])
     }
 
+    func test_指定した問題IDだけを今回の復習として返す() {
+        let questions = [
+            makeQuestion(id: "jh_0001", category: .juniorHigh),
+            makeQuestion(id: "jh_0002", category: .juniorHigh),
+            makeQuestion(id: "hs_0001", category: .highSchool)
+        ]
+        let items = questions.map { ReviewItem(questionID: $0.id) }
+
+        let result = ReviewListFilter.filter(
+            reviewItems: items,
+            questions: questions,
+            category: nil,
+            questionIDs: ["jh_0002", "hs_0001"]
+        )
+
+        XCTAssertEqual(result.map(\.questionID), ["jh_0002", "hs_0001"])
+    }
+
     private func makeQuestion(id: String, category: WordCategory) -> Question {
         Question(
             id: id,

@@ -162,6 +162,17 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(session.state?.game?.phase, .question)
     }
 
+    func test_今回間違えた問題IDだけをリザルト用に返す() async {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 1, strategy: silentCPU, timer: timer)
+        let questions = makeQuestions(count: 2)
+        await session.startGame(questions: questions)
+
+        session.submitAnswer("わざと間違い", visibleCount: 2)
+
+        XCTAssertEqual(session.wrongQuestionIDs, [questions[0].id])
+    }
+
     func test_あとから先に正解した人が出ると得点が置き直される() async {
         let timer = ManualTimer()
         let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)

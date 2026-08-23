@@ -40,6 +40,11 @@ final class OnlineBattleSession: BattleSession {
     var lastError: String?
     /// 自分が回答に関与した問題の正誤(復習リスト反映用)。questionID → isCorrect
     private(set) var myResultsByQuestion: [String: Bool] = [:]
+    var wrongQuestionIDs: Set<String> {
+        Set(myResultsByQuestion.compactMap { questionID, isCorrect in
+            isCorrect ? nil : questionID
+        })
+    }
 
     private let roomsRef: DatabaseReference
     private var observerHandle: DatabaseHandle?

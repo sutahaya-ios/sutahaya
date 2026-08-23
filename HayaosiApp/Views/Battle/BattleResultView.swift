@@ -4,6 +4,7 @@ import SwiftUI
 struct BattleResultView: View {
     let session: any BattleSession
     let onLeave: () -> Void
+    @State private var isReviewPresented = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -46,6 +47,13 @@ struct BattleResultView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if !session.wrongQuestionIDs.isEmpty {
+                    Button("間違えた\(session.wrongQuestionIDs.count)問を復習") {
+                        isReviewPresented = true
+                    }
+                    .buttonStyle(.bordered)
+                }
+
                 Button("退出") {
                     onLeave()
                 }
@@ -55,6 +63,16 @@ struct BattleResultView: View {
         .padding(.vertical)
         .navigationTitle("リザルト")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isReviewPresented) {
+            NavigationStack {
+                ReviewListView(questionIDs: session.wrongQuestionIDs)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("閉じる") { isReviewPresented = false }
+                        }
+                    }
+            }
+        }
     }
 
     private var rankedPlayers: [RoomState.Player] {

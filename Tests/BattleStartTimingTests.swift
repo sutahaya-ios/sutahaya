@@ -136,6 +136,7 @@ private final class StubBattleSession: BattleSession {
     let isHost = true
     let isOnline = false
     let state: RoomState?
+    let wrongQuestionIDs: Set<String> = []
 
     init(state: RoomState) {
         self.state = state

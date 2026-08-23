@@ -6,14 +6,16 @@ struct ReviewListView: View {
     private static let timeLimit: TimeInterval = 20
 
     let category: WordCategory?
+    let questionIDs: Set<String>?
 
     @Query(sort: \ReviewItem.wrongCount, order: .reverse) private var reviewItems: [ReviewItem]
     @Query private var allQuestions: [Question]
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
 
-    init(category: WordCategory? = nil) {
+    init(category: WordCategory? = nil, questionIDs: Set<String>? = nil) {
         self.category = category
+        self.questionIDs = questionIDs
     }
 
     var body: some View {
@@ -60,7 +62,8 @@ struct ReviewListView: View {
         ReviewListFilter.filter(
             reviewItems: reviewItems,
             questions: allQuestions,
-            category: category
+            category: category,
+            questionIDs: questionIDs
         )
     }
 
@@ -69,6 +72,7 @@ struct ReviewListView: View {
     }
 
     private var navigationTitle: String {
+        if questionIDs != nil { return "今回の復習" }
         guard let category else { return "復習リスト" }
         return "\(category.displayName)の復習"
     }

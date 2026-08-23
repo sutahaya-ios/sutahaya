@@ -12,6 +12,8 @@ protocol BattleSession: AnyObject, Observable {
     /// オンライン対戦か(false=CPU対戦。参加コードや招待UIを出さない)
     var isOnline: Bool { get }
     var state: RoomState? { get }
+    /// この対戦で自分が間違えた問題。リザルトから既存の復習機能へ渡す
+    var wrongQuestionIDs: Set<String> { get }
 
     func startGame(questions: [Question]) async
     func rematch() async

@@ -5,13 +5,16 @@ struct ReviewListFilter {
     static func filter(
         reviewItems: [ReviewItem],
         questions: [Question],
-        category: WordCategory?
+        category: WordCategory?,
+        questionIDs: Set<String>? = nil
     ) -> [ReviewItem] {
         let questionsByID = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
 
         return reviewItems.filter { item in
             guard let question = questionsByID[item.questionID] else { return false }
-            return category == nil || question.category == category
+            let matchesCategory = category == nil || question.category == category
+            let matchesQuestionIDs = questionIDs == nil || questionIDs?.contains(item.questionID) == true
+            return matchesCategory && matchesQuestionIDs
         }
     }
 }
