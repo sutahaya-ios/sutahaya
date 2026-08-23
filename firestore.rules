@@ -40,8 +40,16 @@ service cloud.firestore {
         && request.auth.uid == receiverUid
         && exists(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(senderUid))
         && !existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(senderUid))
+        && !existsAfter(/databases/$(database)/documents/users/$(senderUid)/sentFriendRequests/$(receiverUid))
         && existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friends/$(senderUid))
         && existsAfter(/databases/$(database)/documents/users/$(senderUid)/friends/$(receiverUid));
+    }
+
+    function removesFriendRequestPair(receiverUid, senderUid) {
+      return signedIn()
+        && request.auth.uid == receiverUid
+        && !existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(senderUid))
+        && !existsAfter(/databases/$(database)/documents/users/$(senderUid)/sentFriendRequests/$(receiverUid));
     }
 
     function removesMutualFriend(removerUid, otherUid) {
@@ -99,8 +107,30 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time
           && (!exists(/databases/$(database)/documents/users/$(uid)/friends/$(senderUid))
             || !exists(/databases/$(database)/documents/users/$(senderUid)/friends/$(uid)))
-          && !exists(/databases/$(database)/documents/users/$(senderUid)/friendRequests/$(uid));
-        allow delete: if isOwner(uid);
+          && !exists(/databases/$(database)/documents/users/$(senderUid)/friendRequests/$(uid))
+          && existsAfter(/databases/$(database)/documents/users/$(senderUid)/sentFriendRequests/$(uid));
+        allow delete: if removesFriendRequestPair(uid, senderUid);
+        allow update: if false;
+      }
+
+      match /sentFriendRequests/{receiverUid} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && receiverUid != uid
+          && exists(/databases/$(database)/documents/users/$(receiverUid))
+          && request.resource.data.keys().hasOnly([
+            'toUID', 'toNickname', 'toFriendCode', 'createdAt'
+          ])
+          && request.resource.data.toUID == receiverUid
+          && request.resource.data.toNickname
+            == get(/databases/$(database)/documents/users/$(receiverUid)).data.nickname
+          && request.resource.data.toFriendCode
+            == get(/databases/$(database)/documents/users/$(receiverUid)).data.friendCode
+          && request.resource.data.createdAt == request.time
+          && (!exists(/databases/$(database)/documents/users/$(uid)/friends/$(receiverUid))
+            || !exists(/databases/$(database)/documents/users/$(receiverUid)/friends/$(uid)))
+          && existsAfter(/databases/$(database)/documents/users/$(receiverUid)/friendRequests/$(uid));
+        allow delete: if removesFriendRequestPair(receiverUid, uid);
         allow update: if false;
       }
 

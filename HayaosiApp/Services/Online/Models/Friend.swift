@@ -16,3 +16,10 @@ struct FriendRequest: Identifiable, Equatable {
     let nickname: String
     let friendCode: String
 }
+
+/// 送信済みのフレンド申請(users/{uid}/sentFriendRequests/{receiverUid})
+struct SentFriendRequest: Identifiable, Equatable {
+    let id: String       // 申請先のuid
+    let nickname: String
+    let friendCode: String
+}

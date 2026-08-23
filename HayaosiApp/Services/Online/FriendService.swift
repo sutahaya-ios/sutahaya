@@ -15,11 +15,13 @@ final class FriendService {
 
     private(set) var friends: [Friend] = []
     private(set) var friendRequests: [FriendRequest] = []
+    private(set) var sentFriendRequests: [SentFriendRequest] = []
     private(set) var invites: [RoomInvite] = []
 
     private var listeningUID: String?
     private var friendListener: ListenerRegistration?
     private var friendRequestListener: ListenerRegistration?
+    private var sentFriendRequestListener: ListenerRegistration?
     private var inviteListener: ListenerRegistration?
 
     private init() {}
@@ -68,6 +70,24 @@ final class FriendService {
                 }
             }
 
+        sentFriendRequestListener = user.collection("sentFriendRequests")
+            .order(by: "createdAt", descending: true)
+            .addSnapshotListener { [weak self] snapshot, error in
+                MainActor.assumeIsolated {
+                    if let error {
+                        print("送信済みフレンド申請の取得に失敗: \(error)")
+                        return
+                    }
+                    self?.sentFriendRequests = snapshot?.documents.map { doc in
+                        SentFriendRequest(
+                            id: doc.documentID,
+                            nickname: doc.data()["toNickname"] as? String ?? "?",
+                            friendCode: doc.data()["toFriendCode"] as? String ?? ""
+                        )
+                    } ?? []
+                }
+            }
+
         inviteListener = user.collection("invites").order(by: "createdAt", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 MainActor.assumeIsolated {
@@ -89,13 +109,16 @@ final class FriendService {
     func stopListening() {
         friendListener?.remove()
         friendRequestListener?.remove()
+        sentFriendRequestListener?.remove()
         inviteListener?.remove()
         friendListener = nil
         friendRequestListener = nil
+        sentFriendRequestListener = nil
         inviteListener = nil
         listeningUID = nil
         friends = []
         friendRequests = []
+        sentFriendRequests = []
         invites = []
     }
 
@@ -142,13 +165,22 @@ final class FriendService {
               friendUID != myUID else {
             throw OnlineError.friendNotFound
         }
-        let myFriendRef = db.collection("users").document(myUID)
+        let myUserRef = db.collection("users").document(myUID)
+        let recipientUserRef = db.collection("users").document(friendUID)
+        let myFriendRef = myUserRef
             .collection("friends").document(friendUID)
-        let reciprocalFriendRef = db.collection("users").document(friendUID)
+        let reciprocalFriendRef = recipientUserRef
             .collection("friends").document(myUID)
         async let myFriendSnapshot = myFriendRef.getDocument()
         async let reciprocalFriendSnapshot = reciprocalFriendRef.getDocument()
-        let (myFriend, reciprocalFriend) = try await (myFriendSnapshot, reciprocalFriendSnapshot)
+        async let myProfileSnapshot = myUserRef.getDocument()
+        async let recipientProfileSnapshot = recipientUserRef.getDocument()
+        let (myFriend, reciprocalFriend, myProfile, recipientProfile) = try await (
+            myFriendSnapshot,
+            reciprocalFriendSnapshot,
+            myProfileSnapshot,
+            recipientProfileSnapshot
+        )
         if myFriend.exists, reciprocalFriend.exists {
             throw OnlineError.alreadyFriend
         }
@@ -159,24 +191,41 @@ final class FriendService {
             throw OnlineError.incomingFriendRequestExists
         }
 
-        let outgoingRef = db.collection("users").document(friendUID)
+        let outgoingRef = recipientUserRef
             .collection("friendRequests").document(myUID)
         if try await outgoingRef.getDocument().exists {
             throw OnlineError.friendRequestAlreadySent
         }
 
-        let myProfile = try await db.collection("users").document(myUID).getDocument()
         guard let myProfileData = myProfile.data(),
               let nickname = myProfileData["nickname"] as? String,
               let friendCode = myProfileData["friendCode"] as? String else {
             throw OnlineError.notSignedIn
         }
-        try await outgoingRef.setData([
+        guard let recipientProfileData = recipientProfile.data(),
+              let recipientNickname = recipientProfileData["nickname"] as? String,
+              let recipientFriendCode = recipientProfileData["friendCode"] as? String else {
+            throw OnlineError.friendNotFound
+        }
+        let sentRequestRef = myUserRef.collection("sentFriendRequests").document(friendUID)
+        if try await sentRequestRef.getDocument().exists {
+            throw OnlineError.friendRequestAlreadySent
+        }
+
+        let batch = db.batch()
+        batch.setData([
             "fromUID": myUID,
             "fromNickname": nickname,
             "fromFriendCode": friendCode,
             "createdAt": FieldValue.serverTimestamp()
-        ])
+        ], forDocument: outgoingRef)
+        batch.setData([
+            "toUID": friendUID,
+            "toNickname": recipientNickname,
+            "toFriendCode": recipientFriendCode,
+            "createdAt": FieldValue.serverTimestamp()
+        ], forDocument: sentRequestRef)
+        try await batch.commit()
     }
 
     /// 申請を承認し、双方のフレンド文書を同じバッチで作る。
@@ -196,16 +245,27 @@ final class FriendService {
             .collection("friends").document(myUID)
         let requestRef = db.collection("users").document(myUID)
             .collection("friendRequests").document(request.id)
+        let sentRequestRef = db.collection("users").document(request.id)
+            .collection("sentFriendRequests").document(myUID)
         batch.setData(friendDocument(from: senderProfile), forDocument: myFriendRef)
         batch.setData(friendDocument(from: myProfile), forDocument: senderFriendRef)
         batch.deleteDocument(requestRef)
+        batch.deleteDocument(sentRequestRef)
         try await batch.commit()
     }
 
     func declineFriendRequest(_ request: FriendRequest) async throws {
         guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
-        try await db.collection("users").document(myUID)
-            .collection("friendRequests").document(request.id).delete()
+        let batch = db.batch()
+        batch.deleteDocument(
+            db.collection("users").document(myUID)
+                .collection("friendRequests").document(request.id)
+        )
+        batch.deleteDocument(
+            db.collection("users").document(request.id)
+                .collection("sentFriendRequests").document(myUID)
+        )
+        try await batch.commit()
     }
 
     func removeFriend(id: String) async throws {

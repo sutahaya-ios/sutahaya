@@ -65,7 +65,7 @@ Bundle IDごとにFirebase iOSアプリを追加しても、セキュリティ�
 本格ルールの目標仕様は、リポジトリ内の次のファイルで管理する。
 
 - `database.rules.json`: Realtime Database。待機中の部屋は参加前のコード確認を許可し、対戦開始後は参加者だけが読める。ゲーム進行と得点はホストだけが更新できる
-- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、フレンド申請の承認時だけ双方のフレンド文書を同時作成できる。ルーム招待は送信者が登録済みフレンドへ送る場合だけ許可する
+- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、フレンド申請は受信側と送信側の控えを同時作成する。承認時だけ双方のフレンド文書を同時作成できる。ルーム招待は送信者が登録済みフレンドへ送る場合だけ許可する
 - `firebase.json`: 上記ルールとLocal Emulator Suiteの設定
 - `FirebaseRulesTests/rules.test.js`: 許可する操作と拒否する操作の自動テスト
 
@@ -113,12 +113,13 @@ Firestore:
 users/{uid} { nickname, friendCode, icon, bio, createdAt }
   ├─ friends/{friendUid} { nickname, friendCode, icon, bio, addedAt }
   ├─ friendRequests/{senderUid} { fromUID, fromNickname, fromFriendCode, createdAt }
+  ├─ sentFriendRequests/{receiverUid} { toUID, toNickname, toFriendCode, createdAt }
   └─ invites/{autoId} { roomCode, fromNickname, createdAt }
 ```
 
 `icon` はアプリ内の絵文字プリセットまたは空文字、`bio` は140文字以内。プロフィール同期対応前に作成済みのフレンド文書には両フィールドが無い場合があるため、フレンド一覧を開いた時に各 `users/{friendUid}` を1回ずつ取得して最新表示へ補完する。常時監視とフレンド文書への書き戻しは行わない。
 
-フレンドコード入力時は相手の `friendRequests/{自分のuid}` へ申請だけを作成する。受信者が承認すると、Firestoreのバッチ処理で双方の `friends` を作成して申請を削除する。拒否時は申請だけを削除し、フレンド文書は作らない。
+フレンドコード入力時は、相手の `friendRequests/{自分のuid}` と自分の `sentFriendRequests/{相手のuid}` を同じバッチで作成する。これにより受信者は「受信中」、送信者は「送信済み」の一覧で相手名を確認できる。受信者が承認すると、Firestoreのバッチ処理で双方の `friends` を作成し、申請と送信側の控えを同時に削除する。拒否時も申請と控えを同時に削除し、フレンド文書は作らない。
 
 ## 既知の制約(v1.0スコープ)
 

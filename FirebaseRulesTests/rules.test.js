@@ -182,14 +182,26 @@ describe("Cloud Firestore rules", () => {
     const codeSnapshot = await getDoc(doc(aliceDB, "friendCodes", "BOB001"));
     const friendUID = codeSnapshot.data().uid;
     const requestRef = doc(aliceDB, "users", friendUID, "friendRequests", "alice");
-    await assertSucceeds(setDoc(requestRef, {
+    const sentRequestRef = doc(aliceDB, "users", "alice", "sentFriendRequests", friendUID);
+    const requestBatch = writeBatch(aliceDB);
+    requestBatch.set(requestRef, {
       fromUID: "alice",
       fromNickname: "Alice",
       fromFriendCode: "ALICE1",
       createdAt: serverTimestamp(),
-    }));
+    });
+    requestBatch.set(sentRequestRef, {
+      toUID: friendUID,
+      toNickname: "Bob",
+      toFriendCode: "BOB001",
+      createdAt: serverTimestamp(),
+    });
+    await assertSucceeds(requestBatch.commit());
     await assertSucceeds(getDoc(requestRef));
     await assertSucceeds(getDocs(collection(bobDB, "users", "bob", "friendRequests")));
+    await assertSucceeds(getDoc(sentRequestRef));
+    await assertSucceeds(getDocs(collection(aliceDB, "users", "alice", "sentFriendRequests")));
+    await assertFails(getDoc(doc(bobDB, "users", "alice", "sentFriendRequests", "bob")));
 
     const aliceProfile = (await getDoc(doc(bobDB, "users", "alice"))).data();
     const bobProfile = (await getDoc(doc(bobDB, "users", "bob"))).data();
@@ -209,6 +221,7 @@ describe("Cloud Firestore rules", () => {
       addedAt: serverTimestamp(),
     });
     acceptance.delete(doc(bobDB, "users", "bob", "friendRequests", "alice"));
+    acceptance.delete(doc(bobDB, "users", "alice", "sentFriendRequests", "bob"));
     await assertSucceeds(acceptance.commit());
 
     await assertSucceeds(getDoc(doc(aliceDB, "users", "alice", "friends", "bob")));
@@ -221,7 +234,7 @@ describe("Cloud Firestore rules", () => {
     }));
   });
 
-  it("rejects direct or spoofed friend creation and lets the receiver decline a request", async () => {
+  it("requires a paired request, rejects spoofing, and lets the receiver decline both records", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     await seedUser("bob", "BOB001", "Bob");
     const aliceDB = testEnv.authenticatedContext("alice").firestore();
@@ -242,14 +255,50 @@ describe("Cloud Firestore rules", () => {
     }));
 
     const request = doc(aliceDB, "users", "bob", "friendRequests", "alice");
-    await assertSucceeds(setDoc(request, {
+    const sentRequest = doc(aliceDB, "users", "alice", "sentFriendRequests", "bob");
+    await assertFails(setDoc(request, {
       fromUID: "alice",
       fromNickname: "Alice",
       fromFriendCode: "ALICE1",
       createdAt: serverTimestamp(),
     }));
+
+    const spoofedPair = writeBatch(aliceDB);
+    spoofedPair.set(request, {
+      fromUID: "alice",
+      fromNickname: "Alice",
+      fromFriendCode: "ALICE1",
+      createdAt: serverTimestamp(),
+    });
+    spoofedPair.set(sentRequest, {
+      toUID: "bob",
+      toNickname: "Not Bob",
+      toFriendCode: "BOB001",
+      createdAt: serverTimestamp(),
+    });
+    await assertFails(spoofedPair.commit());
+
+    const requestPair = writeBatch(aliceDB);
+    requestPair.set(request, {
+      fromUID: "alice",
+      fromNickname: "Alice",
+      fromFriendCode: "ALICE1",
+      createdAt: serverTimestamp(),
+    });
+    requestPair.set(sentRequest, {
+      toUID: "bob",
+      toNickname: "Bob",
+      toFriendCode: "BOB001",
+      createdAt: serverTimestamp(),
+    });
+    await assertSucceeds(requestPair.commit());
     await assertFails(deleteDoc(request));
-    await assertSucceeds(deleteDoc(doc(bobDB, "users", "bob", "friendRequests", "alice")));
+    await assertFails(deleteDoc(doc(bobDB, "users", "bob", "friendRequests", "alice")));
+
+    const decline = writeBatch(bobDB);
+    decline.delete(doc(bobDB, "users", "bob", "friendRequests", "alice"));
+    decline.delete(doc(bobDB, "users", "alice", "sentFriendRequests", "bob"));
+    await assertSucceeds(decline.commit());
   });
 
   it("removes both sides of a mutual friendship in one batch", async () => {
@@ -286,12 +335,14 @@ describe("Cloud Firestore rules", () => {
     const aliceDB = testEnv.authenticatedContext("alice").firestore();
     const bobDB = testEnv.authenticatedContext("bob").firestore();
     await assertSucceeds(getDoc(doc(bobDB, "users", "alice", "friends", "bob")));
-    await assertSucceeds(setDoc(doc(bobDB, "users", "alice", "friendRequests", "bob"), {
-      fromUID: "bob",
-      fromNickname: "Bob",
-      fromFriendCode: "BOB001",
-      createdAt: serverTimestamp(),
-    }));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "alice", "friendRequests", "bob"), {
+        fromUID: "bob",
+        fromNickname: "Bob",
+        fromFriendCode: "BOB001",
+        createdAt: new Date(),
+      });
+    });
 
     const acceptance = writeBatch(aliceDB);
     acceptance.set(doc(aliceDB, "users", "alice", "friends", "bob"), {
@@ -301,6 +352,7 @@ describe("Cloud Firestore rules", () => {
       nickname: "Alice", friendCode: "ALICE1", icon: "", bio: "", addedAt: serverTimestamp(),
     });
     acceptance.delete(doc(aliceDB, "users", "alice", "friendRequests", "bob"));
+    acceptance.delete(doc(aliceDB, "users", "bob", "sentFriendRequests", "alice"));
     await assertSucceeds(acceptance.commit());
   });
 
