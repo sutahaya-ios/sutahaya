@@ -20,7 +20,7 @@ struct BattleFlowView: View {
             case .playing:
                 playingView
             case .finished:
-                BattleResultView(session: session, onLeave: leaveAndDismiss)
+                BattleResultView(session: session, onLeave: leaveAfterInterstitial)
             case .closed:
                 closedView(message: "ホストが退出したため、ルームは解散しました")
             case nil:
@@ -65,6 +65,7 @@ struct BattleFlowView: View {
             if newStatus == .finished {
                 SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
+                AdsService.shared.recordBattleFinished()
             }
         }
     }
@@ -116,6 +117,12 @@ struct BattleFlowView: View {
     private func leaveAndDismiss() {
         session.leave()
         dismiss()
+    }
+
+    /// リザルトからの退出だけ全画面広告を挟む(要件 §4.2)。
+    /// 遷移アニメーションと広告の表示が重ならないよう、広告が閉じてから退出する
+    private func leaveAfterInterstitial() {
+        AdsService.shared.presentInterstitialIfDue { leaveAndDismiss() }
     }
 
     private func updateMatchStartObservation(for status: RoomState.Status?) {

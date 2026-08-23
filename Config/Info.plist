@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- ここは GENERATE_INFOPLIST_FILE の土台。project.yml の INFOPLIST_KEY_* で表現できない
+	     キー(辞書・配列)だけを置く。単純な値は project.yml 側へ書く -->
+
+	<!-- AdMobのアプリID。未設定だとSDKが起動時に意図的にクラッシュする。
+	     現在はGoogleが公開しているサンプルID。本番IDが取れたら差し替える(STATUS.md タスク4) -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+
+	<!-- 広告の成果計測に使う。Googleが公開している一覧を貼り付けて増やす。
+	     未掲載のネットワークは計測できないだけで、広告の表示自体には影響しない -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
+</dict>
+</plist>
