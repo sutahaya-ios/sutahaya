@@ -12,7 +12,6 @@ struct StudyHubView: View {
             }
             .padding()
         }
-        .navigationTitle("学習")
     }
 
     private var categorySelection: some View {

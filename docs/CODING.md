@@ -64,7 +64,7 @@ env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project
 
 ## テスト方針
 
-- 対象は**ロジックのみ**:出題エンジン(`QuizSession`)・対戦進行(`CPUBattleSession`)・集計(`LearningActivitySummary` 等)・データ投入(`QuestionSeeder`)。UIテストは書かない(費用対効果が低い)
+- 対象は**ロジックのみ**:出題エンジン(`QuizSession`)・対戦進行(`CPUBattleSession`)・集計・データ投入(`QuestionSeeder`)。UIテストは書かない(費用対効果が低い)
 - 置き場所は `Tests/`。ファイル名は `<対象>Tests.swift`
 - 通信(`Services/Online/`)はFirebase実機依存なのでユニットテストの対象外。実機での通し確認で担保する
 - ロジックを直したら、まずテストで再現 → 修正 の順で進める

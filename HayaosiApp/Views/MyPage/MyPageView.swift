@@ -54,7 +54,6 @@ struct MyPageView: View {
                 }
             }
         }
-        .navigationTitle("マイページ")
         .task {
             await prepareOnlineProfile()
         }

@@ -17,26 +17,15 @@ struct BattleHubView: View {
     @State private var showTutorial = false
     @AppStorage("hasSeenBattleTutorial") private var hasSeenTutorial = false
 
-    @Query private var answerRecords: [AnswerRecord]
-
     private var friendService: FriendService { .shared }
 
     private var isOnlineReady: Bool {
         OnlineService.isConfigured && OnlineService.isDatabaseAvailable
     }
 
-    private var activitySummary: LearningActivitySummary {
-        .calculate(records: answerRecords)
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                BattleStatusRow(
-                    streakDayCount: activitySummary.streakDayCount,
-                    todayAnswerCount: activitySummary.todayAnswerCount
-                )
-
                 inviteBanners
                 modeCards
 
@@ -46,7 +35,6 @@ struct BattleHubView: View {
             }
             .padding()
         }
-        .navigationTitle("対戦")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
