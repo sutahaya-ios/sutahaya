@@ -12,6 +12,7 @@ struct StudyHubView: View {
             }
             .padding()
         }
+        .safeAreaInset(edge: .bottom) { AdBannerView() }
     }
 
     private var categorySelection: some View {

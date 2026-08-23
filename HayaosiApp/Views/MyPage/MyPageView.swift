@@ -54,6 +54,7 @@ struct MyPageView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) { AdBannerView() }
         .task {
             await prepareOnlineProfile()
         }

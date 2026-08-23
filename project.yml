@@ -9,6 +9,9 @@ packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
     from: "12.0.0"
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads
+    from: "13.8.0"
 
 targets:
   HayaosiApp:
@@ -27,6 +30,8 @@ targets:
         product: FirebaseDatabase
       - package: Firebase
         product: FirebaseFirestore
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
     settings:
       base:
         # 共有の既定値は本番Bundle ID。共同開発者はgit管理外のlocal.xcconfigだけで上書きする
@@ -39,6 +44,10 @@ targets:
         # ホーム画面に出るアプリ名。ターゲット名・本番Bundle IDは変えない(要件 §10 #1)
         INFOPLIST_KEY_CFBundleDisplayName: スタはや
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        # 辞書・配列のキー(AdMobのアプリID・SKAdNetworkItems)は INFOPLIST_KEY_* で表現できないため、
+        # 土台のplistを与える。単純な値は下の INFOPLIST_KEY_* 側にマージされる
+        INFOPLIST_FILE: Config/Info.plist
+        INFOPLIST_KEY_NSUserTrackingUsageDescription: 広告をあなたの興味に合わせて表示するために使用します。許可しない場合も、広告の内容が変わるだけでアプリは通常どおり使えます。
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
