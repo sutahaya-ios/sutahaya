@@ -258,6 +258,30 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(session.state?.game?.startDelayMS, 0, "開始演出は1問目の前だけ")
     }
 
+    func test_前問で予約されたCPU回答が遅れても次問へ混ざらない() async throws {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 1, strategy: aggressiveCPU, timer: timer)
+        await session.startGame(questions: makeQuestions(count: 2))
+
+        let staleCPUAnswer = try XCTUnwrap(timer.pending.first).action
+        let firstQuestionTimeout = try XCTUnwrap(timer.pending.last).action
+        firstQuestionTimeout()
+
+        XCTAssertEqual(session.state?.game?.phase, .reveal)
+        let advanceToSecondQuestion = try XCTUnwrap(timer.pending.last).action
+        advanceToSecondQuestion()
+
+        XCTAssertEqual(session.state?.game?.questionIndex, 1)
+        XCTAssertEqual(session.state?.game?.phase, .question)
+        staleCPUAnswer()
+
+        XCTAssertTrue(session.state?.game?.answers.isEmpty == true,
+                      "前問の予約回答は世代が違うため次問へ記録しない")
+        XCTAssertTrue(session.state?.game?.failedIDs.isEmpty == true)
+        XCTAssertTrue(session.state?.players.allSatisfy { $0.score == 0 } == true,
+                      "前問の遅延回答で次問の得点を変更しない")
+    }
+
     // MARK: - 順位(同点同順位)
 
     func test_同点は同順位になる() {
