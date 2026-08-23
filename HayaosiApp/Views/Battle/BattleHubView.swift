@@ -14,6 +14,8 @@ struct BattleHubView: View {
     @State private var inviteCode: String?
     @State private var showInviteJoin = false
     @State private var showOnlineMenu = false
+    @State private var showTutorial = false
+    @AppStorage("hasSeenBattleTutorial") private var hasSeenTutorial = false
 
     @Query private var answerRecords: [AnswerRecord]
 
@@ -45,6 +47,20 @@ struct BattleHubView: View {
             .padding()
         }
         .navigationTitle("対戦")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showTutorial = true
+                } label: {
+                    Label("遊び方", systemImage: "questionmark.circle")
+                }
+            }
+        }
+        .onAppear {
+            if !hasSeenTutorial {
+                showTutorial = true
+            }
+        }
         .task {
             if isOnlineReady {
                 await signIn()
@@ -57,6 +73,11 @@ struct BattleHubView: View {
             NavigationStack {
                 OnlineModeMenuView()
             }
+        }
+        .sheet(isPresented: $showTutorial, onDismiss: {
+            hasSeenTutorial = true
+        }) {
+            BattleTutorialView()
         }
         .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
         } message: {
