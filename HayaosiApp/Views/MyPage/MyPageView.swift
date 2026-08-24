@@ -94,6 +94,14 @@ struct MyPageView: View {
 
             VStack(spacing: 0) {
                 settingsLink(
+                    title: "プレミアム(広告非表示)",
+                    systemImage: "crown.fill",
+                    destination: SubscriptionView()
+                )
+
+                Divider().padding(.leading, 52)
+
+                settingsLink(
                     title: "サウンド・振動",
                     systemImage: "speaker.wave.2.fill",
                     destination: SettingsView(content: .soundAndHaptics)

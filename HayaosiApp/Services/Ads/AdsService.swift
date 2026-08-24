@@ -1,9 +1,11 @@
 import Foundation
 import GoogleMobileAds
+import Observation
 
 /// 広告の初期化・先読み・表示を集約する。
-/// 「広告を出すか」の判断はすべてここを通す(広告非表示サブスクを入れるときも、分岐を足すのはこのクラスだけで済む)
+/// 「広告を出すか」の判断はすべてここを通す。
 @MainActor
+@Observable
 final class AdsService {
     static let shared = AdsService()
 
@@ -13,6 +15,7 @@ final class AdsService {
     private var dismissObserver: InterstitialDismissObserver?
     private var isLoadingInterstitial = false
     private var hasStarted = false
+    private(set) var isReadyForRequests = false
 
     private init() {}
 
@@ -23,6 +26,7 @@ final class AdsService {
 
         await AdConsent.gather()
         await MobileAds.shared.start()
+        isReadyForRequests = true
         await preloadInterstitial()
     }
 
@@ -30,6 +34,10 @@ final class AdsService {
     /// リザルトを読んでいる数秒のうちに読み込みを終わらせ、退出時に待たせないための先読み
     func recordBattleFinished() {
         completedBattleCount += 1
+        guard canRequestAds else {
+            interstitial = nil
+            return
+        }
         guard isInterstitialDue else { return }
         Task { await preloadInterstitial() }
     }
@@ -37,9 +45,13 @@ final class AdsService {
     /// リザルトからの退出時に呼ぶ。広告を出す番なら表示し、閉じられてから `onFinish` を実行する。
     /// 出す番でない場合と先読みが間に合わなかった場合は、待たせずにそのまま `onFinish` を実行する
     func presentInterstitialIfDue(onFinish: @escaping () -> Void) {
-        guard isInterstitialDue,
+        guard canRequestAds,
+              isInterstitialDue,
               let ad = interstitial,
               let viewController = AdPresentationContext.topViewController else {
+            if SubscriptionService.shared.isSubscribed {
+                interstitial = nil
+            }
             onFinish()
             return
         }
@@ -56,18 +68,27 @@ final class AdsService {
         InterstitialSchedule.shouldPresent(completedBattleCount: completedBattleCount)
     }
 
+    var canRequestAds: Bool {
+        isReadyForRequests && !SubscriptionService.shared.isSubscribed
+    }
+
     private var completedBattleCount: Int {
         get { UserDefaults.standard.integer(forKey: Self.completedBattleCountKey) }
         set { UserDefaults.standard.set(newValue, forKey: Self.completedBattleCountKey) }
     }
 
     private func preloadInterstitial() async {
-        guard interstitial == nil, !isLoadingInterstitial else { return }
+        guard canRequestAds, interstitial == nil, !isLoadingInterstitial else { return }
         isLoadingInterstitial = true
         defer { isLoadingInterstitial = false }
 
         do {
-            interstitial = try await InterstitialAd.load(with: AdUnit.interstitial, request: Request())
+            let loadedInterstitial = try await InterstitialAd.load(
+                with: AdUnit.interstitial,
+                request: Request()
+            )
+            guard canRequestAds else { return }
+            interstitial = loadedInterstitial
         } catch {
             // 在庫切れ・オフラインでも起きる。広告を諦めるだけで、遷移は止めない
             print("[Ads] 全画面広告の読み込みに失敗: \(error.localizedDescription)")

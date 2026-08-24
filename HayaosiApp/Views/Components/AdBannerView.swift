@@ -1,14 +1,20 @@
 import GoogleMobileAds
 import SwiftUI
 
-/// 画面下端に置くバナー広告。読み込めなければ空白のまま高さだけを保つ
+/// 画面下端に置くバナー広告。購読中は読み込まず、高さも持たない。
 struct AdBannerView: View {
     /// 画面幅に合わせた高さを持つバナー。アプリは縦固定なので一度決めれば変わらない
     private let adSize = currentOrientationAnchoredAdaptiveBanner(width: AdPresentationContext.bannerWidth)
 
+    private var adsService: AdsService { .shared }
+    private var subscriptionService: SubscriptionService { .shared }
+
+    @ViewBuilder
     var body: some View {
-        BannerRepresentable(adSize: adSize)
-            .frame(width: adSize.size.width, height: adSize.size.height)
+        if subscriptionService.hasLoadedEntitlements, adsService.canRequestAds {
+            BannerRepresentable(adSize: adSize)
+                .frame(width: adSize.size.width, height: adSize.size.height)
+        }
     }
 }
 

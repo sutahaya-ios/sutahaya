@@ -5,6 +5,9 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
 
+fileGroups:
+  - Config/Subscription.storekit
+
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
@@ -80,3 +83,4 @@ schemes:
         - HayaosiAppTests
     run:
       config: Debug
+      storeKitConfiguration: Config/Subscription.storekit
