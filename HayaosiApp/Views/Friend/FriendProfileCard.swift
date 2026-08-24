@@ -22,6 +22,7 @@ struct FriendProfileCard: View {
     var bio: String = ""
     var battleStats: ProfileBattleStats? = nil
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var copied = false
 
     var body: some View {
@@ -33,7 +34,7 @@ struct FriendProfileCard: View {
         .background(cardBackground)
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.9), lineWidth: 1)
+                .stroke(Color(.separator).opacity(colorScheme == .dark ? 0.55 : 0.18), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.08), radius: 14, y: 7)
     }
@@ -42,7 +43,7 @@ struct FriendProfileCard: View {
         HStack(spacing: 14) {
             AvatarCircle(name: nickname, icon: icon, size: 74, color: .accentColor)
                 .padding(5)
-                .background(Circle().fill(.white.opacity(0.9)))
+                .background(Circle().fill(Color(.systemBackground).opacity(0.92)))
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(nickname)
@@ -101,12 +102,16 @@ struct FriendProfileCard: View {
                 HStack(spacing: 10) {
                     Text(friendCode ?? "------")
                         .font(.system(.headline, design: .monospaced).bold())
+                        .foregroundStyle(.primary)
                         .kerning(2)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(Capsule().fill(Color.accentColor.opacity(0.07)))
+                        .background(
+                            Capsule()
+                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.18 : 0.07))
+                        )
 
                     if let friendCode {
                         Button {
@@ -133,7 +138,7 @@ struct FriendProfileCard: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.white.opacity(0.88))
+                .fill(Color(.secondarySystemBackground))
         )
     }
 
@@ -160,6 +165,7 @@ struct FriendProfileCard: View {
             Text(value)
                 .font(.title3.bold())
                 .monospacedDigit()
+                .foregroundStyle(.primary)
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
