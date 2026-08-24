@@ -185,15 +185,20 @@ final class FriendService {
             throw OnlineError.alreadyFriend
         }
 
-        let incomingRef = db.collection("users").document(myUID)
+        let incomingRef = myUserRef
             .collection("friendRequests").document(friendUID)
-        if try await incomingRef.getDocument().exists {
+        async let incomingSnapshot = incomingRef.getDocument()
+        if try await incomingSnapshot.exists {
             throw OnlineError.incomingFriendRequestExists
         }
 
         let outgoingRef = recipientUserRef
             .collection("friendRequests").document(myUID)
-        if try await outgoingRef.getDocument().exists {
+        let sentRequestRef = myUserRef.collection("sentFriendRequests").document(friendUID)
+        async let outgoingSnapshot = outgoingRef.getDocument()
+        async let sentRequestSnapshot = sentRequestRef.getDocument()
+        let (outgoingRequest, sentRequest) = try await (outgoingSnapshot, sentRequestSnapshot)
+        if outgoingRequest.exists, sentRequest.exists {
             throw OnlineError.friendRequestAlreadySent
         }
 
@@ -207,24 +212,25 @@ final class FriendService {
               let recipientFriendCode = recipientProfileData["friendCode"] as? String else {
             throw OnlineError.friendNotFound
         }
-        let sentRequestRef = myUserRef.collection("sentFriendRequests").document(friendUID)
-        if try await sentRequestRef.getDocument().exists {
-            throw OnlineError.friendRequestAlreadySent
-        }
-
         let batch = db.batch()
-        batch.setData([
-            "fromUID": myUID,
-            "fromNickname": nickname,
-            "fromFriendCode": friendCode,
-            "createdAt": FieldValue.serverTimestamp()
-        ], forDocument: outgoingRef)
-        batch.setData([
-            "toUID": friendUID,
-            "toNickname": recipientNickname,
-            "toFriendCode": recipientFriendCode,
-            "createdAt": FieldValue.serverTimestamp()
-        ], forDocument: sentRequestRef)
+        // 送信済み一覧の導入前に作られた片側だけの申請も、同じコードの再入力で補完する。
+        // 既存文書は更新不可のルールなので、欠けている側だけを作成する。
+        if !outgoingRequest.exists {
+            batch.setData([
+                "fromUID": myUID,
+                "fromNickname": nickname,
+                "fromFriendCode": friendCode,
+                "createdAt": FieldValue.serverTimestamp()
+            ], forDocument: outgoingRef)
+        }
+        if !sentRequest.exists {
+            batch.setData([
+                "toUID": friendUID,
+                "toNickname": recipientNickname,
+                "toFriendCode": recipientFriendCode,
+                "createdAt": FieldValue.serverTimestamp()
+            ], forDocument: sentRequestRef)
+        }
         try await batch.commit()
     }
 

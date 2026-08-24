@@ -301,6 +301,54 @@ describe("Cloud Firestore rules", () => {
     await assertSucceeds(decline.commit());
   });
 
+  it("lets the sender add a missing sent-request mirror to a legacy incoming request", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    await seedUser("bob", "BOB001", "Bob");
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "bob", "friendRequests", "alice"), {
+        fromUID: "alice",
+        fromNickname: "Alice",
+        fromFriendCode: "ALICE1",
+        createdAt: new Date(),
+      });
+    });
+
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    await assertSucceeds(setDoc(
+      doc(aliceDB, "users", "alice", "sentFriendRequests", "bob"),
+      {
+        toUID: "bob",
+        toNickname: "Bob",
+        toFriendCode: "BOB001",
+        createdAt: serverTimestamp(),
+      }
+    ));
+  });
+
+  it("lets the sender restore a missing incoming request from its sent-request mirror", async () => {
+    await seedUser("alice", "ALICE1", "Alice");
+    await seedUser("bob", "BOB001", "Bob");
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "users", "alice", "sentFriendRequests", "bob"), {
+        toUID: "bob",
+        toNickname: "Bob",
+        toFriendCode: "BOB001",
+        createdAt: new Date(),
+      });
+    });
+
+    const aliceDB = testEnv.authenticatedContext("alice").firestore();
+    await assertSucceeds(setDoc(
+      doc(aliceDB, "users", "bob", "friendRequests", "alice"),
+      {
+        fromUID: "alice",
+        fromNickname: "Alice",
+        fromFriendCode: "ALICE1",
+        createdAt: serverTimestamp(),
+      }
+    ));
+  });
+
   it("removes both sides of a mutual friendship in one batch", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     await seedUser("bob", "BOB001", "Bob");
