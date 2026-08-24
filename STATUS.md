@@ -49,7 +49,8 @@
   - **`Config/Info.plist`を新規追加**(git管理対象)。`GADApplicationIdentifier`と`SKAdNetworkItems`は`INFOPLIST_KEY_*`では生成plistに入らないため、土台のplistを与えて`GENERATE_INFOPLIST_FILE`とマージしている
   - 検証:xcodegen実行、Simulator向けビルド成功、全71テスト成功(表示判定の3件を追加)。iPhone 17 Proで学習タブ・マイページのバナー表示、対戦タブ/設定/ロビー/対戦中/リザルトに広告が出ないこと、4試合目のリザルト退出で全画面広告が出て閉じると対戦設定へ戻ることを確認
   - **2026年8月24日:AdMob登録と本番IDの反映まで完了**。アプリID(`Config/Info.plist`)と広告ユニットID2つ(`AdUnit.swift`)は本番の値。Debugビルドは引き続きGoogleのテストIDを使うので、開発中に自分の広告を叩く心配はない。Releaseビルドの生成Info.plistとバイナリに本番IDが入ることを確認済み。**AdMob上のアプリは「要審査」で、実広告の配信はApp Store公開後**
-  - **未対応(たけるの担当)**:AdMobの支払い情報(税務・銀行口座)の登録。`SKAdNetworkItems`へGoogleの一覧を貼り足す。プライバシーポリシーとApp Storeのデータ収集申告の更新、利用規約への対象年齢明記
+  - **2026年8月24日:プライバシーポリシーと利用規約を更新・新規作成**。`saikyo-app-team/app-privacy`にアプリ名変更・広告識別子の取得・AdMobの第三者提供・対象年齢(全学習者、子ども向けアプリではない)を反映。同リポジトリへ`terms.html`を新規追加し、`MyPageView`に導線を追加(プライバシーポリシーの上に表示)
+  - **未対応(たけるの担当)**:`SKAdNetworkItems`へGoogleの一覧を貼り足す。App Store Connectのデータ収集申告の更新
   - **未検証**:EEA向け同意フォーム(UMP)の表示は、文面がAdMobコンソール側にあり本番アプリIDがないと出せないため未実装。ATT許諾はSimulatorのシステムアラートが合成タップを受け付けないため、TCCへ直接許可を書いて先へ進めた(日本語の文面が出ることまでは確認済み)
 
 - TOKIYA-YAMAMOTO(Codex): **フレンド画面を「フレンド／送信済み／受信中」の3一覧へ整理**。送受信双方で相手名・フレンドコードを表示し、送信時に受信申請と送信控えを同じFirestoreバッチで作成、承認・拒否時に同時削除する。Local EmulatorのRulesテスト全22件、Swiftテスト全68件、Simulator向けビルド成功。**本番Firestoreルールは未公開で、実在Firebaseと実機2台は未検証**

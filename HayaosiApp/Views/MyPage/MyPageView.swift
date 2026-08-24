@@ -3,6 +3,7 @@ import SwiftUI
 /// マイページ。プロフィール・友達・設定など、自分に関する入口を集約する
 struct MyPageView: View {
     private static let privacyPolicyURLString = "https://saikyo-app-team.github.io/app-privacy/"
+    private static let termsOfServiceURLString = "https://saikyo-app-team.github.io/app-privacy/terms.html"
 
     @AppStorage("nickname") private var nickname = "ゲスト"
     @AppStorage("profileIcon") private var profileIcon = ProfileIcon.none
@@ -45,6 +46,12 @@ struct MyPageView: View {
                     QuestionCreateView()
                 } label: {
                     Label("作問(次回アップデート予定)", systemImage: "square.and.pencil")
+                }
+
+                if let termsOfServiceURL = URL(string: Self.termsOfServiceURLString) {
+                    Link(destination: termsOfServiceURL) {
+                        Label("利用規約", systemImage: "doc.text.fill")
+                    }
                 }
 
                 if let privacyPolicyURL = URL(string: Self.privacyPolicyURLString) {
