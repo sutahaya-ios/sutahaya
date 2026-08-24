@@ -101,7 +101,7 @@ final class SubscriptionService {
         }
     }
 
-    private func refreshEntitlements() async {
+    func refreshEntitlements() async {
         var hasActiveSubscription = false
 
         for await verificationResult in Transaction.currentEntitlements {
