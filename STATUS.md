@@ -44,6 +44,7 @@
 ---
 ## 最新更新(2026年8月24日)
 
+- TOKIYA-YAMAMOTO(Codex): **マイページを参考画像に沿ったゲームプロフィールUIへ刷新**。アイコン・名前・自己紹介を主役にしたプレイヤーカード、右上から既存プロフィール編集へ直接進む導線、対戦数・1位回数・1位率の3列、カード下部のフレンドコード・コピー・共有、取得済みプロフィールだけを使う横並びフレンド概要、サウンド・振動／学習データ／お知らせ／アプリ情報を統一カードへ整理。既存の規約・ポリシー・作問導線はアプリ情報内へ維持。試合単位の順位を持つローカル履歴がまだ無いため戦績は捏造せず「—」表示とし、Firestore・RTDB・Presence・XP等は追加していない。XcodeGen生成、Simulator向けビルド、全71テスト成功。iPhone 17 Pro Simulatorで最終レイアウト、1行のコピー・シェア、下部3タブと既存バナー広告の維持を確認。各遷移先でのタップ操作と実機表示は未検証
 - Claude(たける側): **広告(バナー+全画面)を実装**(たけるの指示で今回はClaudeが実装まで担当)。要件定義書 §4.2 を「広告を入れない/課金しない」から収益方針へ全面改訂し、`project.yml`へGoogle Mobile Ads SDK 13.8.0を追加。`Services/Ads/`に表示判定(`InterstitialSchedule`)・SDK操作(`AdsService`)・同意取得(`AdConsent`)・表示元VC(`AdPresentationContext`)を分けて配置し、`Views/Components/AdBannerView.swift`を追加。バナーは学習タブ・マイページの下端のみ、全画面はリザルト退出時のみで、初回3試合は出さず4試合目から3試合に1回。広告が閉じてから退出する順序にして遷移と重ならないようにした。**「広告を出すか」の判断は`AdsService`に集約してあるので、広告非表示サブスク(タスク5)はここへ分岐を足すだけで済む**
   - 途中で見つけて直した点:(1)`AdConsent`がMainActor隔離されておらず、同意フォームのWKWebViewをメインスレッド外で作って起動時クラッシュ (2)`safeAreaInset`内の`GeometryReader`が正しい幅を返さず、バナーが728x90で画面からはみ出していた(縦固定なので画面幅から直接計算する方式へ変更)
   - **`Config/Info.plist`を新規追加**(git管理対象)。`GADApplicationIdentifier`と`SKAdNetworkItems`は`INFOPLIST_KEY_*`では生成plistに入らないため、土台のplistを与えて`GENERATE_INFOPLIST_FILE`とマージしている

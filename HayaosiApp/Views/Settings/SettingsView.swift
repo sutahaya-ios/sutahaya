@@ -1,6 +1,22 @@
 import SwiftUI
 import SwiftData
 
+enum SettingsContent {
+    case all
+    case profile
+    case soundAndHaptics
+    case learningData
+
+    var title: String {
+        switch self {
+        case .all: "設定"
+        case .profile: "プロフィール編集"
+        case .soundAndHaptics: "サウンド・振動"
+        case .learningData: "学習データ"
+        }
+    }
+}
+
 /// 設定(ニックネーム・学習データ管理)。要件 §9-7
 struct SettingsView: View {
     /// 連続入力中に毎回Firestoreへ書き込まないための待ち時間
@@ -16,43 +32,23 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showDeleteDialog = false
     @State private var profileSyncTask: Task<Void, Never>?
+    var content: SettingsContent = .all
 
     var body: some View {
         Form {
-            Section {
-                TextField("ニックネーム", text: $nickname)
-
-                ProfileIconPicker(selection: $profileIcon)
-                    .padding(.vertical, 4)
-
-                TextField("自己紹介(任意)", text: $bio, axis: .vertical)
-                    .lineLimit(2...4)
-            } header: {
-                Text("プロフィール")
-            } footer: {
-                Text("名前・アイコン・自己紹介はオンラインプロフィールへ反映されます")
+            if content == .all || content == .profile {
+                profileSection
             }
 
-            Section {
-                Toggle("効果音", isOn: $soundEnabled)
-                Toggle("振動(ハプティクス)", isOn: $hapticsEnabled)
-            } header: {
-                Text("サウンド")
-            } footer: {
-                Text("効果音はマナーモード中は鳴りません")
+            if content == .all || content == .soundAndHaptics {
+                soundSection
             }
 
-            Section("学習データ") {
-                Button("解答履歴と復習リストを削除", role: .destructive) {
-                    showDeleteDialog = true
-                }
-            }
-
-            Section("アプリ情報") {
-                LabeledContent("バージョン", value: "0.5.0")
+            if content == .all || content == .learningData {
+                learningDataSection
             }
         }
-        .navigationTitle("設定")
+        .navigationTitle(content.title)
         .onChange(of: nickname) { _, _ in
             scheduleProfileSync()
         }
@@ -73,6 +69,41 @@ struct SettingsView: View {
         ) {
             Button("削除する", role: .destructive) {
                 deleteLearningData()
+            }
+        }
+    }
+
+    private var profileSection: some View {
+        Section {
+            TextField("ニックネーム", text: $nickname)
+
+            ProfileIconPicker(selection: $profileIcon)
+                .padding(.vertical, 4)
+
+            TextField("自己紹介(任意)", text: $bio, axis: .vertical)
+                .lineLimit(2...4)
+        } header: {
+            Text("プロフィール")
+        } footer: {
+            Text("名前・アイコン・自己紹介はオンラインプロフィールへ反映されます")
+        }
+    }
+
+    private var soundSection: some View {
+        Section {
+            Toggle("効果音", isOn: $soundEnabled)
+            Toggle("振動(ハプティクス)", isOn: $hapticsEnabled)
+        } header: {
+            Text("サウンド")
+        } footer: {
+            Text("効果音はマナーモード中は鳴りません")
+        }
+    }
+
+    private var learningDataSection: some View {
+        Section("学習データ") {
+            Button("解答履歴と復習リストを削除", role: .destructive) {
+                showDeleteDialog = true
             }
         }
     }

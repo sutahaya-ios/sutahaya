@@ -1,6 +1,18 @@
 import SwiftUI
 
-/// 自分の「会員証」風カード:アバター・ニックネーム・自己紹介・フレンドコード・コピー/シェア
+/// 将来ローカルの対戦結果履歴から集計した戦績を表示するための受け皿。
+/// 現在は試合単位の順位履歴がないため、マイページでは `nil` を渡して未集計表示にする。
+struct ProfileBattleStats: Equatable {
+    let battleCount: Int
+    let firstPlaceCount: Int
+
+    var firstPlaceRate: Double {
+        guard battleCount > 0 else { return 0 }
+        return Double(firstPlaceCount) / Double(battleCount)
+    }
+}
+
+/// 自分のプロフィールカード。プロフィールを主役にし、戦績とフレンドコードを1枚へまとめる
 struct FriendProfileCard: View {
     private static let copiedResetDelay: TimeInterval = 2
 
@@ -8,56 +20,152 @@ struct FriendProfileCard: View {
     let friendCode: String?
     var icon: String = ProfileIcon.none
     var bio: String = ""
+    var battleStats: ProfileBattleStats? = nil
 
     @State private var copied = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            AvatarCircle(name: nickname, icon: icon, size: 64, color: .accentColor)
+        VStack(alignment: .leading, spacing: 14) {
+            profileHeader
+            detailPanel
+        }
+        .padding(16)
+        .background(cardBackground)
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(.white.opacity(0.9), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.08), radius: 14, y: 7)
+    }
 
-            Text(nickname)
-                .font(.headline)
+    private var profileHeader: some View {
+        HStack(spacing: 14) {
+            AvatarCircle(name: nickname, icon: icon, size: 74, color: .accentColor)
+                .padding(5)
+                .background(Circle().fill(.white.opacity(0.9)))
 
-            if !bio.isEmpty {
-                Text(bio)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(nickname)
+                    .font(.title3.bold())
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+
+                Text(bio.isEmpty ? "自己紹介はまだありません" : bio)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private var detailPanel: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 0) {
+                metric(
+                    value: battleStats.map { String($0.battleCount) } ?? "—",
+                    title: "対戦数",
+                    systemImage: "gamecontroller.fill",
+                    color: .indigo
+                )
+
+                metricDivider
+
+                metric(
+                    value: battleStats.map { String($0.firstPlaceCount) } ?? "—",
+                    title: "1位回数",
+                    systemImage: "crown.fill",
+                    color: .yellow
+                )
+
+                metricDivider
+
+                metric(
+                    value: battleStats.map {
+                        $0.firstPlaceRate.formatted(.percent.precision(.fractionLength(1)))
+                    } ?? "—",
+                    title: "1位率",
+                    systemImage: "trophy.fill",
+                    color: .blue
+                )
             }
 
-            Text(friendCode ?? "------")
-                .font(.system(.title, design: .monospaced).bold())
-                .kerning(4)
+            Divider()
 
-            Text(friendCode == nil
-                 ? "オンライン設定後にコードが発行されます"
-                 : "このコードで友達に追加してもらえます")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("フレンドコード")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
 
-            if let friendCode {
-                HStack(spacing: 12) {
-                    Button {
-                        copy(friendCode)
-                    } label: {
-                        Label(copied ? "コピー済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
+                HStack(spacing: 10) {
+                    Text(friendCode ?? "------")
+                        .font(.system(.headline, design: .monospaced).bold())
+                        .kerning(2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color.accentColor.opacity(0.07)))
+
+                    if let friendCode {
+                        Button {
+                            copy(friendCode)
+                        } label: {
+                            Label(copied ? "済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .font(.caption)
+                        .fixedSize()
+
+                        ShareLink(item: "スタはやでフレンドになろう!マイコード:\(friendCode)") {
+                            Label("シェア", systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .font(.caption)
+                        .fixedSize()
                     }
-                    .buttonStyle(.bordered)
-
-                    ShareLink(item: "スタはやでフレンドになろう!マイコード:\(friendCode)") {
-                        Label("シェア", systemImage: "square.and.arrow.up")
-                    }
-                    .buttonStyle(.bordered)
                 }
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(20)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemBackground))
-                .stroke(Color.accentColor, lineWidth: 2)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.white.opacity(0.88))
         )
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 28, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [Color.accentColor.opacity(0.18), Color(.secondarySystemBackground)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+    }
+
+    private var metricDivider: some View {
+        Divider()
+            .frame(height: 60)
+    }
+
+    private func metric(value: String, title: String, systemImage: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .foregroundStyle(color)
+            Text(value)
+                .font(.title3.bold())
+                .monospacedDigit()
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 
     private func copy(_ friendCode: String) {
@@ -75,6 +183,13 @@ struct FriendProfileCard: View {
 }
 
 #Preview {
-    FriendProfileCard(nickname: "たける", friendCode: "3F8KQ2")
-        .padding()
+    FriendProfileCard(
+        nickname: "TOKIYA TEST DEMO",
+        friendCode: "VH49YR",
+        icon: "✏️",
+        bio: "実務経験はありません。Codexの扱いは得意です。",
+        battleStats: ProfileBattleStats(battleCount: 42, firstPlaceCount: 18)
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }
