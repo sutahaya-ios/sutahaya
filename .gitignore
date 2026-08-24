@@ -20,6 +20,11 @@ Config/local.xcconfig
 # Claude Code ローカル設定
 .claude/settings.local.json
 
+# 単語データの作業用xlsx(管理外)。バイナリなので同時編集するとgitがマージできず、
+# 一方の追加語が消える恐れがある。正はHayaosiApp/Resources/*.json(scripts/word_bank_to_json.pyで変換)。
+# 受け渡しはファイルを直接送る
+word_bank.xlsx
+
 # Firebase Emulator / Node.js のローカル生成物
 node_modules/
 .firebase/
