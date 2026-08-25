@@ -53,6 +53,8 @@ struct BattleView: View {
         .onChange(of: questionKey) { _, _ in
             pendingAnswer = nil
             answerErrorMessage = nil
+            wrongFeedbackTask?.cancel()
+            wrongFeedbackQuestionIndex = nil
         }
         .onChange(of: failedIDs) { oldIDs, newIDs in
             if !newIDs.subtracting(oldIDs).isEmpty {
@@ -90,7 +92,9 @@ struct BattleView: View {
     /// 出題中は文字送りを進め、発表に入ったら全文を出す
     private func revealMode(game: RoomState.Game) -> BattleQuestionText.Mode {
         guard game.phase == .question else { return .full }
-        return .progressing(startedAtMS: game.effectiveStartedAtMS)
+        return .progressing(
+            startedAtMS: session.localTimeMS(forBattleTimeMS: game.effectiveStartedAtMS)
+        )
     }
 
     // MARK: - スコア・進行表示
@@ -178,24 +182,28 @@ struct BattleView: View {
                     .foregroundStyle(.orange)
             }
 
-            BattleChoiceList(
-                choices: question.choices,
-                myChoice: myAnswer(in: game)?.choice ?? pendingAnswer?.choice,
-                canAnswer: session.canAnswerNow && pendingAnswer == nil
-            ) { choice in
-                Haptics.impact(.heavy)
-                let pending = PendingAnswer(questionIndex: game.questionIndex, choice: choice)
-                pendingAnswer = pending
-                answerErrorMessage = nil
-                session.submitAnswer(
-                    choice,
-                    visibleCount: session.visibleCharacterCount(at: .now)
-                ) { succeeded in
-                    guard pendingAnswer == pending else { return }
-                    if !succeeded {
-                        pendingAnswer = nil
-                        if questionKey?.index == pending.questionIndex {
-                            answerErrorMessage = "回答を送信できませんでした。もう一度お試しください"
+            // 回答権はFirebase補正時刻で短周期に再評価し、
+            // 相手の回答更新を待たずに開始時刻を跨げるようにする。
+            TimelineView(.periodic(from: .now, by: Self.tickInterval)) { timeline in
+                BattleChoiceList(
+                    choices: question.choices,
+                    myChoice: myAnswer(in: game)?.choice ?? pendingAnswer?.choice,
+                    canAnswer: session.canAnswer(at: timeline.date) && pendingAnswer == nil
+                ) { choice in
+                    Haptics.impact(.heavy)
+                    let pending = PendingAnswer(questionIndex: game.questionIndex, choice: choice)
+                    pendingAnswer = pending
+                    answerErrorMessage = nil
+                    session.submitAnswer(
+                        choice,
+                        visibleCount: session.visibleCharacterCount(at: .now)
+                    ) { succeeded in
+                        guard pendingAnswer == pending else { return }
+                        if !succeeded {
+                            pendingAnswer = nil
+                            if questionKey?.index == pending.questionIndex {
+                                answerErrorMessage = "回答を送信できませんでした。もう一度お試しください"
+                            }
                         }
                     }
                 }

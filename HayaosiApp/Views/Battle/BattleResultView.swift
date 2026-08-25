@@ -47,7 +47,7 @@ struct BattleResultView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if !session.wrongQuestionIDs.isEmpty {
+                if !session.isOnline, !session.wrongQuestionIDs.isEmpty {
                     Button("間違えた\(session.wrongQuestionIDs.count)問を復習") {
                         isReviewPresented = true
                     }

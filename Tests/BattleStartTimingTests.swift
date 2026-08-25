@@ -97,6 +97,33 @@ final class BattleStartTimingTests: XCTestCase {
         XCTAssertEqual(state?.game?.effectiveStartedAtMS, 1_000)
     }
 
+    func test_端末時計が遅れていてもサーバー時刻基準で回答できる() {
+        let serverStartAtMS = observedAt.addingTimeInterval(2).timeIntervalSince1970 * 1_000
+        let session = StubBattleSession(
+            state: makeRoomState(startDelayMS: 0, startedAtMS: serverStartAtMS),
+            battleClockOffsetMS: 2_000
+        )
+
+        XCTAssertTrue(session.canAnswer(at: observedAt))
+        XCTAssertEqual(session.remainingTime(at: observedAt), 20, accuracy: 0.001)
+        XCTAssertEqual(session.localTimeMS(forBattleTimeMS: serverStartAtMS),
+                       observedAt.timeIntervalSince1970 * 1_000,
+                       accuracy: 0.001)
+    }
+
+    func test_文字送りもサーバー時刻補正を使う() {
+        let serverStartAtMS = observedAt.timeIntervalSince1970 * 1_000
+        let session = StubBattleSession(
+            state: makeRoomState(startDelayMS: 0, startedAtMS: serverStartAtMS),
+            battleClockOffsetMS: 1_000
+        )
+
+        XCTAssertEqual(
+            session.visibleCharacterCount(at: observedAt),
+            ProgressiveReveal.visibleCount(totalCharacters: "benefit".count, elapsed: 1)
+        )
+    }
+
     private func makeRoomState(startDelayMS: Double, startedAtMS: Double) -> RoomState {
         let question = RoomState.QuestionPayload(
             id: "q1",
@@ -135,11 +162,13 @@ private final class StubBattleSession: BattleSession {
     let myID = "me"
     let isHost = true
     let isOnline = false
+    let battleClockOffsetMS: Double
     let state: RoomState?
     let wrongQuestionIDs: Set<String> = []
 
-    init(state: RoomState) {
+    init(state: RoomState, battleClockOffsetMS: Double = 0) {
         self.state = state
+        self.battleClockOffsetMS = battleClockOffsetMS
     }
 
     func startGame(questions: [Question]) async {}

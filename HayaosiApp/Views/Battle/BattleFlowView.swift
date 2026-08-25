@@ -78,14 +78,17 @@ struct BattleFlowView: View {
            game.startDelayMS > 0,
            let observedAt = matchStartObservedAt {
             TimelineView(.periodic(from: .now, by: Self.startCueTickInterval)) { timeline in
+                let localScheduledStartAtMS = session.localTimeMS(
+                    forBattleTimeMS: game.effectiveStartedAtMS
+                )
                 let remaining = BattleStartTiming.remainingDisplayTime(
-                    scheduledStartAtMS: game.effectiveStartedAtMS,
+                    scheduledStartAtMS: localScheduledStartAtMS,
                     observedAt: observedAt,
                     now: timeline.date
                 )
                 if remaining > 0 {
                     BattleStartView(progress: BattleStartTiming.progress(
-                        scheduledStartAtMS: game.effectiveStartedAtMS,
+                        scheduledStartAtMS: localScheduledStartAtMS,
                         observedAt: observedAt,
                         now: timeline.date
                     ))

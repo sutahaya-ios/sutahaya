@@ -47,14 +47,19 @@ final class OnlineBattleSession: BattleSession {
     }
 
     private let roomsRef: DatabaseReference
+    private let serverTimeOffsetRef: DatabaseReference
     private var observerHandle: DatabaseHandle?
+    private var serverTimeOffsetObserverHandle: DatabaseHandle?
     private var hasSavedResults = false
     private var hasLeft = false
+
+    /// `.info/serverTimeOffset`で補正したFirebaseサーバー時刻 - 端末時刻(ms)。
+    private(set) var battleClockOffsetMS: Double = 0
 
     // MARK: ホスト進行管理(OnlineBattleSession+Host.swift から使用)
     var questionTimerTask: Task<Void, Never>?
     var revealTask: Task<Void, Never>?
-    var timedQuestion: (index: Int, effectiveStartedAtMS: Double)?
+    var timedQuestion: (index: Int, effectiveStartedAtMS: Double, clockOffsetMS: Double)?
     var revealScheduledIndex: Int?
     /// 採点済みの問題。スナップショットが複数回届いても得点を二重加算しないためのマーカー
     var scoredQuestionIndex: Int?
@@ -72,6 +77,7 @@ final class OnlineBattleSession: BattleSession {
         self.myID = myID
         self.nickname = nickname
         self.roomsRef = Database.database().reference().child("rooms")
+        self.serverTimeOffsetRef = Database.database().reference(withPath: ".info/serverTimeOffset")
     }
 
     // MARK: - ルーム作成・入室・退出
@@ -206,7 +212,7 @@ final class OnlineBattleSession: BattleSession {
             completion(false)
             return
         }
-        let nowMS = Date().timeIntervalSince1970 * 1_000
+        let nowMS = battleTimeMS(at: .now)
         let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
         guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else {
             completion(false)
@@ -250,6 +256,7 @@ final class OnlineBattleSession: BattleSession {
     // MARK: - 観測
 
     private func startObserving() {
+        startObservingServerTimeOffset()
         observerHandle = roomRef.observe(.value) { [weak self] snapshot in
             MainActor.assumeIsolated {
                 self?.apply(snapshot: snapshot)
@@ -262,6 +269,26 @@ final class OnlineBattleSession: BattleSession {
             roomRef.removeObserver(withHandle: observerHandle)
         }
         observerHandle = nil
+        if let serverTimeOffsetObserverHandle {
+            serverTimeOffsetRef.removeObserver(withHandle: serverTimeOffsetObserverHandle)
+        }
+        serverTimeOffsetObserverHandle = nil
+    }
+
+    private func startObservingServerTimeOffset() {
+        guard serverTimeOffsetObserverHandle == nil else { return }
+        serverTimeOffsetObserverHandle = serverTimeOffsetRef.observe(.value) { [weak self] snapshot in
+            MainActor.assumeIsolated {
+                guard let offset = snapshot.value as? NSNumber else { return }
+                guard let self else { return }
+                let newOffsetMS = offset.doubleValue
+                guard self.battleClockOffsetMS != newOffsetMS else { return }
+                self.battleClockOffsetMS = newOffsetMS
+                if self.isHost, let state = self.state {
+                    self.hostReact(to: state)
+                }
+            }
+        }
     }
 
     private func apply(snapshot: DataSnapshot) {

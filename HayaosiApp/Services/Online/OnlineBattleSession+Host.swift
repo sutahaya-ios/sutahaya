@@ -103,14 +103,15 @@ extension OnlineBattleSession {
         // 同じ問題・同じ開始時刻ならタイマー設定済み
         if let timed = timedQuestion,
            timed.index == game.questionIndex,
-           timed.effectiveStartedAtMS == game.effectiveStartedAtMS {
+           timed.effectiveStartedAtMS == game.effectiveStartedAtMS,
+           timed.clockOffsetMS == battleClockOffsetMS {
             return
         }
         cancelQuestionTimer()
-        timedQuestion = (game.questionIndex, game.effectiveStartedAtMS)
+        timedQuestion = (game.questionIndex, game.effectiveStartedAtMS, battleClockOffsetMS)
 
         let index = game.questionIndex
-        let elapsed = Date().timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000
+        let elapsed = (battleTimeMS(at: .now) - game.effectiveStartedAtMS) / 1_000
         let remaining = max(0, timeLimit - elapsed)
         questionTimerTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))

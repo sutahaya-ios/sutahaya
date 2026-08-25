@@ -11,6 +11,8 @@ protocol BattleSession: AnyObject, Observable {
     var isHost: Bool { get }
     /// オンライン対戦か(false=CPU対戦。参加コードや招待UIを出さない)
     var isOnline: Bool { get }
+    /// Firebaseのサーバー時刻 - 端末時刻(ms)。CPU対戦は0。
+    var battleClockOffsetMS: Double { get }
     var state: RoomState? { get }
     /// この対戦で自分が間違えた問題。リザルトから既存の復習機能へ渡す
     var wrongQuestionIDs: Set<String> { get }
@@ -27,6 +29,8 @@ protocol BattleSession: AnyObject, Observable {
 }
 
 extension BattleSession {
+    var battleClockOffsetMS: Double { 0 }
+
     /// CPU対戦など同期的に回答できる実装は、従来の回答処理を呼んだ時点で成功とみなす。
     func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
         submitAnswer(choice, visibleCount: visibleCount)
@@ -49,14 +53,18 @@ extension BattleSession {
         guard let state, let question = currentQuestion else { return 0 }
         guard let game = state.game, game.phase == .question else { return question.text.count }
 
-        let elapsed = date.timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000
+        let elapsed = (battleTimeMS(at: date) - game.effectiveStartedAtMS) / 1_000
         return ProgressiveReveal.visibleCount(totalCharacters: question.text.count, elapsed: elapsed)
     }
 
     /// 自分がこの問題にまだ回答できるか(未回答かつ誤答していない)
     var canAnswerNow: Bool {
+        canAnswer(at: .now)
+    }
+
+    func canAnswer(at date: Date) -> Bool {
         guard let game = state?.game, game.phase == .question else { return false }
-        let nowMS = Date().timeIntervalSince1970 * 1_000
+        let nowMS = battleTimeMS(at: date)
         let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
         guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else { return false }
         guard !game.failedIDs.contains(myID) else { return false }
@@ -66,7 +74,17 @@ extension BattleSession {
     /// 表示用の残り時間(開始タイムスタンプ基準の近似値)
     func remainingTime(at date: Date) -> TimeInterval {
         guard let state, let game = state.game, game.phase == .question else { return 0 }
-        let elapsed = max(0, date.timeIntervalSince1970 - game.effectiveStartedAtMS / 1_000)
+        let elapsed = max(0, (battleTimeMS(at: date) - game.effectiveStartedAtMS) / 1_000)
         return max(0, state.settings.timeLimit - elapsed)
+    }
+
+    /// 端末のDateを、対戦で共有するFirebaseサーバー時刻(ms)へ変換する。
+    func battleTimeMS(at date: Date) -> Double {
+        date.timeIntervalSince1970 * 1_000 + battleClockOffsetMS
+    }
+
+    /// Firebaseサーバー時刻(ms)を、この端末のDateと比較できる値へ変換する。
+    func localTimeMS(forBattleTimeMS timeMS: Double) -> Double {
+        timeMS - battleClockOffsetMS
     }
 }
