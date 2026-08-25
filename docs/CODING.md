@@ -76,5 +76,6 @@ env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project
 - **英単語を増やす手順**:`HayaosiApp/Resources/junior_high.json` / `high_school.json` / `toeic.json` の対象ファイルへ既存要素と同じ形式で直接追記し、`QuestionSeeder.dataVersion` を上げる。
   - 必須項目は `id` / `word` / `meaning` / `pos` / `category` / `difficulty`。カテゴリはファイル名と一致させ、難易度は整数の1〜5にする
   - IDは中学=`jh_####`、高校=`hs_####`、TOEIC=`tc_####`。同じファイル内ではIDと単語(大文字小文字を無視)を重複させない。カテゴリをまたぐ同じ単語は登録してよい
-  - 品詞は `PartOfSpeech` の3種のみ(誤答を同じ品詞から作るため、表記がゆれるとグループが割れる)
+  - 品詞は `PartOfSpeech` の7種のみ(動詞 / 名詞 / 形容詞 / 副詞 / 代名詞 / 接続詞 / 前置詞)。誤答を同じ品詞から作るため、表記がゆれるとグループが割れる
+  - 4択の誤答を同じ品詞から3語選ぶため、使用する品詞は全カテゴリを通して4語以上登録する
 - SwiftDataモデル(`Models/`)にプロパティを足すときは Optional かデフォルト値付きにし、**アプリを削除せず上書きインストールで移行を確認する**(ユーザーの学習履歴が飛ぶ事故を防ぐ)

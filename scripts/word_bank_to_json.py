@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -57,7 +58,10 @@ CATEGORY_CONFIGS = (
 )
 
 COLUMNS = ["id", "word", "meaning", "pos", "difficulty"]
-VALID_POS = {"動詞", "名詞", "形容詞"}
+VALID_POS = (
+    "動詞", "名詞", "形容詞", "副詞", "代名詞", "接続詞", "前置詞",
+)
+MIN_WORDS_PER_POS = 4
 ID_DIGITS = 4
 
 
@@ -105,7 +109,10 @@ def validate(rows, prefix):
             seen_words[key] = where
 
         if entry["pos"] not in VALID_POS and entry["pos"] not in (None, ""):
-            problems.append(f"{where}: 品詞「{entry['pos']}」は 動詞/名詞/形容詞 のいずれかにする")
+            valid_pos_text = "/".join(VALID_POS)
+            problems.append(
+                f"{where}: 品詞「{entry['pos']}」は {valid_pos_text} のいずれかにする"
+            )
 
         difficulty = entry["difficulty"]
         difficulty_is_valid = (
@@ -136,6 +143,20 @@ def validate(rows, prefix):
         seen_ids[identifier] = where
 
     return problems
+
+
+def validate_minimum_pos_counts(rows):
+    """使用中の各品詞が、4択を作れる語数に達しているか確認する。"""
+    counts = Counter(
+        entry["pos"]
+        for entry in rows
+        if entry["pos"] in VALID_POS
+    )
+    return [
+        f"{pos}は{counts[pos]}語しかない。4択にするには同じ品詞が{MIN_WORDS_PER_POS}語以上必要"
+        for pos in VALID_POS
+        if 0 < counts[pos] < MIN_WORDS_PER_POS
+    ]
 
 
 def assign_ids(rows, prefix):
@@ -212,6 +233,8 @@ def main():
 
     problems = []
     results = []
+    all_rows = []
+    missing_sheet_found = False
     for config in CATEGORY_CONFIGS:
         rows = []
         missing_sheet = False
@@ -223,6 +246,7 @@ def main():
                     f"{workbook_path.name}: 必要なシート「{sheet_name}」がない"
                 )
                 missing_sheet = True
+                missing_sheet_found = True
                 continue
             rows.extend(read_sheet(
                 workbook[sheet_name],
@@ -232,10 +256,14 @@ def main():
 
         if missing_sheet:
             continue
+        all_rows.extend(rows)
         found = validate(rows, config["prefix"])
         problems.extend(found)
         if not found:
             results.append((config, rows))
+
+    if not missing_sheet_found:
+        problems.extend(validate_minimum_pos_counts(all_rows))
 
     if problems:
         print(f"入力を直してから実行する({len(problems)}件):\n", file=sys.stderr)
