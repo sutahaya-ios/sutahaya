@@ -1,88 +1,113 @@
 import SwiftUI
 import SwiftData
 
-/// 学習タブ。カテゴリから学習内容を選ぶ入口
+/// 学習タブ。ピン留めした教材から学習内容を選ぶ入口
 struct StudyHubView: View {
+    @AppStorage("pinnedStudyCategories") private var pinnedCategoriesJSON = "[]"
+    @Query private var records: [AnswerRecord]
+    @Query private var questions: [Question]
+
+    @State private var isEditingBoard = false
+    @State private var isShowingMaterialSheet = false
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("学習メニュー")
-                    .font(.title3.bold())
-                categorySelection
+            VStack(alignment: .leading, spacing: 18) {
+                header
+
+                PinnedStudyBoardView(
+                    categories: pinnedCategories,
+                    records: records,
+                    questions: questions,
+                    isEditing: isEditingBoard,
+                    onUnpin: unpin
+                )
+
+                addMaterialButton
             }
             .padding()
         }
         .safeAreaInset(edge: .bottom) { AdBannerView() }
-    }
-
-    private var categorySelection: some View {
-        VStack(spacing: 10) {
-            NavigationLink {
-                CategorySummaryView(category: .juniorHigh)
-            } label: {
-                StudyCategoryCard(
-                    title: WordCategory.juniorHigh.displayName,
-                    subtitle: "基礎から積み上げる",
-                    systemImage: "books.vertical.fill",
-                    accentColor: .blue,
-                    backgroundColor: Color.blue.opacity(0.1)
-                )
-            }
-            .buttonStyle(.plain)
-
-            NavigationLink {
-                CategorySummaryView(category: .highSchool)
-            } label: {
-                StudyCategoryCard(
-                    title: WordCategory.highSchool.displayName,
-                    subtitle: "受験レベルまで対応",
-                    systemImage: "graduationcap.fill",
-                    accentColor: .orange,
-                    backgroundColor: Color.orange.opacity(0.1)
-                )
-            }
-            .buttonStyle(.plain)
-
-            NavigationLink {
-                CategorySummaryView(category: .toeic)
-            } label: {
-                StudyCategoryCard(
-                    title: WordCategory.toeic.displayName,
-                    subtitle: "ビジネス英語に対応",
-                    systemImage: "briefcase.fill",
-                    accentColor: .green,
-                    backgroundColor: Color.green.opacity(0.1)
-                )
-            }
-            .buttonStyle(.plain)
+        .sheet(isPresented: $isShowingMaterialSheet) {
+            StudyMaterialAddSheet(pinnedCategories: pinnedCategoriesBinding)
         }
     }
-}
 
-private struct StudyCategoryCard: View {
-    let title: String
-    let subtitle: String
-    let systemImage: String
-    let accentColor: Color
-    let backgroundColor: Color
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("学習メニュー")
+                .font(.title3.bold())
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: systemImage)
-                .font(.system(size: 22))
-                .foregroundStyle(accentColor)
+            Spacer()
 
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.primary)
-
-            Text(subtitle)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+            Button(isEditingBoard ? "完了" : "編集") {
+                withAnimation {
+                    isEditingBoard.toggle()
+                }
+            }
+            .font(.subheadline.weight(.semibold))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(RoundedRectangle(cornerRadius: 14).fill(backgroundColor))
+    }
+
+    private var addMaterialButton: some View {
+        Button {
+            isShowingMaterialSheet = true
+        } label: {
+            Label("教材を追加", systemImage: "plus")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.accentColor.opacity(0.12))
+                )
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Color.accentColor)
+    }
+
+    private var pinnedCategories: [WordCategory] {
+        guard let data = pinnedCategoriesJSON.data(using: .utf8) else {
+            return []
+        }
+
+        do {
+            let rawValues = try JSONDecoder().decode([String].self, from: data)
+            var includedRawValues = Set<String>()
+            return rawValues.compactMap { rawValue in
+                guard includedRawValues.insert(rawValue).inserted else {
+                    return nil
+                }
+                return WordCategory(rawValue: rawValue)
+            }
+        } catch {
+            print("ピン留め教材の読み込みに失敗: \(error)")
+            return []
+        }
+    }
+
+    private var pinnedCategoriesBinding: Binding<[WordCategory]> {
+        Binding(
+            get: { pinnedCategories },
+            set: storePinnedCategories
+        )
+    }
+
+    private func unpin(_ category: WordCategory) {
+        storePinnedCategories(pinnedCategories.filter { $0 != category })
+    }
+
+    private func storePinnedCategories(_ categories: [WordCategory]) {
+        do {
+            let data = try JSONEncoder().encode(categories.map(\.rawValue))
+            guard let json = String(data: data, encoding: .utf8) else {
+                print("ピン留め教材を文字列へ変換できませんでした")
+                return
+            }
+            pinnedCategoriesJSON = json
+        } catch {
+            print("ピン留め教材の保存に失敗: \(error)")
+        }
     }
 }
 
@@ -90,5 +115,8 @@ private struct StudyCategoryCard: View {
     NavigationStack {
         StudyHubView()
     }
-    .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self], inMemory: true)
+    .modelContainer(
+        for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self],
+        inMemory: true
+    )
 }
