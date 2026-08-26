@@ -16,7 +16,7 @@ struct BattleFlowView: View {
         Group {
             switch session.state?.status {
             case .waiting:
-                BattleLobbyView(session: session)
+                BattleLobbyView(session: session, onLeave: leaveAndDismiss)
             case .playing:
                 playingView
             case .finished:
@@ -34,13 +34,21 @@ struct BattleFlowView: View {
         .toolbar {
             if session.state?.status != .finished && session.state?.status != .closed {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("退出") {
+                    Button {
                         if session.state?.status == .playing {
                             showLeaveDialog = true
                         } else {
                             leaveAndDismiss()
                         }
+                    } label: {
+                        if session.state?.status == .waiting {
+                            Image(systemName: "chevron.left")
+                                .font(.headline)
+                        } else {
+                            Text("退出")
+                        }
                     }
+                    .accessibilityLabel(session.state?.status == .waiting ? "戻る" : "退出")
                 }
             }
         }

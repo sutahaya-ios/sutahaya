@@ -57,10 +57,8 @@ struct BattleHubView: View {
         .navigationDestination(isPresented: $showInviteJoin) {
             RoomJoinView(initialCode: inviteCode ?? "")
         }
-        .sheet(isPresented: $showOnlineMenu) {
-            NavigationStack {
-                OnlineModeMenuView()
-            }
+        .navigationDestination(isPresented: $showOnlineMenu) {
+            OnlineModeMenuView()
         }
         .sheet(isPresented: $showTutorial, onDismiss: {
             hasSeenTutorial = true
