@@ -35,21 +35,27 @@ struct RoomCreateView: View {
                 Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")
             }
 
-            Section {
-                Button {
-                    Task { await create() }
-                } label: {
-                    if isCreating {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Text("ルームを作成")
-                    }
+            if availableQuestions.isEmpty {
+                Section {
+                    QuestionAvailabilityNotice(category: category, difficulty: difficulty)
                 }
-                .buttonStyle(SoundButtonStyle())
-                .disabled(isCreating || availableQuestions.isEmpty)
-            } footer: {
-                Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")
+            } else {
+                Section {
+                    Button {
+                        Task { await create() }
+                    } label: {
+                        if isCreating {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("ルームを作成")
+                        }
+                    }
+                    .buttonStyle(SoundButtonStyle())
+                    .disabled(isCreating)
+                } footer: {
+                    Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")
+                }
             }
         }
         .navigationTitle("ルーム作成")
@@ -80,13 +86,16 @@ struct RoomCreateView: View {
     }
 
     private func create() async {
+        let availableQuestionCount = availableQuestions.count
+        guard availableQuestionCount > 0 else { return }
+
         isCreating = true
         defer { isCreating = false }
         do {
             let uid = try await AuthService.shared.ensureSignedIn()
             let newSession = try OnlineBattleSession(myID: uid, nickname: nickname)
             try await newSession.createRoom(settings: .init(
-                questionCount: min(questionCount, availableQuestions.count),
+                questionCount: min(questionCount, availableQuestionCount),
                 timeLimit: timeLimit,
                 genre: .englishWord,
                 wordCategory: category,

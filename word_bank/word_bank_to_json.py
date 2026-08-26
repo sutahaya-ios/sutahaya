@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """4つの単語入力xlsxから単語JSONを生成する。
 
-    python3 scripts/word_bank_to_json.py            # 検証だけして差分を表示
-    python3 scripts/word_bank_to_json.py --write    # JSONへ書き込む
+    python3 word_bank/word_bank_to_json.py            # 検証だけして差分を表示
+    python3 word_bank/word_bank_to_json.py --write    # JSONへ書き込む
 
-id が空欄の行には、カテゴリ内の最大番号の続きを自動で振る。
+id が空欄の行には、接頭辞ごとの最大番号の続きを自動で振る。
 1件でも入力ミスがあれば、何も書き込まずに全件を報告して終了する。
 """
 
@@ -17,12 +17,13 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-ROOT = Path(__file__).resolve().parent.parent
+WORD_BANK_DIR = Path(__file__).resolve().parent
+ROOT = WORD_BANK_DIR.parent
 DEFAULT_WORKBOOKS = {
-    "main": ROOT / "word_bank.xlsx",
-    "takeru": ROOT / "word_bank_takeru.xlsx",
-    "tokiya": ROOT / "word_bank_tokiya.xlsx",
-    "toeic": ROOT / "word_bank_toeic.xlsx",
+    "main": WORD_BANK_DIR / "word_bank.xlsx",
+    "takeru": WORD_BANK_DIR / "word_bank_takeru.xlsx",
+    "tokiya": WORD_BANK_DIR / "word_bank_tokiya.xlsx",
+    "toeic": WORD_BANK_DIR / "word_bank_toeic.xlsx",
 }
 RESOURCES = ROOT / "HayaosiApp" / "Resources"
 
@@ -31,41 +32,77 @@ CATEGORY_CONFIGS = (
         "name": "中学英単語",
         "filename": "junior_high.json",
         "prefix": "jh_",
-        "category": "junior_high",
-        "sources": (("main", "中学英単語", None),),
+        "sources": ({
+            "workbook": "main",
+            "sheet": "中学英単語",
+            "difficulties": None,
+        },),
     },
     {
         "name": "高校英単語",
         "filename": "high_school.json",
         "prefix": "hs_",
-        "category": "high_school",
         "sources": (
-            ("takeru", "ターゲット1200", frozenset({1, 2})),
-            ("takeru", "ターゲット1400", frozenset({3})),
-            ("tokiya", "ターゲット1900", frozenset({4, 5})),
+            {
+                "workbook": "takeru",
+                "sheet": "ターゲット1200",
+                "difficulties": frozenset({1, 2}),
+            },
+            {
+                "workbook": "takeru",
+                "sheet": "ターゲット1400",
+                "difficulties": frozenset({3}),
+            },
+            {
+                "workbook": "tokiya",
+                "sheet": "ターゲット1900",
+                "difficulties": frozenset({4, 5}),
+            },
         ),
     },
     {
         "name": "TOEIC単語",
         "filename": "toeic.json",
-        "prefix": "tc_",
-        "category": "toeic",
         "sources": (
-            ("toeic", "銀のフレーズ", frozenset({1, 2})),
-            ("toeic", "金のフレーズ", frozenset({3, 4, 5})),
+            {
+                "workbook": "toeic",
+                "sheet": "銀のフレーズ",
+                "difficulties": frozenset({1, 2}),
+                "prefix": "tc1_",
+            },
+            {
+                "workbook": "toeic",
+                "sheet": "金のフレーズ",
+                "difficulties": frozenset({3, 4, 5}),
+                "prefix": "tc2_",
+            },
         ),
     },
 )
 
 COLUMNS = ["id", "word", "meaning", "pos", "difficulty"]
-VALID_POS = (
-    "動詞", "名詞", "形容詞", "副詞", "代名詞", "接続詞", "前置詞",
+DISTRACTOR_GROUPS = (
+    ("動詞", ("動詞",)),
+    ("名詞", ("名詞",)),
+    ("形容詞", ("形容詞",)),
+    ("副詞", ("副詞",)),
+    ("代名詞・接続詞・前置詞", ("代名詞", "接続詞", "前置詞")),
 )
-MIN_WORDS_PER_POS = 4
+VALID_POS = tuple(
+    pos
+    for _, group in DISTRACTOR_GROUPS
+    for pos in group
+)
+MIN_WORDS_PER_DISTRACTOR_GROUP = 4
 ID_DIGITS = 4
 
 
-def read_sheet(worksheet, workbook_path, allowed_difficulties):
+def read_sheet(
+    worksheet,
+    workbook_path,
+    allowed_difficulties,
+    id_prefix,
+):
     """見出し行を除いた各行を、入力元情報付きの辞書で返す。"""
     rows = []
     for number, values in enumerate(worksheet.iter_rows(min_row=2, values_only=True), start=2):
@@ -78,6 +115,7 @@ def read_sheet(worksheet, workbook_path, allowed_difficulties):
             "sheet": worksheet.title,
             "row": number,
             "allowed_difficulties": allowed_difficulties,
+            "id_prefix": id_prefix,
             **dict(zip(COLUMNS, cells)),
         })
     return rows
@@ -87,12 +125,15 @@ def row_location(entry):
     return f"{entry['workbook']} / {entry['sheet']} {entry['row']}行目"
 
 
-def validate(rows, prefix):
+def validate(rows):
     """カテゴリ全体の入力ミスを漏れなく集める。"""
     problems = []
     seen_words = {}
     seen_ids = {}
-    identifier_pattern = re.compile(rf"{re.escape(prefix)}\d{{{ID_DIGITS},}}\Z")
+    identifier_patterns = {
+        prefix: re.compile(rf"{re.escape(prefix)}\d{{{ID_DIGITS},}}\Z")
+        for prefix in {entry["id_prefix"] for entry in rows}
+    }
 
     for entry in rows:
         where = row_location(entry)
@@ -134,9 +175,12 @@ def validate(rows, prefix):
         identifier = entry["id"]
         if identifier in (None, ""):
             continue
+        prefix = entry["id_prefix"]
+        identifier_pattern = identifier_patterns[prefix]
         if not isinstance(identifier, str) or not identifier_pattern.fullmatch(identifier):
             problems.append(
-                f"{where}: id「{identifier}」は {prefix}{'0' * ID_DIGITS} 形式にする"
+                f"{where}: id「{identifier}」は接頭辞「{prefix}」の"
+                f" {prefix}{'0' * ID_DIGITS} 形式にする"
             )
         elif identifier in seen_ids:
             problems.append(f"{where}: id「{identifier}」が{seen_ids[identifier]}と重複")
@@ -145,53 +189,71 @@ def validate(rows, prefix):
     return problems
 
 
-def validate_minimum_pos_counts(rows):
-    """使用中の各品詞が、4択を作れる語数に達しているか確認する。"""
+def validate_minimum_distractor_group_counts(rows):
+    """使用中の各誤答グループが、4択を作れる語数に達しているか確認する。"""
     counts = Counter(
         entry["pos"]
         for entry in rows
         if entry["pos"] in VALID_POS
     )
-    return [
-        f"{pos}は{counts[pos]}語しかない。4択にするには同じ品詞が{MIN_WORDS_PER_POS}語以上必要"
-        for pos in VALID_POS
-        if 0 < counts[pos] < MIN_WORDS_PER_POS
-    ]
+    problems = []
+    for label, group in DISTRACTOR_GROUPS:
+        group_count = sum(counts[pos] for pos in group)
+        if 0 < group_count < MIN_WORDS_PER_DISTRACTOR_GROUP:
+            subject = label if len(group) == 1 else f"{label}の合計"
+            problems.append(
+                f"{subject}は{group_count}語しかない。4択にするには同じ誤答グループに"
+                f"{MIN_WORDS_PER_DISTRACTOR_GROUP}語以上必要"
+            )
+    return problems
 
 
-def assign_ids(rows, prefix):
-    """空欄のidへ、カテゴリ全体の最大番号の続きを振る。"""
-    numbers = [
-        int(entry["id"][len(prefix):])
-        for entry in rows
-        if isinstance(entry["id"], str) and entry["id"].startswith(prefix)
-    ]
-    next_number = max(numbers, default=0) + 1
-
+def assign_ids(rows):
+    """空欄のidへ、接頭辞ごとに最大番号の続きを振る。"""
     assigned = []
-    for entry in rows:
-        if entry["id"] not in (None, ""):
-            continue
-        entry["id"] = f"{prefix}{next_number:0{ID_DIGITS}d}"
-        assigned.append((entry["id"], entry["word"]))
-        next_number += 1
+    prefixes = dict.fromkeys(entry["id_prefix"] for entry in rows)
+    for prefix in prefixes:
+        prefix_rows = [entry for entry in rows if entry["id_prefix"] == prefix]
+        numbers = [
+            int(entry["id"][len(prefix):])
+            for entry in prefix_rows
+            if isinstance(entry["id"], str) and entry["id"].startswith(prefix)
+        ]
+        next_number = max(numbers, default=0) + 1
+
+        for entry in prefix_rows:
+            if entry["id"] not in (None, ""):
+                continue
+            entry["id"] = f"{prefix}{next_number:0{ID_DIGITS}d}"
+            assigned.append((entry["id"], entry["word"]))
+            next_number += 1
     return assigned
 
 
-def build_entries(rows, category):
-    entries = []
-    for row in rows:
-        entry = {
+def sort_rows_by_identifier(rows):
+    """入力元の順序を保ちつつ、各接頭辞の番号順に並べる。"""
+    prefix_order = {
+        prefix: order
+        for order, prefix in enumerate(dict.fromkeys(row["id_prefix"] for row in rows))
+    }
+    rows.sort(key=lambda row: (
+        prefix_order[row["id_prefix"]],
+        int(row["id"][len(row["id_prefix"]):]),
+    ))
+
+
+def build_entries(rows):
+    """categoryは出力しない。どのファイルへ書くかで決まるため、アプリ側がファイル名から判断する。"""
+    return [
+        {
             "id": row["id"],
             "word": row["word"],
             "meaning": row["meaning"],
             "pos": row["pos"],
+            "difficulty": row["difficulty"],
         }
-        if category:
-            entry["category"] = category
-        entry["difficulty"] = row["difficulty"]
-        entries.append(entry)
-    return entries
+        for row in rows
+    ]
 
 
 def load_workbooks(paths):
@@ -211,8 +273,6 @@ def load_workbooks(paths):
 def main():
     parser = argparse.ArgumentParser(description="4つの単語入力xlsxを単語JSONへ変換する")
     parser.add_argument("--write", action="store_true", help="JSONへ書き込む(既定は確認のみ)")
-    parser.add_argument("--no-category", action="store_true",
-                        help="category を出力しない(アプリ側の対応後に使う)")
     parser.add_argument("--workbook", type=Path, default=DEFAULT_WORKBOOKS["main"],
                         help="中学英単語用xlsx")
     parser.add_argument("--takeru-workbook", type=Path, default=DEFAULT_WORKBOOKS["takeru"],
@@ -238,7 +298,11 @@ def main():
     for config in CATEGORY_CONFIGS:
         rows = []
         missing_sheet = False
-        for workbook_key, sheet_name, allowed_difficulties in config["sources"]:
+        for source in config["sources"]:
+            workbook_key = source["workbook"]
+            sheet_name = source["sheet"]
+            allowed_difficulties = source["difficulties"]
+            id_prefix = source.get("prefix", config.get("prefix"))
             workbook = workbooks[workbook_key]
             workbook_path = workbook_paths[workbook_key]
             if sheet_name not in workbook.sheetnames:
@@ -252,18 +316,19 @@ def main():
                 workbook[sheet_name],
                 workbook_path,
                 allowed_difficulties,
+                id_prefix,
             ))
 
         if missing_sheet:
             continue
         all_rows.extend(rows)
-        found = validate(rows, config["prefix"])
+        found = validate(rows)
         problems.extend(found)
         if not found:
             results.append((config, rows))
 
     if not missing_sheet_found:
-        problems.extend(validate_minimum_pos_counts(all_rows))
+        problems.extend(validate_minimum_distractor_group_counts(all_rows))
 
     if problems:
         print(f"入力を直してから実行する({len(problems)}件):\n", file=sys.stderr)
@@ -273,12 +338,11 @@ def main():
 
     changed = False
     for config, rows in results:
-        assigned = assign_ids(rows, config["prefix"])
+        assigned = assign_ids(rows)
         if len(config["sources"]) > 1:
-            rows.sort(key=lambda row: int(row["id"][len(config["prefix"]):]))
+            sort_rows_by_identifier(rows)
 
-        category = None if args.no_category else config["category"]
-        text = json.dumps(build_entries(rows, category), ensure_ascii=False, indent=2) + "\n"
+        text = json.dumps(build_entries(rows), ensure_ascii=False, indent=2) + "\n"
 
         path = RESOURCES / config["filename"]
         current = path.read_text(encoding="utf-8") if path.exists() else ""

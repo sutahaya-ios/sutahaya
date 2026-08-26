@@ -1,162 +1,2802 @@
 [
   {
-    "id": "tc_0001",
-    "word": "office",
-    "meaning": "オフィス、事務所",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 1
-  },
-  {
-    "id": "tc_0002",
-    "word": "meeting",
-    "meaning": "会議",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 1
-  },
-  {
-    "id": "tc_0003",
-    "word": "confirm",
-    "meaning": "〜を確認する",
+    "id": "tc1_0001",
+    "word": "begin",
+    "meaning": "始まる、始める",
     "pos": "動詞",
-    "category": "toeic",
     "difficulty": 1
   },
   {
-    "id": "tc_0004",
-    "word": "available",
-    "meaning": "利用できる、都合がつく",
+    "id": "tc1_0002",
+    "word": "work",
+    "meaning": "働く、作業する、うまくいく",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0003",
+    "word": "company",
+    "meaning": "会社",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0004",
+    "word": "order",
+    "meaning": "注文、順番",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0005",
+    "word": "employee",
+    "meaning": "社員、従業員",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0006",
+    "word": "information",
+    "meaning": "情報",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0007",
+    "word": "receive",
+    "meaning": "受け取る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0008",
+    "word": "last",
+    "meaning": "続く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0009",
+    "word": "need",
+    "meaning": "〜を必要とする、〜する必要がある",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0010",
+    "word": "travel",
+    "meaning": "旅、出張",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0011",
+    "word": "job",
+    "meaning": "仕事",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0012",
+    "word": "find",
+    "meaning": "見つける、思う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0013",
+    "word": "department",
+    "meaning": "部、部署、売り場",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0014",
+    "word": "let",
+    "meaning": "〜させる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0015",
+    "word": "visit",
+    "meaning": "訪れる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0016",
+    "word": "also",
+    "meaning": "〜もまた",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0017",
+    "word": "sure",
+    "meaning": "確かな、もちろん、必ず",
     "pos": "形容詞",
-    "category": "toeic",
     "difficulty": 1
   },
   {
-    "id": "tc_0005",
-    "word": "invoice",
+    "id": "tc1_0018",
+    "word": "leave",
+    "meaning": "出発する、残す、辞める、〜のままにする",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0019",
+    "word": "sales",
+    "meaning": "営業、売り上げ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0020",
+    "word": "move",
+    "meaning": "引っ越す、動かす、動く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0021",
+    "word": "arrive",
+    "meaning": "到着する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0022",
+    "word": "hold",
+    "meaning": "手に持つ、（イベントを）行う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0023",
+    "word": "return",
+    "meaning": "戻る、戻す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0024",
+    "word": "opening",
+    "meaning": "オープン、仕事の空き",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0025",
+    "word": "soon",
+    "meaning": "もうすぐ",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0026",
+    "word": "sign",
+    "meaning": "署名する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0027",
+    "word": "able",
+    "meaning": "できる",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0028",
+    "word": "few",
+    "meaning": "少しの、少数の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0029",
+    "word": "pay",
+    "meaning": "支払う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0030",
+    "word": "trip",
+    "meaning": "出張、旅行",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0031",
+    "word": "sell",
+    "meaning": "売る、売れる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0032",
+    "word": "several",
+    "meaning": "いくつかの、数名の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0033",
+    "word": "hear",
+    "meaning": "聞く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0034",
+    "word": "still",
+    "meaning": "まだ、依然として、それでもなお",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0035",
+    "word": "later",
+    "meaning": "あとで",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0036",
+    "word": "different",
+    "meaning": "異なる、違う",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0037",
+    "word": "close",
+    "meaning": "閉める、閉まる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0038",
+    "word": "stay",
+    "meaning": "滞在する、とどまる、〜のままでいる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0039",
+    "word": "already",
+    "meaning": "すでに",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0040",
+    "word": "present",
+    "meaning": "与える、贈呈する、示す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0041",
+    "word": "factory",
+    "meaning": "工場",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0042",
+    "word": "interested",
+    "meaning": "興味がある",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0043",
+    "word": "cover",
+    "meaning": "覆う、含む、報道する、扱う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0044",
+    "word": "choose",
+    "meaning": "選ぶ",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0045",
+    "word": "apartment",
+    "meaning": "アパート、マンション",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0046",
+    "word": "paper",
+    "meaning": "書類、紙",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0047",
+    "word": "note",
+    "meaning": "注意する、述べる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0048",
+    "word": "both",
+    "meaning": "両方とも",
+    "pos": "接続詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0049",
+    "word": "either",
+    "meaning": "どちらか",
+    "pos": "接続詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0050",
+    "word": "neither",
+    "meaning": "どちらも〜ない",
+    "pos": "接続詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0051",
+    "word": "ago",
+    "meaning": "前に",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0052",
+    "word": "finish",
+    "meaning": "終わる、終える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0053",
+    "word": "hope",
+    "meaning": "期待する、願う、望む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0054",
+    "word": "part",
+    "meaning": "一部、部分、部品",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0055",
+    "word": "important",
+    "meaning": "重要な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0056",
+    "word": "mail",
+    "meaning": "郵送する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0057",
+    "word": "once",
+    "meaning": "一度、かつて",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0058",
+    "word": "run",
+    "meaning": "運営する、続く、走る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0059",
+    "word": "bring",
+    "meaning": "持ってくる、連れてくる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0060",
+    "word": "place",
+    "meaning": "（注文や広告などを）出す、置く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0061",
+    "word": "become",
+    "meaning": "〜になる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0062",
+    "word": "ready",
+    "meaning": "準備ができた",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0063",
+    "word": "closed",
+    "meaning": "閉まっている",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0064",
+    "word": "enter",
+    "meaning": "入る、エントリーする、入力する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0065",
+    "word": "happen",
+    "meaning": "起こる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0066",
+    "word": "customer",
+    "meaning": "客、顧客",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0067",
+    "word": "past",
+    "meaning": "過去の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0068",
+    "word": "same",
+    "meaning": "同じ",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0069",
+    "word": "early",
+    "meaning": "早い、早く",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0070",
+    "word": "join",
+    "meaning": "参加する、加わる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0071",
+    "word": "decide",
+    "meaning": "決める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0072",
+    "word": "plant",
+    "meaning": "工場、植物",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0073",
+    "word": "pleased",
+    "meaning": "喜んで",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0074",
+    "word": "enough",
+    "meaning": "十分な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0075",
+    "word": "film",
+    "meaning": "映画",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0076",
+    "word": "case",
+    "meaning": "場合、事例",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0077",
+    "word": "meal",
+    "meaning": "食事",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0078",
+    "word": "someone",
+    "meaning": "誰か",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0079",
+    "word": "always",
+    "meaning": "いつも",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0080",
+    "word": "piece",
+    "meaning": "一片、1つ、作品、記事",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0081",
+    "word": "carry",
+    "meaning": "運ぶ、取り扱う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0082",
+    "word": "ship",
+    "meaning": "出荷する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0083",
+    "word": "reach",
+    "meaning": "到着する、連絡を取る、情報を伝える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0084",
+    "word": "remember",
+    "meaning": "覚えている、思い出す、忘れずに〜する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0085",
+    "word": "field",
+    "meaning": "分野、現場、野原",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0086",
+    "word": "dish",
+    "meaning": "料理、皿",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0087",
+    "word": "post",
+    "meaning": "投稿する、掲示する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0088",
+    "word": "sound",
+    "meaning": "〜のように思える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0089",
+    "word": "break",
+    "meaning": "休憩",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0090",
+    "word": "seem",
+    "meaning": "〜のように見える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0091",
+    "word": "build",
+    "meaning": "建てる、築く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0092",
+    "word": "necessary",
+    "meaning": "必要な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0093",
+    "word": "believe",
+    "meaning": "信じる、〜だと思う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0094",
+    "word": "grow",
+    "meaning": "成長する、育てる、伸びる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0095",
+    "word": "though",
+    "meaning": "〜にもかかわらず",
+    "pos": "接続詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0096",
+    "word": "kind",
+    "meaning": "種類",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0097",
+    "word": "miss",
+    "meaning": "逃す、いなくて寂しく思う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0098",
+    "word": "spend",
+    "meaning": "（金や時間を）費やす、過ごす",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0099",
+    "word": "busy",
+    "meaning": "忙しい、混んでいる",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0100",
+    "word": "save",
+    "meaning": "節約する、保存する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0101",
+    "word": "map",
+    "meaning": "地図",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0102",
+    "word": "ride",
+    "meaning": "乗る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0103",
+    "word": "almost",
+    "meaning": "ほとんど、もう少しで、〜に近い",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0104",
+    "word": "goods",
+    "meaning": "商品、品物",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0105",
+    "word": "quickly",
+    "meaning": "すばやく",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0106",
+    "word": "wide",
+    "meaning": "幅広い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0107",
+    "word": "famous",
+    "meaning": "有名な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0108",
+    "word": "power",
+    "meaning": "電力、権力、力",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0109",
+    "word": "book",
+    "meaning": "予約する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0110",
+    "word": "wrong",
+    "meaning": "間違った",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0111",
+    "word": "play",
+    "meaning": "遊ぶ、演奏する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0112",
+    "word": "usual",
+    "meaning": "いつもの、通常の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0113",
+    "word": "certain",
+    "meaning": "確かな、ある、特定の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0114",
+    "word": "difficult",
+    "meaning": "難しい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0115",
+    "word": "store",
+    "meaning": "保管する、保存する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0116",
+    "word": "clear",
+    "meaning": "明確な、わかりやすい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0117",
+    "word": "forget",
+    "meaning": "忘れる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0118",
+    "word": "rise",
+    "meaning": "上がる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0119",
+    "word": "chance",
+    "meaning": "機会、可能性",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0120",
+    "word": "draw",
+    "meaning": "描く、引く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0121",
+    "word": "glad",
+    "meaning": "うれしい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0122",
+    "word": "warm",
+    "meaning": "暖かい、温かい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0123",
+    "word": "matter",
+    "meaning": "問題、事柄",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0124",
+    "word": "useful",
+    "meaning": "役に立つ、有用な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0125",
+    "word": "refer",
+    "meaning": "参照する、言及する、紹介する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0126",
+    "word": "safe",
+    "meaning": "安全な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0127",
+    "word": "simple",
+    "meaning": "単純な、簡単な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0128",
+    "word": "discover",
+    "meaning": "発見する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0129",
+    "word": "park",
+    "meaning": "車を停める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0130",
+    "word": "promise",
+    "meaning": "約束する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0131",
+    "word": "proud",
+    "meaning": "誇りに思う",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0132",
+    "word": "pretty",
+    "meaning": "かなり、とても",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0133",
+    "word": "noise",
+    "meaning": "騒音",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0134",
+    "word": "perhaps",
+    "meaning": "おそらく、よろしければ",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0135",
+    "word": "farm",
+    "meaning": "農場、農地",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0136",
+    "word": "product",
+    "meaning": "製品",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0137",
+    "word": "invite",
+    "meaning": "招待する、求める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0138",
+    "word": "offer",
+    "meaning": "提供する、申し出る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0139",
+    "word": "provide",
+    "meaning": "提供する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0140",
+    "word": "include",
+    "meaning": "含む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0141",
+    "word": "report",
+    "meaning": "報告書",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0142",
+    "word": "problem",
+    "meaning": "問題",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0143",
+    "word": "likely",
+    "meaning": "ありそうな、おそらく",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0144",
+    "word": "request",
+    "meaning": "依頼、要求",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0145",
+    "word": "cost",
+    "meaning": "費用",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0146",
+    "word": "complete",
+    "meaning": "完了させる、完成させる、記入する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0147",
+    "word": "form",
+    "meaning": "用紙、書式",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0148",
+    "word": "experience",
+    "meaning": "経験",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0149",
+    "word": "attend",
+    "meaning": "出席する、参加する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0150",
+    "word": "announce",
+    "meaning": "発表する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0151",
+    "word": "position",
+    "meaning": "職、地位",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0152",
+    "word": "repair",
+    "meaning": "修理する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0153",
+    "word": "local",
+    "meaning": "地元の、地域の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0154",
+    "word": "purpose",
+    "meaning": "目的",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0155",
+    "word": "discuss",
+    "meaning": "話し合う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0156",
+    "word": "expect",
+    "meaning": "予期する、期待する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0157",
+    "word": "increase",
+    "meaning": "増える、増やす",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0158",
+    "word": "mention",
+    "meaning": "言及する、述べる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0159",
+    "word": "tour",
+    "meaning": "見学、ツアー",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0160",
+    "word": "charge",
+    "meaning": "料金、責任",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0161",
+    "word": "discount",
+    "meaning": "割引",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0162",
+    "word": "research",
+    "meaning": "調査、研究",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0163",
+    "word": "hire",
+    "meaning": "雇う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0164",
+    "word": "recently",
+    "meaning": "最近",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0165",
+    "word": "main",
+    "meaning": "主な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0166",
+    "word": "account",
+    "meaning": "口座、取引先、アカウント",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0167",
+    "word": "international",
+    "meaning": "国際的な、海外の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0168",
+    "word": "copy",
+    "meaning": "部、コピー",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0169",
+    "word": "probably",
+    "meaning": "おそらく",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0170",
+    "word": "process",
+    "meaning": "過程、工程",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0171",
+    "word": "result",
+    "meaning": "結果",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0172",
+    "word": "president",
+    "meaning": "社長、大統領",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0173",
+    "word": "material",
+    "meaning": "材料、資料",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0174",
+    "word": "record",
+    "meaning": "記録",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0175",
+    "word": "apply",
+    "meaning": "応募する、適用する、申請する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0176",
+    "word": "detail",
+    "meaning": "詳細",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0177",
+    "word": "rate",
+    "meaning": "料金、割合",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0178",
+    "word": "industry",
+    "meaning": "業界、産業",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0179",
+    "word": "public",
+    "meaning": "公共の、一般の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0180",
+    "word": "yet",
+    "meaning": "まだ、もう",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0181",
+    "word": "possible",
+    "meaning": "可能な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0182",
+    "word": "furniture",
+    "meaning": "家具",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0183",
+    "word": "arrange",
+    "meaning": "手配する、並べる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0184",
+    "word": "notice",
+    "meaning": "お知らせ、通知",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0185",
+    "word": "create",
+    "meaning": "創造する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0186",
+    "word": "serve",
+    "meaning": "提供する、役割を果たす",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0187",
+    "word": "prepare",
+    "meaning": "準備する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0188",
+    "word": "policy",
+    "meaning": "方針、規定",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0189",
+    "word": "package",
+    "meaning": "小包",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0190",
+    "word": "agency",
+    "meaning": "代理店",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0191",
+    "word": "introduce",
+    "meaning": "紹介する、導入する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0192",
+    "word": "reserve",
+    "meaning": "予約する、確保する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0193",
+    "word": "allow",
+    "meaning": "許可する、許す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0194",
+    "word": "press",
+    "meaning": "押す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0195",
+    "word": "weather",
+    "meaning": "天気、天候",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0196",
+    "word": "support",
+    "meaning": "支援する、支持する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0197",
+    "word": "publish",
+    "meaning": "出版する、掲載する、公表する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0198",
+    "word": "describe",
+    "meaning": "説明する、描写する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0199",
+    "word": "add",
+    "meaning": "加える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0200",
+    "word": "deliver",
+    "meaning": "配達する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0201",
+    "word": "state",
+    "meaning": "述べる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0202",
+    "word": "accept",
+    "meaning": "受け入れる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0203",
+    "word": "accounting",
+    "meaning": "経理、会計",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0204",
+    "word": "based",
+    "meaning": "拠点を置く、本社がある",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0205",
+    "word": "own",
+    "meaning": "所有する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0206",
+    "word": "develop",
+    "meaning": "開発する、発展させる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0207",
+    "word": "excellent",
+    "meaning": "優れた、素晴らしい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0208",
+    "word": "bill",
     "meaning": "請求書",
     "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 2
+    "difficulty": 1
   },
   {
-    "id": "tc_0006",
-    "word": "schedule",
-    "meaning": "予定、日程",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 2
-  },
-  {
-    "id": "tc_0007",
-    "word": "negotiate",
-    "meaning": "〜を交渉する",
+    "id": "tc1_0209",
+    "word": "produce",
+    "meaning": "生産する、製作する",
     "pos": "動詞",
-    "category": "toeic",
-    "difficulty": 2
+    "difficulty": 1
   },
   {
-    "id": "tc_0008",
-    "word": "annual",
-    "meaning": "年1回の、年間の",
-    "pos": "形容詞",
-    "category": "toeic",
-    "difficulty": 2
-  },
-  {
-    "id": "tc_0009",
-    "word": "reimburse",
-    "meaning": "〜に払い戻す、精算する",
+    "id": "tc1_0210",
+    "word": "host",
+    "meaning": "主催する",
     "pos": "動詞",
-    "category": "toeic",
-    "difficulty": 3
+    "difficulty": 1
   },
   {
-    "id": "tc_0010",
-    "word": "shipment",
-    "meaning": "発送品、出荷",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 3
-  },
-  {
-    "id": "tc_0011",
-    "word": "mandatory",
-    "meaning": "義務的な、必須の",
-    "pos": "形容詞",
-    "category": "toeic",
-    "difficulty": 3
-  },
-  {
-    "id": "tc_0012",
-    "word": "eligible",
-    "meaning": "資格がある",
-    "pos": "形容詞",
-    "category": "toeic",
-    "difficulty": 3
-  },
-  {
-    "id": "tc_0013",
-    "word": "subsidiary",
-    "meaning": "子会社",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 4
-  },
-  {
-    "id": "tc_0014",
-    "word": "procurement",
-    "meaning": "調達",
-    "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 4
-  },
-  {
-    "id": "tc_0015",
-    "word": "allocate",
-    "meaning": "〜を割り当てる",
+    "id": "tc1_0211",
+    "word": "explain",
+    "meaning": "説明する",
     "pos": "動詞",
-    "category": "toeic",
-    "difficulty": 4
+    "difficulty": 1
   },
   {
-    "id": "tc_0016",
-    "word": "tentative",
-    "meaning": "仮の、暫定的な",
+    "id": "tc1_0212",
+    "word": "less",
+    "meaning": "より少ない",
     "pos": "形容詞",
-    "category": "toeic",
-    "difficulty": 4
+    "difficulty": 1
   },
   {
-    "id": "tc_0017",
-    "word": "acquisition",
-    "meaning": "買収、取得",
+    "id": "tc1_0213",
+    "word": "passenger",
+    "meaning": "乗客",
     "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 5
+    "difficulty": 1
   },
   {
-    "id": "tc_0018",
-    "word": "consolidate",
-    "meaning": "〜を統合する",
+    "id": "tc1_0214",
+    "word": "successful",
+    "meaning": "成功した",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0215",
+    "word": "activity",
+    "meaning": "活動",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0216",
+    "word": "lead",
+    "meaning": "導く、率いる",
     "pos": "動詞",
-    "category": "toeic",
-    "difficulty": 5
+    "difficulty": 1
   },
   {
-    "id": "tc_0019",
-    "word": "compliance",
-    "meaning": "法令遵守",
+    "id": "tc1_0217",
+    "word": "traffic",
+    "meaning": "交通",
     "pos": "名詞",
-    "category": "toeic",
-    "difficulty": 5
+    "difficulty": 1
   },
   {
-    "id": "tc_0020",
-    "word": "lucrative",
-    "meaning": "もうかる、収益性の高い",
+    "id": "tc1_0218",
+    "word": "actually",
+    "meaning": "実際に、実際は",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0219",
+    "word": "follow",
+    "meaning": "従う、後に続く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0220",
+    "word": "inform",
+    "meaning": "知らせる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0221",
+    "word": "prefer",
+    "meaning": "好む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0222",
+    "word": "final",
+    "meaning": "最終の、最終的な",
     "pos": "形容詞",
-    "category": "toeic",
-    "difficulty": 5
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0223",
+    "word": "professional",
+    "meaning": "専門的な、職業上の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0224",
+    "word": "improve",
+    "meaning": "改善する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0225",
+    "word": "medical",
+    "meaning": "医療の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0226",
+    "word": "official",
+    "meaning": "公式の、正式な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0227",
+    "word": "continue",
+    "meaning": "続ける、続く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0228",
+    "word": "total",
+    "meaning": "合計",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0229",
+    "word": "branch",
+    "meaning": "支店",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0230",
+    "word": "entrance",
+    "meaning": "入口、入場",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0231",
+    "word": "fair",
+    "meaning": "展示会、フェア",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0232",
+    "word": "attention",
+    "meaning": "注意、注目",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0233",
+    "word": "cleaning",
+    "meaning": "清掃",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0234",
+    "word": "expensive",
+    "meaning": "高価な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0235",
+    "word": "seated",
+    "meaning": "座っている",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0236",
+    "word": "share",
+    "meaning": "共有する、シェアする",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0237",
+    "word": "daily",
+    "meaning": "毎日の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0238",
+    "word": "instead",
+    "meaning": "代わりに",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0239",
+    "word": "national",
+    "meaning": "国の、全国的な、国民の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0240",
+    "word": "perform",
+    "meaning": "行う、遂行する、演じる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0241",
+    "word": "remove",
+    "meaning": "取り除く、取り出す、取り去る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0242",
+    "word": "suggest",
+    "meaning": "提案する、示唆する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0243",
+    "word": "direction",
+    "meaning": "方向、指示",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0244",
+    "word": "express",
+    "meaning": "表現する、表す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0245",
+    "word": "amount",
+    "meaning": "量、額",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0246",
+    "word": "personal",
+    "meaning": "個人の、個人的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0247",
+    "word": "publishing",
+    "meaning": "出版",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0248",
+    "word": "view",
+    "meaning": "眺め、見解",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0249",
+    "word": "wish",
+    "meaning": "願う、〜したいと思う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0250",
+    "word": "appear",
+    "meaning": "現れる、〜のように見える、掲載される",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0251",
+    "word": "arrangement",
+    "meaning": "手配、取り決め、配置",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0252",
+    "word": "manage",
+    "meaning": "経営する、対処する、なんとかやる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0253",
+    "word": "direct",
+    "meaning": "直接の、直行の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0254",
+    "word": "paid",
+    "meaning": "有給の、支払済みの",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0255",
+    "word": "agree",
+    "meaning": "同意する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0256",
+    "word": "cause",
+    "meaning": "引き起こす",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0257",
+    "word": "damage",
+    "meaning": "損害、ダメージ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0258",
+    "word": "raise",
+    "meaning": "上げる、（お金を）集める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0259",
+    "word": "respond",
+    "meaning": "応じる、返答する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0260",
+    "word": "directly",
+    "meaning": "直接",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0261",
+    "word": "limited",
+    "meaning": "限られた",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0262",
+    "word": "packaging",
+    "meaning": "梱包、パッケージ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0263",
+    "word": "degree",
+    "meaning": "学位、程度",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0264",
+    "word": "further",
+    "meaning": "さらなる、さらに",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0265",
+    "word": "quite",
+    "meaning": "かなり",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0266",
+    "word": "regular",
+    "meaning": "定期的な、通常の、常連の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0267",
+    "word": "broadcast",
+    "meaning": "放送する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0268",
+    "word": "contain",
+    "meaning": "含む、中に入っている",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0269",
+    "word": "experienced",
+    "meaning": "経験豊富な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0270",
+    "word": "fix",
+    "meaning": "修理する、固定する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0271",
+    "word": "opinion",
+    "meaning": "意見",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0272",
+    "word": "society",
+    "meaning": "社会、協会",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0273",
+    "word": "condition",
+    "meaning": "状態、条件",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0274",
+    "word": "correct",
+    "meaning": "正しい、正確な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0275",
+    "word": "audience",
+    "meaning": "聴衆、観客",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0276",
+    "word": "general",
+    "meaning": "一般的な、全体的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0277",
+    "word": "advise",
+    "meaning": "助言する、勧める、忠告する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0278",
+    "word": "especially",
+    "meaning": "特に",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0279",
+    "word": "period",
+    "meaning": "期間",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0280",
+    "word": "professor",
+    "meaning": "教授",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0281",
+    "word": "effort",
+    "meaning": "努力",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0282",
+    "word": "highly",
+    "meaning": "非常に",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0283",
+    "word": "lower",
+    "meaning": "下げる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0284",
+    "word": "reason",
+    "meaning": "理由",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0285",
+    "word": "similar",
+    "meaning": "似ている",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0286",
+    "word": "fit",
+    "meaning": "合う、入る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0287",
+    "word": "intended",
+    "meaning": "意図された、対象とする、向けられた",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0288",
+    "word": "invitation",
+    "meaning": "招待(状)",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0289",
+    "word": "patient",
+    "meaning": "患者",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0290",
+    "word": "responsible",
+    "meaning": "責任がある、担当している",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0291",
+    "word": "certainly",
+    "meaning": "確かに",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0292",
+    "word": "method",
+    "meaning": "方法",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0293",
+    "word": "claim",
+    "meaning": "主張する、請求する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0294",
+    "word": "immediately",
+    "meaning": "即座に、ただちに",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0295",
+    "word": "law",
+    "meaning": "法律",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0296",
+    "word": "row",
+    "meaning": "列、(船を)漕ぐ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0297",
+    "word": "downtown",
+    "meaning": "中心街",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0298",
+    "word": "helpful",
+    "meaning": "助けになる、親切な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0299",
+    "word": "track",
+    "meaning": "線路、進路、追跡",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0300",
+    "word": "value",
+    "meaning": "価値",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0301",
+    "word": "ability",
+    "meaning": "能力",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0302",
+    "word": "collect",
+    "meaning": "集める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0303",
+    "word": "comfortable",
+    "meaning": "快適な、自信がある",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0304",
+    "word": "deal",
+    "meaning": "取引、取引条件",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0305",
+    "word": "gather",
+    "meaning": "集まる、集める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0306",
+    "word": "unable",
+    "meaning": "できない",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0307",
+    "word": "officer",
+    "meaning": "役員、幹部、警察官",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0308",
+    "word": "role",
+    "meaning": "役割、役柄",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0309",
+    "word": "bit",
+    "meaning": "少し",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0310",
+    "word": "figure",
+    "meaning": "数字、人物",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0311",
+    "word": "fuel",
+    "meaning": "燃料",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0312",
+    "word": "regarding",
+    "meaning": "〜に関して",
+    "pos": "前置詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0313",
+    "word": "reasonable",
+    "meaning": "(値段が)手ごろな、妥当な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0314",
+    "word": "twice",
+    "meaning": "2回、2倍",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0315",
+    "word": "arrival",
+    "meaning": "到着",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0316",
+    "word": "central",
+    "meaning": "中心の、中央の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0317",
+    "word": "district",
+    "meaning": "地区",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0318",
+    "word": "modern",
+    "meaning": "現代の、近代的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0319",
+    "word": "permit",
+    "meaning": "許可する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0320",
+    "word": "positive",
+    "meaning": "前向きな、肯定的な、積極的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0321",
+    "word": "profit",
+    "meaning": "利益",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0322",
+    "word": "rather",
+    "meaning": "むしろ、かなり",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0323",
+    "word": "surprised",
+    "meaning": "驚いた",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0324",
+    "word": "address",
+    "meaning": "住所、アドレス",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0325",
+    "word": "education",
+    "meaning": "教育",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0326",
+    "word": "tip",
+    "meaning": "コツ、アドバイス",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0327",
+    "word": "automobile",
+    "meaning": "自動車",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0328",
+    "word": "garage",
+    "meaning": "車庫、ガレージ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0329",
+    "word": "handle",
+    "meaning": "対処する、扱う、手で扱う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0330",
+    "word": "knowledge",
+    "meaning": "知識",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0331",
+    "word": "private",
+    "meaning": "私的な、個人の、内密な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0332",
+    "word": "realize",
+    "meaning": "気づく、実現する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0333",
+    "word": "reply",
+    "meaning": "返信する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0334",
+    "word": "rest",
+    "meaning": "残り、休憩、休み",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0335",
+    "word": "familiar",
+    "meaning": "よく知っている",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0336",
+    "word": "former",
+    "meaning": "以前の、かつての",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0337",
+    "word": "heating",
+    "meaning": "暖房",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0338",
+    "word": "nearly",
+    "meaning": "ほとんど、もう少しで",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0339",
+    "word": "plastic",
+    "meaning": "プラスチック、ビニール",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0340",
+    "word": "steel",
+    "meaning": "鋼鉄",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0341",
+    "word": "demand",
+    "meaning": "需要",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0342",
+    "word": "distance",
+    "meaning": "距離",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0343",
+    "word": "easily",
+    "meaning": "簡単に",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0344",
+    "word": "pleasure",
+    "meaning": "喜び",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0345",
+    "word": "remain",
+    "meaning": "〜のままでいる、残る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0346",
+    "word": "standard",
+    "meaning": "基準",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0347",
+    "word": "carefully",
+    "meaning": "注意深く、慎重に",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0348",
+    "word": "clerk",
+    "meaning": "店員、事務員",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0349",
+    "word": "common",
+    "meaning": "共通の、一般的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0350",
+    "word": "compare",
+    "meaning": "比較する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0351",
+    "word": "electricity",
+    "meaning": "電気",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0352",
+    "word": "whole",
+    "meaning": "全体の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0353",
+    "word": "abroad",
+    "meaning": "海外へ",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0354",
+    "word": "approach",
+    "meaning": "近づく、方法",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0355",
+    "word": "borrow",
+    "meaning": "借りる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0356",
+    "word": "bottom",
+    "meaning": "底、一番下",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0357",
+    "word": "duty",
+    "meaning": "職務、義務",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0358",
+    "word": "separate",
+    "meaning": "別々の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0359",
+    "word": "subject",
+    "meaning": "主題、科目、件名、〜の対象となる",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0360",
+    "word": "tax",
+    "meaning": "税金",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0361",
+    "word": "earn",
+    "meaning": "稼ぐ",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0362",
+    "word": "fare",
+    "meaning": "運賃",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0363",
+    "word": "formal",
+    "meaning": "正式な、公式の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0364",
+    "word": "suit",
+    "meaning": "合う、スーツ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0365",
+    "word": "worried",
+    "meaning": "心配して",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0366",
+    "word": "aware",
+    "meaning": "気づいている",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0367",
+    "word": "balance",
+    "meaning": "残高、均衡",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0368",
+    "word": "content",
+    "meaning": "中身、内容、満足",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0369",
+    "word": "lift",
+    "meaning": "持ち上げる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0370",
+    "word": "occasion",
+    "meaning": "機会、行事",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0371",
+    "word": "proof",
+    "meaning": "証明、証拠",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0372",
+    "word": "respect",
+    "meaning": "尊敬する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0373",
+    "word": "single",
+    "meaning": "単一の、1つの",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0374",
+    "word": "wing",
+    "meaning": "翼、棟",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0375",
+    "word": "worth",
+    "meaning": "〜の価値がある",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0376",
+    "word": "anywhere",
+    "meaning": "どこでも、どこにも、どこか",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0377",
+    "word": "guess",
+    "meaning": "推測する、〜だと思う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0378",
+    "word": "length",
+    "meaning": "長さ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0379",
+    "word": "solve",
+    "meaning": "解決する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0380",
+    "word": "storm",
+    "meaning": "嵐",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0381",
+    "word": "willing",
+    "meaning": "〜することを嫌がらない、〜する気がある",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0382",
+    "word": "chapter",
+    "meaning": "章、支部",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0383",
+    "word": "crowded",
+    "meaning": "混雑した",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0384",
+    "word": "custom",
+    "meaning": "習慣、特注の",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0385",
+    "word": "praise",
+    "meaning": "称賛する、褒める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0386",
+    "word": "bright",
+    "meaning": "明るい、輝かしい、あざやかな",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0387",
+    "word": "century",
+    "meaning": "世紀",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0388",
+    "word": "scientific",
+    "meaning": "科学的な",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0389",
+    "word": "vote",
+    "meaning": "投票する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0390",
+    "word": "anyway",
+    "meaning": "とにかく、ともあれ",
+    "pos": "副詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0391",
+    "word": "match",
+    "meaning": "合う、一致する、匹敵する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0392",
+    "word": "object",
+    "meaning": "物体、目的",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0393",
+    "word": "progress",
+    "meaning": "進歩、進行状況、前進",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0394",
+    "word": "regard",
+    "meaning": "みなす",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0395",
+    "word": "rush",
+    "meaning": "急ぐ、急がせる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0396",
+    "word": "stair",
+    "meaning": "階段",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0397",
+    "word": "appearance",
+    "meaning": "外見、登場、出現",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0398",
+    "word": "cross",
+    "meaning": "横断する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0399",
+    "word": "divide",
+    "meaning": "分ける",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "tc1_0400",
+    "word": "empty",
+    "meaning": "空の、空にする",
+    "pos": "形容詞",
+    "difficulty": 1
   }
 ]

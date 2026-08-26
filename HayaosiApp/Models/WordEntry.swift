@@ -1,11 +1,12 @@
 import Foundation
 
-/// 配布用の英単語JSON 1件ぶん
-struct WordEntry: Codable, Identifiable, Equatable {
+/// 配布用の英単語1件ぶん
+struct WordEntry: Identifiable, Equatable {
     let id: String
     let word: String
     let meaning: String
     let pos: PartOfSpeech
+    /// JSONには持たせない。どのファイルから読み込んだかで決まるため、投入時に与える
     let category: WordCategory
     let difficulty: WordDifficulty
 

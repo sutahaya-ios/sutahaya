@@ -2,7 +2,7 @@ import XCTest
 import SwiftData
 @testable import HayaosiApp
 
-/// 全カテゴリと、各カテゴリ内の★1〜5の絞り込みを検証する
+/// カテゴリ・難易度の絞り込みと、収録データの整合性を検証する
 final class WordClassificationTests: XCTestCase {
     private var container: ModelContainer!
 
@@ -36,6 +36,22 @@ final class WordClassificationTests: XCTestCase {
         )
         ModelContext(container).insert(question)
         return question
+    }
+
+    private func makeEntry(
+        id: String,
+        word: String,
+        meaning: String,
+        pos: PartOfSpeech
+    ) -> WordEntry {
+        WordEntry(
+            id: id,
+            word: word,
+            meaning: meaning,
+            pos: pos,
+            category: .toeic,
+            difficulty: .one
+        )
     }
 
     func test_カテゴリと難易度の完全一致で絞り込む() {
@@ -106,7 +122,34 @@ final class WordClassificationTests: XCTestCase {
         XCTAssertEqual(WordDifficulty.five.starDisplay, "★★★★★")
     }
 
-    func test_収録データは全カテゴリ各難易度を含みIDと単語が重複しない() throws {
+    func test_代名詞接続詞前置詞を同じ誤答グループで4択にする() throws {
+        let minorFunctionWordEntries = [
+            makeEntry(id: "test_0001", word: "they", meaning: "彼らは", pos: .pronoun),
+            makeEntry(id: "test_0002", word: "because", meaning: "なぜなら", pos: .conjunction),
+            makeEntry(id: "test_0003", word: "under", meaning: "〜の下に", pos: .preposition),
+            makeEntry(id: "test_0004", word: "although", meaning: "〜だけれども", pos: .conjunction)
+        ]
+        let nounEntry = makeEntry(
+            id: "test_0005",
+            word: "company",
+            meaning: "会社",
+            pos: .noun
+        )
+
+        let questions = QuestionSeeder.makeQuestions(
+            from: minorFunctionWordEntries + [nounEntry]
+        )
+        let minorMeanings = Set(minorFunctionWordEntries.map(\.meaning))
+
+        for entry in minorFunctionWordEntries {
+            let question = try XCTUnwrap(questions.first { $0.id == entry.id })
+            XCTAssertEqual(question.choices.count, 4)
+            XCTAssertEqual(Set(question.choices), minorMeanings)
+            XCTAssertFalse(question.choices.contains(nounEntry.meaning))
+        }
+    }
+
+    func test_収録データは各カテゴリを含みIDと単語が重複しない() throws {
         let entries = try QuestionSeeder.loadEntries()
         XCTAssertFalse(entries.isEmpty)
         XCTAssertEqual(Set(entries.map(\.id)).count, entries.count, "問題IDが重複している")
@@ -119,12 +162,6 @@ final class WordClassificationTests: XCTestCase {
                 categoryEntries.count,
                 "\(category.displayName)内で単語が重複している"
             )
-            for difficulty in WordDifficulty.allCases {
-                XCTAssertTrue(
-                    categoryEntries.contains { $0.difficulty == difficulty },
-                    "\(category.displayName) \(difficulty.starDisplay)が空"
-                )
-            }
         }
     }
 
@@ -133,7 +170,10 @@ final class WordClassificationTests: XCTestCase {
 
         XCTAssertTrue(entries.filter { $0.category == .juniorHigh }.allSatisfy { $0.id.hasPrefix("jh_") })
         XCTAssertTrue(entries.filter { $0.category == .highSchool }.allSatisfy { $0.id.hasPrefix("hs_") })
-        XCTAssertTrue(entries.filter { $0.category == .toeic }.allSatisfy { $0.id.hasPrefix("tc_") })
+        // TOEICは銀のフレーズ=tc1_、金のフレーズ=tc2_ でシート別に分かれている
+        XCTAssertTrue(entries.filter { $0.category == .toeic }.allSatisfy {
+            $0.id.hasPrefix("tc1_") || $0.id.hasPrefix("tc2_")
+        })
     }
 
     func test_旧IDの学習履歴と復習項目を同じ単語の新IDへ引き継ぐ() throws {

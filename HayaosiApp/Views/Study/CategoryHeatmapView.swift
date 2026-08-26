@@ -25,6 +25,9 @@ struct CategoryHeatmapView: View {
             questions: questions,
             category: category
         ).count
+        let unavailableDifficulties = WordDifficulty.allCases.filter {
+            practiceQuestions(for: $0).isEmpty
+        }
 
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -64,6 +67,13 @@ struct CategoryHeatmapView: View {
                             .buttonStyle(.plain)
                         }
                     }
+                }
+
+                if !unavailableDifficulties.isEmpty {
+                    QuestionAvailabilityNotice(
+                        category: category,
+                        difficulties: unavailableDifficulties
+                    )
                 }
 
                 Text("\(category.displayName)・難易度別正答率")

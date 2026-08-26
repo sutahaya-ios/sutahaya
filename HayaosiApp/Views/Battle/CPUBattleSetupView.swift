@@ -33,14 +33,19 @@ struct CPUBattleSetupView: View {
                 Stepper("CPU \(cpuCount)体", value: $cpuCount, in: Self.botCountRange)
             }
 
-            Section {
-                Button("ロビーへ") {
-                    start()
+            if availableQuestions.isEmpty {
+                Section {
+                    QuestionAvailabilityNotice(category: category, difficulty: difficulty)
                 }
-                .buttonStyle(SoundButtonStyle())
-                .disabled(availableQuestions.isEmpty)
-            } footer: {
-                Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")
+            } else {
+                Section {
+                    Button("ロビーへ") {
+                        start()
+                    }
+                    .buttonStyle(SoundButtonStyle())
+                } footer: {
+                    Text("\(category.displayName) \(difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")
+                }
             }
         }
         .navigationTitle("ひとりで(CPU対戦)")

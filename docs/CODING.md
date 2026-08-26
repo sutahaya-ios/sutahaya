@@ -19,6 +19,7 @@ CLAUDE.md には守るべきルールだけを置き、コードを書くとき�
 │   ├── Views/<機能名>/        # 画面(機能ごとにフォルダを分ける)
 │   ├── Resources/            # 単語データJSON・効果音・GoogleService-Info.plist(git管理外)
 │   └── Assets.xcassets/
+├── word_bank/                # 作業用xlsx(git管理外)・単語JSON変換ツール
 ├── Tests/                    # ユニットテスト(ロジックのみ)
 └── docs/                     # 随時読み込むナレッジ(このファイルなど)
 ```
@@ -73,9 +74,9 @@ env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project
 
 - 効果音は `Resources/Sounds/se_*.wav`。正弦波合成の自作(著作権フリー)で、**同名ファイルを差し替えれば音が変わる**(コード変更不要)
 - 問題データを更新したら `QuestionSeeder.dataVersion` を上げる(次回起動時に再投入される)
-- **英単語を増やす手順**:`HayaosiApp/Resources/junior_high.json` / `high_school.json` / `toeic.json` の対象ファイルへ既存要素と同じ形式で直接追記し、`QuestionSeeder.dataVersion` を上げる。
-  - 必須項目は `id` / `word` / `meaning` / `pos` / `category` / `difficulty`。カテゴリはファイル名と一致させ、難易度は整数の1〜5にする
-  - IDは中学=`jh_####`、高校=`hs_####`、TOEIC=`tc_####`。同じファイル内ではIDと単語(大文字小文字を無視)を重複させない。カテゴリをまたぐ同じ単語は登録してよい
-  - 品詞は `PartOfSpeech` の7種のみ(動詞 / 名詞 / 形容詞 / 副詞 / 代名詞 / 接続詞 / 前置詞)。誤答を同じ品詞から作るため、表記がゆれるとグループが割れる
-  - 4択の誤答を同じ品詞から3語選ぶため、使用する品詞は全カテゴリを通して4語以上登録する
+- **英単語を増やす手順**:`word_bank/`の担当xlsxへ追記し、`python3 word_bank/word_bank_to_json.py`で確認後に`--write`でJSONへ反映し、`QuestionSeeder.dataVersion`を上げる。
+  - 必須項目は `id` / `word` / `meaning` / `pos` / `difficulty`。難易度は整数の1〜5にする。**カテゴリはJSONに持たせない**(ファイル名で決まるため、読み込み時に付与する)
+  - IDは中学=`jh_####`、高校=`hs_####`、TOEIC銀のフレーズ=`tc1_####`、金のフレーズ=`tc2_####`。同じカテゴリ内ではIDと単語(大文字小文字を無視)を重複させない。カテゴリをまたぐ同じ単語は登録してよい
+  - 品詞は `PartOfSpeech` の7種のみ(動詞 / 名詞 / 形容詞 / 副詞 / 代名詞 / 接続詞 / 前置詞)。誤答グループは動詞・名詞・形容詞・副詞を個別にし、少数の代名詞・接続詞・前置詞だけを共通化する
+  - 4択の誤答を同じグループから3語選ぶため、使用する誤答グループは全カテゴリを通して4語以上登録する
 - SwiftDataモデル(`Models/`)にプロパティを足すときは Optional かデフォルト値付きにし、**アプリを削除せず上書きインストールで移行を確認する**(ユーザーの学習履歴が飛ぶ事故を防ぐ)

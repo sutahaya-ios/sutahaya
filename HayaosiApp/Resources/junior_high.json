@@ -4,7 +4,6 @@
     "word": "benefit",
     "meaning": "恩恵",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 1
   },
   {
@@ -12,7 +11,6 @@
     "word": "economy",
     "meaning": "経済",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 2
   },
   {
@@ -20,7 +18,6 @@
     "word": "emergency",
     "meaning": "緊急事態",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 3
   },
   {
@@ -28,7 +25,6 @@
     "word": "industry",
     "meaning": "産業、工業",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 4
   },
   {
@@ -36,7 +32,6 @@
     "word": "opportunity",
     "meaning": "機会",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 5
   },
   {
@@ -44,7 +39,6 @@
     "word": "visible",
     "meaning": "目に見える",
     "pos": "形容詞",
-    "category": "junior_high",
     "difficulty": 1
   },
   {
@@ -52,7 +46,6 @@
     "word": "admire",
     "meaning": "〜を称賛する",
     "pos": "動詞",
-    "category": "junior_high",
     "difficulty": 2
   },
   {
@@ -60,7 +53,6 @@
     "word": "announce",
     "meaning": "〜を発表する",
     "pos": "動詞",
-    "category": "junior_high",
     "difficulty": 3
   },
   {
@@ -68,7 +60,6 @@
     "word": "apply",
     "meaning": "適用する、応募する",
     "pos": "動詞",
-    "category": "junior_high",
     "difficulty": 4
   },
   {
@@ -76,7 +67,6 @@
     "word": "avoid",
     "meaning": "〜を避ける",
     "pos": "動詞",
-    "category": "junior_high",
     "difficulty": 5
   },
   {
@@ -84,7 +74,6 @@
     "word": "advantage",
     "meaning": "利点、有利",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 1
   },
   {
@@ -92,7 +81,6 @@
     "word": "competition",
     "meaning": "競争、競技会",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 2
   },
   {
@@ -100,7 +88,6 @@
     "word": "fuel",
     "meaning": "燃料",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 3
   },
   {
@@ -108,7 +95,6 @@
     "word": "income",
     "meaning": "収入",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 4
   },
   {
@@ -116,7 +102,6 @@
     "word": "item",
     "meaning": "品目、項目",
     "pos": "名詞",
-    "category": "junior_high",
     "difficulty": 5
   },
   {
@@ -124,7 +109,6 @@
     "word": "aware",
     "meaning": "気づいている",
     "pos": "形容詞",
-    "category": "junior_high",
     "difficulty": 1
   },
   {
@@ -132,7 +116,6 @@
     "word": "entire",
     "meaning": "全体の",
     "pos": "形容詞",
-    "category": "junior_high",
     "difficulty": 2
   }
 ]

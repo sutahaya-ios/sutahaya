@@ -5,6 +5,10 @@
 
 ---
 
+## 過去の更新(2026年8月25日・整理分)
+
+- Codex(たける側): **高校英単語183語を担当者別・ターゲット別の作業用xlsxへ再編**。`word_bank_takeru.xlsx`へターゲット1200(difficulty 1・2、27語)とターゲット1400(3、60語)、`word_bank_tokiya.xlsx`へターゲット1900(4・5、96語)を移し、`word_bank.xlsx`は使い方・中学17語・TOEIC20語だけに変更。変換スクリプトは高校3シートを通したID採番・単語/ID重複確認、シート別difficulty検証、3ファイルの不足表示へ対応した。3ブック全6シートを目視確認し、`python3 word_bank/word_bank_to_json.py`で3つのJSONすべて「変更なし」を確認。一時移行スクリプトは削除済み
+
 ## 過去の更新(2026年8月24日・整理分)
 
 - TOKIYA-YAMAMOTO(Codex): **本番設定を維持した開発者別Bundle ID・Signing・Firebase構成へ更新**。共有既定値は本番Bundle ID `com.n.HayaosiApp`、共同開発者はgit管理外の`Config/local.xcconfig`だけでPersonal Teamと開発用Bundle IDを上書きする。2つのiOSアプリは同じFirebaseプロジェクトを共有し、各自が実効Bundle IDに一致するgit管理外のplistを使用する。Firebaseプロジェクト`hayaosiapp`へ開発用iOSアプリ`com.n.HayaosiApp.dev.tokiya`を登録し、対応plistとPersonal Teamをローカルへ設定。XcodeGen生成、実効Bundle ID・Teamの確認、Simulatorビルド、Personal Teamでの実機署名・iPhoneへのインストール・起動に成功。**実機上のFirebase疎通と実機2台通信は未検証**。本番Bundle ID・本番Firebaseルール・既存データは変更していない

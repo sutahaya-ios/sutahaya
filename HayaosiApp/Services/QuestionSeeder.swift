@@ -3,7 +3,6 @@ import SwiftData
 
 enum QuestionDataError: LocalizedError {
     case missingResource(name: String)
-    case categoryMismatch(id: String, expected: WordCategory, actual: WordCategory)
     case duplicateID(String)
     case duplicateWord(word: String, category: WordCategory)
 
@@ -11,8 +10,6 @@ enum QuestionDataError: LocalizedError {
         switch self {
         case .missingResource(let name):
             return "単語データ \(name).json が見つかりません"
-        case .categoryMismatch(let id, let expected, let actual):
-            return "\(id) のカテゴリが不正です: \(actual.rawValue)（期待値: \(expected.rawValue)）"
         case .duplicateID(let id):
             return "問題ID \(id) が重複しています"
         case .duplicateWord(let word, let category):
@@ -24,7 +21,7 @@ enum QuestionDataError: LocalizedError {
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 7
+    static let dataVersion = 8
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -83,6 +80,15 @@ enum QuestionSeeder {
         }
     }
 
+    /// JSONの1件ぶん。カテゴリはファイル名で決まるので持たせない
+    private struct WordEntryFile: Decodable {
+        let id: String
+        let word: String
+        let meaning: String
+        let pos: PartOfSpeech
+        let difficulty: WordDifficulty
+    }
+
     /// 全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する
     static func loadEntries() throws -> [WordEntry] {
         var allEntries: [WordEntry] = []
@@ -92,34 +98,35 @@ enum QuestionSeeder {
             guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
                 throw QuestionDataError.missingResource(name: category.rawValue)
             }
-            let entries = try JSONDecoder().decode([WordEntry].self, from: Data(contentsOf: url))
+            let decoded = try JSONDecoder().decode([WordEntryFile].self, from: Data(contentsOf: url))
             var wordsInCategory: Set<String> = []
 
-            for entry in entries {
-                guard entry.category == category else {
-                    throw QuestionDataError.categoryMismatch(
-                        id: entry.id,
-                        expected: category,
-                        actual: entry.category
-                    )
+            for file in decoded {
+                guard allIDs.insert(file.id).inserted else {
+                    throw QuestionDataError.duplicateID(file.id)
                 }
-                guard allIDs.insert(entry.id).inserted else {
-                    throw QuestionDataError.duplicateID(entry.id)
-                }
+                let entry = WordEntry(
+                    id: file.id,
+                    word: file.word,
+                    meaning: file.meaning,
+                    pos: file.pos,
+                    category: category,
+                    difficulty: file.difficulty
+                )
                 guard wordsInCategory.insert(entry.normalizedWordKey).inserted else {
                     throw QuestionDataError.duplicateWord(word: entry.word, category: category)
                 }
+                allEntries.append(entry)
             }
-            allEntries.append(contentsOf: entries)
         }
         return allEntries
     }
 
-    /// 「単語 → 意味を4択」の問題を作る。誤答は同じ品詞の他単語から決定的に選ぶ
-    private static func makeQuestions(from entries: [WordEntry]) -> [Question] {
-        let groups = Dictionary(grouping: entries, by: \.pos)
+    /// 「単語 → 意味を4択」の問題を作る。誤答は同じ品詞グループから決定的に選ぶ
+    static func makeQuestions(from entries: [WordEntry]) -> [Question] {
+        let groups = Dictionary(grouping: entries) { $0.pos.distractorGroup }
         return entries.compactMap { entry in
-            guard let group = groups[entry.pos] else { return nil }
+            guard let group = groups[entry.pos.distractorGroup] else { return nil }
             return Question(
                 id: entry.id,
                 genre: .englishWord,
