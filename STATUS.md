@@ -21,7 +21,7 @@
 
 | 項目 | 状態 |
 |---|---|
-| プライバシーポリシー | **公開済み**:https://saikyo-app-team.github.io/app-privacy/(App Store Connect の Privacy Policy URL に入れる) |
+| プライバシーポリシー | **公開済み**:https://sutahaya-ios.github.io/app-privacy/(App Store Connect の Privacy Policy URL に入れる) |
 | アプリ名 | **確定:「スタはや」**(2026年8月9日、旧名「マナビート」から変更。サブタイトル「友達と早押し勉強対戦」)。Bundle ID・リポジトリ名・ターゲット名は `HayaosiApp` のまま。**J-PlatPatでの商標確認は完了(2026年8月22日・たける)** |
 | アイコン | **完了**:鉛筆型早押しボタン画像を設定済み(名称変更前に用意したものをそのまま使用) |
 | スクリーンショット | 未着手 |
@@ -63,7 +63,7 @@
   - **`Config/Info.plist`を新規追加**(git管理対象)。`GADApplicationIdentifier`と`SKAdNetworkItems`は`INFOPLIST_KEY_*`では生成plistに入らないため、土台のplistを与えて`GENERATE_INFOPLIST_FILE`とマージしている
   - 検証:xcodegen実行、Simulator向けビルド成功、全71テスト成功(表示判定の3件を追加)。iPhone 17 Proで学習タブ・マイページのバナー表示、対戦タブ/設定/ロビー/対戦中/リザルトに広告が出ないこと、4試合目のリザルト退出で全画面広告が出て閉じると対戦設定へ戻ることを確認
   - **2026年8月24日:AdMob登録と本番IDの反映まで完了**。アプリID(`Config/Info.plist`)と広告ユニットID2つ(`AdUnit.swift`)は本番の値。Debugビルドは引き続きGoogleのテストIDを使うので、開発中に自分の広告を叩く心配はない。Releaseビルドの生成Info.plistとバイナリに本番IDが入ることを確認済み。**AdMob上のアプリは「要審査」で、実広告の配信はApp Store公開後**
-  - **2026年8月24日:プライバシーポリシーと利用規約を更新・新規作成**。`saikyo-app-team/app-privacy`にアプリ名変更・広告識別子の取得・AdMobの第三者提供・対象年齢(全学習者、子ども向けアプリではない)を反映。同リポジトリへ`terms.html`を新規追加し、`MyPageView`に導線を追加(プライバシーポリシーの上に表示)
+  - **2026年8月24日:プライバシーポリシーと利用規約を更新・新規作成**。`sutahaya-ios/app-privacy`にアプリ名変更・広告識別子の取得・AdMobの第三者提供・対象年齢(全学習者、子ども向けアプリではない)を反映。同リポジトリへ`terms.html`を新規追加し、`MyPageView`に導線を追加(プライバシーポリシーの上に表示)
   - **2026年8月24日:`SKAdNetworkItems`をGoogle公式(AdMob)一覧の50件へ更新**(`Config/Info.plist`。従来はGoogle自身の1件のみ)。App Store Connectのデータ収集申告(Appのプライバシー)も公開済み。ビルドで生成Info.plistへ50件反映されることを確認
   - **広告(タスク4)は実装・法務対応ともに完了**。残るのはApp Store公開そのものとAdMobアプリ審査の完了(Google側で自動進行)、および両者への申告内容の継続的な見直し
   - **EEA向け同意フォーム(UMP)は未実装のまま**。2026年8月24日に配信国を日本のみへ限定したため、v1.0では対応不要と判断(申請素材の表を参照)。将来配信国を広げる場合は着手前に実装する。ATT許諾はSimulatorのシステムアラートが合成タップを受け付けないため、TCCへ直接許可を書いて先へ進めた(日本語の文面が出ることまでは確認済み)

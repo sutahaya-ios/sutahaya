@@ -42,7 +42,7 @@ cp Config/local.xcconfig.sample Config/local.xcconfig
 
 ## GitHubの認証(初回のみ・pushできない場合)
 
-このリポジトリは **非公開のOrganizationリポジトリ**(`saikyo-app-team/HayaosiApp`)。プライベートリポジトリでは**認証が通っていないと403ではなく404 `Repository not found` が返る**ため、「リポジトリが無い」と表示されて権限問題に見えるが、実際は認証の問題であることが多い。
+このリポジトリは **非公開のOrganizationリポジトリ**(`sutahaya-ios/HayaosiApp`)。プライベートリポジトリでは**認証が通っていないと403ではなく404 `Repository not found` が返る**ため、「リポジトリが無い」と表示されて権限問題に見えるが、実際は認証の問題であることが多い。
 
 GitHub CLI で認証するのが最短:
 
@@ -86,7 +86,7 @@ printf 'protocol=https\nhost=github.com\n\n' | git credential-osxkeychain erase
 SSHに切り替える(トークンの期限切れがなく長期的に安定):
 
 ```bash
-ssh-keygen -t ed25519 -C "github" && gh ssh-key add ~/.ssh/id_ed25519.pub && git remote set-url origin git@github.com:saikyo-app-team/HayaosiApp.git && ssh -T git@github.com
+ssh-keygen -t ed25519 -C "github" && gh ssh-key add ~/.ssh/id_ed25519.pub && git remote set-url origin git@github.com:sutahaya-ios/HayaosiApp.git && ssh -T git@github.com
 ```
 
 **Xcodeから push する場合は別管理**。Xcode → Settings → Accounts に自分のGitHubアカウントを追加する(パスワードではなく `repo` スコープ付きのPATを使う)。ターミナルで通っていてもXcode側は通らないので、ここで詰まる人が多い。

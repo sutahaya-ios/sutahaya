@@ -2,8 +2,8 @@ import SwiftUI
 
 /// バージョン・法務文書・今後提供予定の機能をまとめたアプリ情報画面
 struct AppInformationView: View {
-    private static let privacyPolicyURLString = "https://saikyo-app-team.github.io/app-privacy/"
-    private static let termsOfServiceURLString = "https://saikyo-app-team.github.io/app-privacy/terms.html"
+    private static let privacyPolicyURLString = "https://sutahaya-ios.github.io/app-privacy/"
+    private static let termsOfServiceURLString = "https://sutahaya-ios.github.io/app-privacy/terms.html"
 
     var body: some View {
         List {
