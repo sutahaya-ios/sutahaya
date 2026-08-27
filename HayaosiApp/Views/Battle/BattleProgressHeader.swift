@@ -12,7 +12,7 @@ struct BattleProgressHeader: View {
 
     private var isUrgent: Bool {
         guard let remaining else { return false }
-        return remaining <= BattleAnimation.urgentThreshold
+        return remaining <= TimerBarStyle.urgentThreshold(for: timeLimit)
     }
 
     var body: some View {
@@ -33,7 +33,7 @@ struct BattleProgressHeader: View {
 
             if let remaining {
                 ProgressView(value: min(remaining, timeLimit), total: timeLimit)
-                    .tint(isUrgent ? .red : .accentColor)
+                    .tint(isUrgent ? TimerBarStyle.urgentTint : TimerBarStyle.normalTint)
             }
         }
         .onChange(of: isUrgent) { _, urgent in

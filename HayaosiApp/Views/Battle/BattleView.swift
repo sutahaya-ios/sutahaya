@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct BattleView: View {
+    /// 文字送りの更新間隔
     private static let tickInterval: TimeInterval = 0.1
     private static let wrongFeedbackDuration: TimeInterval = 1.2
 
@@ -136,7 +137,8 @@ struct BattleView: View {
     }
 
     private func progressHeader(state: RoomState, game: RoomState.Game) -> some View {
-        TimelineView(.periodic(from: .now, by: Self.tickInterval)) { timeline in
+        // 残り時間バーは段差が見えるため、画面のリフレッシュレートに合わせて引き直す
+        TimelineView(.animation) { timeline in
             BattleProgressHeader(
                 questionNumber: game.questionIndex + 1,
                 totalCount: state.questions.count,

@@ -4,8 +4,12 @@ import Combine
 
 /// 出題画面(練習・復習共通)。要件 §9-2
 struct QuizSessionView: View {
-    private static let tickInterval: TimeInterval = 0.1
-    private static let warningThreshold: TimeInterval = 5
+    /// 残り時間の更新間隔。バーの段差が見えないよう毎フレーム進める
+    private static let tickInterval: TimeInterval = 1.0 / 60.0
+    /// 正誤表示を見せてから次の問題へ進むまでの時間。
+    /// 不正解のほうが長いのは、正答を読む時間が要るため
+    private static let correctFeedbackDuration: TimeInterval = 0.7
+    private static let wrongFeedbackDuration: TimeInterval = 1.6
 
     let mode: PlayMode
     let timeLimit: TimeInterval
@@ -55,6 +59,9 @@ struct QuizSessionView: View {
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
         }
+        .task(id: session.phase) {
+            await advanceAfterFeedback()
+        }
         .onAppear {
             if sessionStartedAt == nil {
                 sessionStartedAt = .now
@@ -96,7 +103,11 @@ struct QuizSessionView: View {
             .foregroundStyle(.secondary)
 
             ProgressView(value: session.remainingTime, total: timeLimit)
-                .tint(session.remainingTime < Self.warningThreshold ? .red : .accentColor)
+                .tint(
+                    session.remainingTime < TimerBarStyle.urgentThreshold(for: timeLimit)
+                        ? TimerBarStyle.urgentTint
+                        : TimerBarStyle.normalTint
+                )
 
             Spacer()
 
@@ -122,25 +133,36 @@ struct QuizSessionView: View {
         .padding()
     }
 
+    @ViewBuilder
     private func feedbackFooter(entry: QuizSession.Entry) -> some View {
-        VStack(spacing: 12) {
-            if entry.didTimeout {
-                Label("時間切れ", systemImage: "clock.badge.xmark")
-                    .foregroundStyle(.red)
-            } else if entry.isCorrect {
-                Label("正解!", systemImage: "circle")
-                    .foregroundStyle(.green)
-            } else {
-                Label("不正解", systemImage: "xmark")
-                    .foregroundStyle(.red)
-            }
-
-            Button(session.isLastQuestion ? "結果を見る" : "次の問題へ") {
-                session.advance()
-            }
-            .buttonStyle(.borderedProminent)
+        if entry.didTimeout {
+            Label("時間切れ", systemImage: "clock.badge.xmark")
+                .foregroundStyle(.red)
+                .font(.headline)
+        } else if entry.isCorrect {
+            Label("正解!", systemImage: "circle")
+                .foregroundStyle(.green)
+                .font(.headline)
+        } else {
+            Label("不正解", systemImage: "xmark")
+                .foregroundStyle(.red)
+                .font(.headline)
         }
-        .font(.headline)
+    }
+
+    /// 正誤表示中だけ待って次の問題へ進む。
+    /// 画面を離れたときと次のフェーズへ移ったときは .task(id:) がキャンセルする
+    private func advanceAfterFeedback() async {
+        guard session.phase == .feedback else { return }
+        let duration = session.currentEntry?.isCorrect == true
+            ? Self.correctFeedbackDuration
+            : Self.wrongFeedbackDuration
+        do {
+            try await Task.sleep(for: .seconds(duration))
+        } catch {
+            return
+        }
+        session.advance()
     }
 
     private func recordIfNeeded() {
@@ -176,7 +198,7 @@ private struct ChoiceButton: View {
         }
         .buttonStyle(.bordered)
         .tint(tint)
-        .disabled(phase != .answering)
+        .allowsHitTesting(phase == .answering)
     }
 
     private var tint: Color {

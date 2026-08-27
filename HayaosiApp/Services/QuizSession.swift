@@ -44,8 +44,6 @@ final class QuizSession {
     var totalCount: Int { entries.count }
     var correctCount: Int { entries.filter(\.isCorrect).count }
     var wrongCount: Int { totalCount - correctCount }
-    var isLastQuestion: Bool { currentIndex == entries.count - 1 }
-
     func select(_ choice: String) {
         guard phase == .answering else { return }
         entries[currentIndex].selectedChoice = choice

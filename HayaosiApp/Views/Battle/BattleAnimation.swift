@@ -10,7 +10,4 @@ enum BattleAnimation {
     static let playerOrder: Animation = .snappy(duration: 0.32, extraBounce: 0.08)
     /// 残り時間が少ないときの点滅
     static let urgentPulse: Animation = .easeInOut(duration: 0.5).repeatForever(autoreverses: true)
-
-    /// この秒数を切ったら残り時間を強調する
-    static let urgentThreshold: TimeInterval = 5
 }

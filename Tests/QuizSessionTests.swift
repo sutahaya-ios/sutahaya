@@ -127,7 +127,6 @@ final class QuizSessionTests: XCTestCase {
 
         session.select("a1")
         session.advance()
-        XCTAssertTrue(session.isLastQuestion)
 
         session.select("a2")
         session.advance()
