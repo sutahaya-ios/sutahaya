@@ -21,7 +21,7 @@ enum QuestionDataError: LocalizedError {
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 8
+    static let dataVersion = 9
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -147,13 +147,55 @@ enum QuestionSeeder {
     ) -> [String] {
         guard let base = group.firstIndex(where: { $0.id == entry.id }) else { return [] }
         let correct = entry[keyPath: key]
+        let correctElements = meaningElements(from: correct)
         var result: [String] = []
         for step in 1..<group.count where result.count < distractorCount {
             let candidate = group[(base + step * distractorStride) % group.count][keyPath: key]
-            if candidate != correct && !result.contains(candidate) {
+            let candidateElements = meaningElements(from: candidate)
+            if candidate != correct
+                && correctElements.isDisjoint(with: candidateElements)
+                && !result.contains(candidate) {
                 result.append(candidate)
             }
         }
         return result
+    }
+
+    /// カッコ外の区切り文字で意味を分け、空白を除いた要素の集合を返す
+    private static func meaningElements(from meaning: String) -> Set<String> {
+        var elements: Set<String> = []
+        var currentElement = ""
+        var parenthesisDepth = 0
+
+        for character in meaning {
+            switch character {
+            case "（", "(":
+                parenthesisDepth += 1
+                currentElement.append(character)
+            case "）", ")":
+                if parenthesisDepth > 0 {
+                    parenthesisDepth -= 1
+                }
+                currentElement.append(character)
+            case "、", "・":
+                if parenthesisDepth > 0 {
+                    currentElement.append(character)
+                    continue
+                }
+                if !currentElement.isEmpty {
+                    elements.insert(currentElement)
+                }
+                currentElement.removeAll(keepingCapacity: true)
+            case " ", "　":
+                continue
+            default:
+                currentElement.append(character)
+            }
+        }
+
+        if !currentElement.isEmpty {
+            elements.insert(currentElement)
+        }
+        return elements
     }
 }
