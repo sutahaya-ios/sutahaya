@@ -2,7 +2,7 @@ import SwiftUI
 
 /// ルーム参加:コードを入力して入室(要件 §5.1.1・§9-3)
 struct RoomJoinView: View {
-    private static let minCodeLength = 4
+    private static let codeLength = BattleRules.codeDigits
 
     @AppStorage("nickname") private var nickname = "ゲスト"
     @State private var code: String
@@ -18,9 +18,12 @@ struct RoomJoinView: View {
     var body: some View {
         Form {
             Section("参加コード") {
-                TextField("4〜6桁のコード", text: $code)
+                TextField("\(Self.codeLength)桁のコード", text: $code)
                     .keyboardType(.numberPad)
                     .font(.title2.monospaced())
+                    .onChange(of: code) { _, newValue in
+                        code = String(newValue.filter(\.isNumber).prefix(Self.codeLength))
+                    }
             }
 
             Section {
@@ -35,7 +38,7 @@ struct RoomJoinView: View {
                     }
                 }
                 .buttonStyle(SoundButtonStyle())
-                .disabled(code.count < Self.minCodeLength || isJoining)
+                .disabled(code.count != Self.codeLength || isJoining)
             } footer: {
                 Text("ホストに教えてもらったコードを入力してください")
             }

@@ -1,21 +1,40 @@
 import SwiftUI
 import SwiftData
 
-/// 対戦タブ。「誰と遊ぶか」を起点に、ひとり用とオンライン用の導線を分ける
+/// 対戦タブ。オンライン作成・参加とCPU対戦をホームから直接始める。
 struct BattleHubView: View {
-    /// Firebase未設定でもオンライン区画の見た目を確認できるよう、招待を1件だけ表示する
+    /// Firebase未設定でもオンライン区画の見た目を確認できるよう、招待を1件だけ表示する。
     private static let sampleInvite = RoomInvite(
         id: "sample",
         roomCode: "4821",
         fromNickname: "ときや"
     )
 
-    @State private var showPreviewAlert = false
-    @State private var inviteCode: String?
-    @State private var showInviteJoin = false
-    @State private var showOnlineMenu = false
-    @State private var showTutorial = false
+    @AppStorage("nickname") private var nickname = "ゲスト"
     @AppStorage("hasSeenBattleTutorial") private var hasSeenTutorial = false
+    @AppStorage(OnlineRoomConfiguration.categoryKey)
+    private var savedCategoryRaw = WordCategory.juniorHigh.rawValue
+    @AppStorage(OnlineRoomConfiguration.difficultyKey)
+    private var savedDifficultyValue = WordDifficulty.one.rawValue
+    @AppStorage(OnlineRoomConfiguration.questionCountKey)
+    private var savedQuestionCount = QuizDefaults.questionCount
+    @AppStorage(OnlineRoomConfiguration.timeLimitKey)
+    private var savedTimeLimit = QuizDefaults.timeLimit
+
+    @Query private var allQuestions: [Question]
+    @State private var onlineSession: OnlineBattleSession?
+    @State private var cpuSession: CPUBattleSession?
+    @State private var showOnlineRoom = false
+    @State private var showCPURoom = false
+    @State private var showCodeJoin = false
+    @State private var showSettings = false
+    @State private var showTutorial = false
+    @State private var showPreviewAlert = false
+    @State private var isCreatingRoom = false
+    @State private var isStartingCPU = false
+    @State private var joiningInviteID: String?
+    @State private var hiddenInviteIDs: Set<String> = []
+    @State private var errorMessage: String?
 
     private var friendService: FriendService { .shared }
 
@@ -25,23 +44,39 @@ struct BattleHubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(spacing: 20) {
+                OnlineBattleHomeCard(
+                    configuration: configuration,
+                    isCreating: isCreatingRoom,
+                    onCreate: createRoom,
+                    onJoinByCode: { showCodeJoin = true },
+                    onChangeSettings: { showSettings = true }
+                )
+
+                SoloBattleHomeCard(
+                    isStarting: isStartingCPU,
+                    onStart: startCPU
+                )
+
                 inviteBanners
-                modeCards
 
                 if !isOnlineReady {
                     OnlinePreviewBanner()
                 }
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
+        .background(Color(.systemGroupedBackground))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showTutorial = true
                 } label: {
-                    Label("遊び方", systemImage: "questionmark.circle")
+                    Image(systemName: "questionmark.circle")
+                        .font(.title2)
                 }
+                .accessibilityLabel("遊び方")
             }
         }
         .onAppear {
@@ -54,11 +89,33 @@ struct BattleHubView: View {
                 await signIn()
             }
         }
-        .navigationDestination(isPresented: $showInviteJoin) {
-            RoomJoinView(initialCode: inviteCode ?? "")
+        .navigationDestination(isPresented: $showOnlineRoom) {
+            if let onlineSession {
+                BattleFlowView(session: onlineSession)
+            }
         }
-        .navigationDestination(isPresented: $showOnlineMenu) {
-            OnlineModeMenuView()
+        .navigationDestination(isPresented: $showCPURoom) {
+            if let cpuSession {
+                BattleFlowView(session: cpuSession)
+            }
+        }
+        .navigationDestination(isPresented: $showCodeJoin) {
+            RoomJoinView()
+        }
+        .navigationDestination(isPresented: $showSettings) {
+            RoomCreateView(mode: .editPreferences)
+        }
+        .onChange(of: showOnlineRoom) { _, isShowing in
+            if !isShowing {
+                onlineSession?.leave()
+                onlineSession = nil
+            }
+        }
+        .onChange(of: showCPURoom) { _, isShowing in
+            if !isShowing {
+                cpuSession?.leave()
+                cpuSession = nil
+            }
         }
         .sheet(isPresented: $showTutorial, onDismiss: {
             hasSeenTutorial = true
@@ -67,46 +124,104 @@ struct BattleHubView: View {
         }
         .alert("オンライン機能が未設定です", isPresented: $showPreviewAlert) {
         } message: {
-            Text("招待への参加はFirebase設定後に利用できます(設定手順:FIREBASE_SETUP.md)")
+            Text("Firebase設定後にルーム作成・招待参加を利用できます(設定手順:FIREBASE_SETUP.md)")
+        }
+        .alert("エラー", isPresented: .init(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+        } message: {
+            Text(errorMessage ?? "")
         }
     }
 
-    private var modeCards: some View {
-        HStack(alignment: .top, spacing: 12) {
-            NavigationLink {
-                CPUBattleSetupView()
-            } label: {
-                BattleModeCard(
-                    title: "ひとりで",
-                    subtitle: "CPUと対戦\n通信なしですぐ遊べる",
-                    systemImage: "person.fill",
-                    color: .orange
-                )
-            }
-            .buttonStyle(SoundButtonStyle())
-
-            Button {
-                showOnlineMenu = true
-            } label: {
-                BattleModeCard(
-                    title: "オンライン",
-                    subtitle: "友達と対戦\nルームを作成・参加",
-                    systemImage: "person.2.fill",
-                    color: .blue
-                )
-            }
-            .buttonStyle(SoundButtonStyle())
-        }
-    }
-
+    @ViewBuilder
     private var inviteBanners: some View {
-        ForEach(isOnlineReady ? friendService.invites : [Self.sampleInvite]) { invite in
+        ForEach(visibleInvites) { invite in
             RoomInviteBanner(
                 invite: invite,
+                memberCount: 1,
+                isJoining: joiningInviteID == invite.id,
                 onAccept: { accept(invite, isPreview: !isOnlineReady) },
                 onDismiss: { dismiss(invite, isPreview: !isOnlineReady) }
             )
         }
+    }
+
+    private var configuration: OnlineRoomConfiguration {
+        OnlineRoomConfiguration(
+            category: WordCategory(rawValue: savedCategoryRaw) ?? .juniorHigh,
+            difficulty: WordDifficulty(rawValue: savedDifficultyValue) ?? .one,
+            questionCount: QuizDefaults.questionCountOptions.contains(savedQuestionCount)
+                ? savedQuestionCount
+                : QuizDefaults.questionCount,
+            timeLimit: QuizDefaults.timeLimitOptions.contains(savedTimeLimit)
+                ? savedTimeLimit
+                : QuizDefaults.timeLimit
+        )
+    }
+
+    private var availableQuestions: [Question] {
+        allQuestions
+            .filter { $0.genre == .englishWord }
+            .matching(
+                category: configuration.category,
+                difficulty: configuration.difficulty
+            )
+    }
+
+    private var visibleInvites: [RoomInvite] {
+        let source = isOnlineReady ? friendService.invites : [Self.sampleInvite]
+        return source.filter { !hiddenInviteIDs.contains($0.id) }
+    }
+
+    private func createRoom() {
+        guard !isCreatingRoom, joiningInviteID == nil else { return }
+        guard isOnlineReady else {
+            showPreviewAlert = true
+            return
+        }
+        guard !availableQuestions.isEmpty else {
+            errorMessage = "この設定で出題できる問題がありません。「変更」から別の難易度を選んでください"
+            return
+        }
+
+        isCreatingRoom = true
+        Task {
+            defer { isCreatingRoom = false }
+            do {
+                let uid = try await AuthService.shared.ensureSignedIn()
+                let session = try OnlineBattleSession(myID: uid, nickname: nickname)
+                try await session.createRoom(
+                    settings: configuration.roomSettings(
+                        availableQuestionCount: availableQuestions.count
+                    )
+                )
+                onlineSession = session
+                showOnlineRoom = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func startCPU() {
+        guard !isStartingCPU, !isCreatingRoom else { return }
+        guard !availableQuestions.isEmpty else {
+            errorMessage = "この設定で出題できる問題がありません。「変更」から別の難易度を選んでください"
+            return
+        }
+
+        isStartingCPU = true
+        cpuSession = CPUBattleSession(
+            nickname: nickname,
+            settings: configuration.roomSettings(
+                availableQuestionCount: availableQuestions.count
+            ),
+            cpuCount: 2
+        )
+        showCPURoom = true
+        isStartingCPU = false
     }
 
     private func accept(_ invite: RoomInvite, isPreview: Bool) {
@@ -114,9 +229,22 @@ struct BattleHubView: View {
             showPreviewAlert = true
             return
         }
-        inviteCode = invite.roomCode
-        showInviteJoin = true
-        Task { await friendService.deleteInvite(id: invite.id) }
+        guard joiningInviteID == nil, !isCreatingRoom else { return }
+
+        joiningInviteID = invite.id
+        Task {
+            defer { joiningInviteID = nil }
+            do {
+                let uid = try await AuthService.shared.ensureSignedIn()
+                let session = try OnlineBattleSession(myID: uid, nickname: nickname)
+                try await session.joinRoom(code: invite.roomCode)
+                onlineSession = session
+                showOnlineRoom = true
+                await friendService.deleteInvite(id: invite.id)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func dismiss(_ invite: RoomInvite, isPreview: Bool) {
@@ -124,7 +252,7 @@ struct BattleHubView: View {
             showPreviewAlert = true
             return
         }
-        Task { await friendService.deleteInvite(id: invite.id) }
+        hiddenInviteIDs.insert(invite.id)
     }
 
     private func signIn() async {
@@ -132,7 +260,7 @@ struct BattleHubView: View {
             let uid = try await AuthService.shared.ensureSignedIn()
             friendService.startListening(uid: uid)
         } catch {
-            print("サインインに失敗: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
 }
