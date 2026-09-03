@@ -12,15 +12,18 @@ struct ProfileBattleStats: Equatable {
     }
 }
 
-/// 自分のプロフィールカード。プロフィールを主役にし、戦績とフレンドコードを1枚へまとめる
-struct FriendProfileCard: View {
-    private static let copiedResetDelay: TimeInterval = 2
+/// 自分のプロフィールカード。プロフィールを主役にし、戦績とフレンドコードを1枚へまとめる。
+/// `footer` は自分のマイページだけに出したい行を差し込む口。
+/// フレンドのカードとして使うときは省略する
+struct FriendProfileCard<Footer: View>: View {
+    private static var copiedResetDelay: TimeInterval { 2 }
 
     let nickname: String
     let friendCode: String?
     var icon: String = ProfileIcon.none
     var bio: String = ""
     var battleStats: ProfileBattleStats? = nil
+    @ViewBuilder var footer: () -> Footer
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var copied = false
@@ -134,6 +137,8 @@ struct FriendProfileCard: View {
                     }
                 }
             }
+
+            footer()
         }
         .padding(12)
         .background(
@@ -185,6 +190,26 @@ struct FriendProfileCard: View {
             }
             copied = false
         }
+    }
+}
+
+extension FriendProfileCard where Footer == EmptyView {
+    /// 差し込む行がないとき(フレンドのカードなど)に使う
+    init(
+        nickname: String,
+        friendCode: String?,
+        icon: String = ProfileIcon.none,
+        bio: String = "",
+        battleStats: ProfileBattleStats? = nil
+    ) {
+        self.init(
+            nickname: nickname,
+            friendCode: friendCode,
+            icon: icon,
+            bio: bio,
+            battleStats: battleStats,
+            footer: { EmptyView() }
+        )
     }
 }
 

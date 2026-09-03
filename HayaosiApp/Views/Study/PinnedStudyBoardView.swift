@@ -47,7 +47,7 @@ struct PinnedStudyBoardView: View {
                 )
             } else {
                 NavigationLink {
-                    CategorySummaryView(category: category)
+                    CategoryHeatmapView(category: category)
                 } label: {
                     StudyBoardCard(
                         category: category,

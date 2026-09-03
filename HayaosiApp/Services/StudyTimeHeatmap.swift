@@ -30,9 +30,10 @@ struct StudyTimeHeatmap {
         static let level4Seconds: Double = 35 * 60
     }
 
+    /// `category` に nil を渡すと全カテゴリを合算する
     static func calculate(
         records: [DailyStudyTime],
-        category: WordCategory,
+        category: WordCategory?,
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> Summary {
@@ -50,7 +51,7 @@ struct StudyTimeHeatmap {
         ) ?? currentWeekStart
 
         let secondsByDay = records.reduce(into: [Date: Double]()) { result, record in
-            guard record.categoryRaw == category.rawValue else { return }
+            if let category, record.categoryRaw != category.rawValue { return }
             let dayStart = calendar.startOfDay(for: record.dayStart)
             result[dayStart, default: 0] += max(record.totalSeconds, 0)
         }

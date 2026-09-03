@@ -1,60 +1,7 @@
 import SwiftUI
-import SwiftData
 
-/// カテゴリ別の習得率と直近12週の学習時間を要約する
-struct CategorySummaryView: View {
-    let category: WordCategory
-
-    @Query private var records: [AnswerRecord]
-    @Query private var questions: [Question]
-    @Query private var dailyStudyTimes: [DailyStudyTime]
-
-    var body: some View {
-        let proficiency = CategoryProficiencySummary.calculate(
-            records: records,
-            questions: questions,
-            category: category
-        )
-        let studyTimeSummary = StudyTimeHeatmap.calculate(
-            records: dailyStudyTimes,
-            category: category
-        )
-
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                NavigationLink {
-                    CategoryHeatmapView(category: category)
-                } label: {
-                    Text("学習")
-                        .font(.system(size: 15, weight: .medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .foregroundStyle(.white)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.accentColor)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                ProficiencyRingBlock(summary: proficiency)
-                    .padding(.top, 18)
-
-                Rectangle()
-                    .fill(Color(.separator))
-                    .frame(height: 0.5)
-                    .padding(.top, 18)
-
-                StudyTimeBlock(summary: studyTimeSummary)
-                    .padding(.top, 14)
-            }
-            .padding()
-        }
-        .navigationTitle(category.displayName)
-    }
-}
-
-private struct ProficiencyRingBlock: View {
+/// 習得率を円環で示す。マイページの学習記録で使う
+struct ProficiencyRingBlock: View {
     private static let ringSize: CGFloat = 60
     private static let ringLineWidth: CGFloat = 7
     private static let progressColor = Color(
@@ -119,22 +66,27 @@ private struct ProficiencyRingBlock: View {
     }
 }
 
-private struct StudyTimeBlock: View {
+/// 直近12週の学習時間ヒートマップ
+struct StudyTimeBlock: View {
     private static let gridSpacing: CGFloat = 3
     private static let cellSize: CGFloat = 14
     private static let cellCornerRadius: CGFloat = 2
 
     let summary: StudyTimeHeatmap.Summary
+    /// 見出しを出すか。カード内で重複するときは false にする
+    var showsTitle = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("学習時間")
-                    .font(.system(size: 13, weight: .medium))
+                if showsTitle {
+                    Text("学習時間")
+                        .font(.system(size: 13, weight: .medium))
+                }
 
                 Spacer(minLength: 8)
 
-                Text("直近12週 · 計\(durationText)")
+                Text("直近12週 · 計\(StudyDuration.text(seconds: summary.totalSeconds))")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -166,11 +118,14 @@ private struct StudyTimeBlock: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("直近12週の学習時間、計\(durationText)")
+        .accessibilityLabel("直近12週の学習時間、計\(StudyDuration.text(seconds: summary.totalSeconds))")
     }
+}
 
-    private var durationText: String {
-        let totalMinutes = Int(max(summary.totalSeconds, 0) / 60)
+/// 秒数を「◯時間◯分」へ整形する。学習時間の表示は必ずここを通す
+enum StudyDuration {
+    static func text(seconds: Double) -> String {
+        let totalMinutes = Int(max(seconds, 0) / 60)
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         if hours == 0 {
@@ -183,7 +138,7 @@ private struct StudyTimeBlock: View {
     }
 }
 
-private extension StudyTimeHeatmap.Level {
+extension StudyTimeHeatmap.Level {
     var color: Color {
         switch self {
         case .none:
@@ -198,14 +153,4 @@ private extension StudyTimeHeatmap.Level {
             Color(red: 24.0 / 255.0, green: 95.0 / 255.0, blue: 165.0 / 255.0)
         }
     }
-}
-
-#Preview {
-    NavigationStack {
-        CategorySummaryView(category: .juniorHigh)
-    }
-    .modelContainer(
-        for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self],
-        inMemory: true
-    )
 }
