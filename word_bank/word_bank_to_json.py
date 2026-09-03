@@ -20,7 +20,7 @@ from openpyxl import load_workbook
 WORD_BANK_DIR = Path(__file__).resolve().parent
 ROOT = WORD_BANK_DIR.parent
 DEFAULT_WORKBOOKS = {
-    "main": WORD_BANK_DIR / "word_bank.xlsx",
+    "junior_high": WORD_BANK_DIR / "junior_high_school.xlsx",
     "takeru": WORD_BANK_DIR / "word_bank_takeru.xlsx",
     "tokiya": WORD_BANK_DIR / "word_bank_tokiya.xlsx",
     "toeic": WORD_BANK_DIR / "word_bank_toeic.xlsx",
@@ -33,7 +33,7 @@ CATEGORY_CONFIGS = (
         "filename": "junior_high.json",
         "prefix": "jh_",
         "sources": ({
-            "workbook": "main",
+            "workbook": "junior_high",
             "sheet": "中学英単語",
             "difficulties": None,
         },),
@@ -86,7 +86,7 @@ DISTRACTOR_GROUPS = (
     ("名詞", ("名詞",)),
     ("形容詞", ("形容詞",)),
     ("副詞", ("副詞",)),
-    ("代名詞・接続詞・前置詞", ("代名詞", "接続詞", "前置詞")),
+    ("代名詞・接続詞・前置詞・助動詞", ("代名詞", "接続詞", "前置詞", "助動詞")),
 )
 VALID_POS = tuple(
     pos
@@ -273,7 +273,8 @@ def load_workbooks(paths):
 def main():
     parser = argparse.ArgumentParser(description="4つの単語入力xlsxを単語JSONへ変換する")
     parser.add_argument("--write", action="store_true", help="JSONへ書き込む(既定は確認のみ)")
-    parser.add_argument("--workbook", type=Path, default=DEFAULT_WORKBOOKS["main"],
+    parser.add_argument("--junior-high-workbook", type=Path,
+                        default=DEFAULT_WORKBOOKS["junior_high"],
                         help="中学英単語用xlsx")
     parser.add_argument("--takeru-workbook", type=Path, default=DEFAULT_WORKBOOKS["takeru"],
                         help="ターゲット1200・1400用xlsx")
@@ -284,7 +285,7 @@ def main():
     args = parser.parse_args()
 
     workbook_paths = {
-        "main": args.workbook,
+        "junior_high": args.junior_high_workbook,
         "takeru": args.takeru_workbook,
         "tokiya": args.tokiya_workbook,
         "toeic": args.toeic_workbook,

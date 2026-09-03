@@ -10,6 +10,7 @@ enum PartOfSpeech: String, Codable, CaseIterable, Identifiable {
     case pronoun = "代名詞"
     case conjunction = "接続詞"
     case preposition = "前置詞"
+    case auxiliary = "助動詞"
 
     enum DistractorGroup: Hashable {
         case verb
@@ -22,7 +23,7 @@ enum PartOfSpeech: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var displayName: String { rawValue }
 
-    /// 少数の3品詞は訳の見た目が近いため、誤答候補だけを共通化する。
+    /// 少数の4品詞は訳の見た目が近いため、誤答候補だけを共通化する。
     /// 各品詞が単独で4語以上に増えたら、個別グループへ分離できる。
     var distractorGroup: DistractorGroup {
         switch self {
@@ -34,7 +35,7 @@ enum PartOfSpeech: String, Codable, CaseIterable, Identifiable {
             return .adjective
         case .adverb:
             return .adverb
-        case .pronoun, .conjunction, .preposition:
+        case .pronoun, .conjunction, .preposition, .auxiliary:
             return .minorFunctionWords
         }
     }

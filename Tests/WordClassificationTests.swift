@@ -149,6 +149,10 @@ final class WordClassificationTests: XCTestCase {
         }
     }
 
+    func test_助動詞は少数機能語の誤答グループに属する() {
+        XCTAssertEqual(PartOfSpeech.auxiliary.distractorGroup, .minorFunctionWords)
+    }
+
     func test_収録データは各カテゴリを含みIDと単語が重複しない() throws {
         let entries = try QuestionSeeder.loadEntries()
         XCTAssertFalse(entries.isEmpty)
