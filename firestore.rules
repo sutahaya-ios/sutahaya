@@ -186,26 +186,6 @@ service cloud.firestore {
         && request.resource.data.sentAt == resource.data.sentAt;
     }
 
-    function senderReinvites(recipientUid, inviteId) {
-      return signedIn()
-        && request.auth.uid == resource.data.fromUID
-        && validPendingInvite(recipientUid, inviteId, request.resource.data)
-        && validInviteIdentity(recipientUid, inviteId, resource.data)
-        && request.resource.data.roomInstanceID == resource.data.roomInstanceID
-        && request.resource.data.roomCode == resource.data.roomCode
-        && request.resource.data.fromUID == resource.data.fromUID
-        && request.resource.data.toUID == resource.data.toUID
-        && resource.data.generation is int
-        && request.resource.data.generation == resource.data.generation + 1
-        && request.resource.data.sentAt == request.time
-        && request.time >= resource.data.sentAt + duration.value(10, 's')
-        && (resource.data.status != 'accepting'
-          || (resource.data.acceptingAt is timestamp
-            && request.time >= resource.data.acceptingAt + duration.value(10, 's')))
-        && resource.data.status in ['pending', 'accepting', 'accepted', 'cancelled']
-        && mutualFriends(resource.data.fromUID, recipientUid);
-    }
-
     function recipientClaims(recipientUid, inviteId) {
       return isOwner(recipientUid)
         && resource.data.status == 'pending'
@@ -325,22 +305,16 @@ service cloud.firestore {
           || (signedIn()
             && inviteId.matches('^[A-Za-z0-9-]+_' + request.auth.uid + '$'));
         allow list: if isOwner(uid);
-        allow create: if signedIn()
-          && validPendingInvite(uid, inviteId, request.resource.data)
-          && request.resource.data.fromUID == request.auth.uid
-          && request.resource.data.generation == 1
-          && request.resource.data.sentAt == request.time
-          && mutualFriends(request.auth.uid, uid);
-        allow update: if signedIn()
-          && ((request.auth.uid == resource.data.fromUID
-              && senderReinvites(uid, inviteId))
-            || (isOwner(uid)
-              && ((resource.data.status == 'pending'
-                  && (recipientClaims(uid, inviteId)
-                    || recipientCancels(uid, inviteId)))
-                || (resource.data.status == 'accepting'
-                  && (recipientFinalizes(uid, inviteId)
-                    || recipientRollsBack(uid, inviteId))))));
+        // 作成・再招待はCloud FunctionだけがAdmin権限で行う。
+        // clientからはhostを安全に検証できないため、sender本人でも直接writeを許可しない。
+        allow create: if false;
+        allow update: if isOwner(uid)
+          && ((resource.data.status == 'pending'
+              && (recipientClaims(uid, inviteId)
+                || recipientCancels(uid, inviteId)))
+            || (resource.data.status == 'accepting'
+              && (recipientFinalizes(uid, inviteId)
+                || recipientRollsBack(uid, inviteId))));
         allow delete: if false;
       }
     }

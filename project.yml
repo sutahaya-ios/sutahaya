@@ -33,6 +33,8 @@ targets:
         product: FirebaseDatabase
       - package: Firebase
         product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseFunctions
       - package: GoogleMobileAds
         product: GoogleMobileAds
     settings:

@@ -29,6 +29,7 @@ Bundle IDが異なっても、同じFirebaseプロジェクト内のiOSアプリ
 | Authentication | Sign-in method → **匿名** を有効化 | ニックネームだけで利用開始 |
 | Realtime Database | データベースを作成(ロケーションは asia-southeast1 など近場)。**「ロックモードで開始」を選び、下の §4 のルールを貼る** | ルーム同期・早押し判定 |
 | Cloud Firestore | データベースを作成(asia-northeast1 推奨)。同じく**ロックモード**で作り §4 のルールを貼る | ユーザープロフィール・フレンド・招待 |
+| Cloud Functions | Blazeプランを有効にし、§4 の `sendRoomInvite` を公開する | Realtime Databaseのhostを検証した招待作成 |
 
 **テストモードで作らないこと。** テストモードは30日後に全拒否へ切り替わり、ある日突然アプリが動かなくなって原因が分かりにくい。ロックモードで作って §4 のルールを貼れば最初から動く。
 
@@ -65,9 +66,11 @@ Bundle IDごとにFirebase iOSアプリを追加しても、セキュリティ�
 本格ルールの目標仕様は、リポジトリ内の次のファイルで管理する。
 
 - `database.rules.json`: Realtime Database。待機中の部屋は参加前のコード確認を許可し、対戦開始後は参加者だけが読める。ゲーム進行と得点はホストだけが更新できる
-- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、フレンド申請は受信側と送信側の控えを同時作成する。承認時だけ双方のフレンド文書を同時作成できる。ルーム招待は送信者が登録済みフレンドへ送る場合だけ許可する
+- `firestore.rules`: `users` と `friendCodes` の一覧取得を禁止し、フレンド申請は受信側と送信側の控えを同時作成する。承認時だけ双方のフレンド文書を同時作成できる。ルーム招待のクライアント直接作成は禁止し、受信者のaccept/cancelだけ許可する
+- `functions/index.js`: callable function `sendRoomInvite`。認証済みユーザーがRealtime Database上の現在のhostかと双方のフレンド関係を検証し、canonical inviteをAdmin SDKで作成する
 - `firebase.json`: 上記ルールとLocal Emulator Suiteの設定
 - `FirebaseRulesTests/rules.test.js`: 許可する操作と拒否する操作の自動テスト
+- `FirebaseFunctionsTests/sendRoomInvite.test.js`: host招待、guest拒否、再招待、cooldown、accepting leaseの自動テスト
 
 テストは実在するFirebaseプロジェクトではなく、`demo-hayaosiapp` というローカル専用IDを使う。本番データ・課金・公開中のルールには影響しない。
 
@@ -75,17 +78,24 @@ Bundle IDごとにFirebase iOSアプリを追加しても、セキュリティ�
 
 ```bash
 npm install
+npm install --prefix functions
 ```
 
 ルールテストを実行する:
 
 ```bash
 npm run test:firebase-rules
+npm run test:firebase-functions
 ```
 
 `firestore.rules` は `friendCodes/{code}` と招待の `fromUID`、`database.rules.json` は現在の回答・得点更新経路を前提にしている。ルール変更時はアプリ側の通信経路と不整合がないか確認し、Local Emulatorの全テストを通す。
 
-本番公開は外部状態を変更するため、差分・テスト結果・Swift側の対応を確認し、担当者の明示的な許可を得た後にだけ行う。公開対象を限定するコマンドは `firebase deploy --only firestore:rules,database`。
+本番公開は外部状態を変更するため、差分・テスト結果・Swift側の対応を確認し、担当者の明示的な許可を得た後にだけ行う。招待経路の公開時は、旧クライアントを先に拒否しないようFunctionsを先に公開し、成功後にFirestore Rulesを公開する。
+
+```bash
+firebase deploy --project hayaosiapp --only functions:sendRoomInvite
+firebase deploy --project hayaosiapp --only firestore:rules
+```
 
 ## 5. 動作確認
 
@@ -114,8 +124,12 @@ users/{uid} { nickname, friendCode, icon, bio, createdAt }
   ├─ friends/{friendUid} { nickname, friendCode, icon, bio, addedAt }
   ├─ friendRequests/{senderUid} { fromUID, fromNickname, fromFriendCode, createdAt }
   ├─ sentFriendRequests/{receiverUid} { toUID, toNickname, toFriendCode, createdAt }
-  └─ invites/{autoId} { roomCode, fromNickname, createdAt }
+  └─ invites/{roomInstanceID}_{senderUID}
+       { roomCode, roomInstanceID, fromUID, fromNickname, generation,
+         status(pending/accepting/cancelled), createdAt }
 ```
+
+招待は `sendRoomInvite` だけが作成する。Realtime Databaseの `rooms/{roomCode}` に保存された `hostID` と `roomInstanceID` を検証するため、guestがUIを改造しても招待は作成されない。同じルーム・送信者・受信者の招待は同じcanonical documentをgeneration更新して再利用する。
 
 `icon` はアプリ内の絵文字プリセットまたは空文字、`bio` は140文字以内。プロフィール同期対応前に作成済みのフレンド文書には両フィールドが無い場合があるため、フレンド一覧を開いた時に各 `users/{friendUid}` を1回ずつ取得して最新表示へ補完する。常時監視とフレンド文書への書き戻しは行わない。
 

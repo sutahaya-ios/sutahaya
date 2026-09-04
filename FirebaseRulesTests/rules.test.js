@@ -13,7 +13,6 @@ const {
   doc,
   getDoc,
   getDocs,
-  runTransaction: runFirestoreTransaction,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -132,14 +131,6 @@ function acceptingInvite({
   };
 }
 
-function acceptedInvite({ acceptedAgoMS = 100, ...overrides } = {}) {
-  return {
-    ...acceptingInvite(overrides),
-    status: "accepted",
-    acceptedAt: new Date(Date.now() - acceptedAgoMS),
-  };
-}
-
 async function seedInvite(data, recipientUID = "bob", documentID = null) {
   const id = documentID ?? inviteDocumentID(data.roomInstanceID, data.fromUID);
   await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -251,7 +242,7 @@ describe("Cloud Firestore rules", () => {
     await assertFails(getDocs(collection(db, "friendCodes")));
   });
 
-  it("allows only a canonical generation-1 pending invite between mutual friends", async () => {
+  it("rejects invite creation and re-invite from every client", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     await seedUser("bob", "BOB001", "Bob");
     await seedMutualFriends();
@@ -260,84 +251,9 @@ describe("Cloud Firestore rules", () => {
       aliceDB, "users", "bob", "invites", inviteDocumentID()
     );
 
-    await assertSucceeds(setDoc(inviteRef, pendingInvite()));
-  });
-
-  it("rejects non-mutual friendship and sender/recipient/canonical identity spoofing", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    const aliceDB = testEnv.authenticatedContext("alice").firestore();
-
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID()),
-      pendingInvite()
-    ));
-
-    await seedMutualFriends();
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID("room-instance", "mallory")),
-      pendingInvite({ senderUID: "mallory", fromNickname: "Mallory" })
-    ));
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID()),
-      pendingInvite({ recipientUID: "mallory" })
-    ));
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", "different-room_alice"),
-      pendingInvite()
-    ));
-  });
-
-  it("rejects invalid create generation, nickname, timestamp, and extra fields", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    await seedMutualFriends();
-    const aliceDB = testEnv.authenticatedContext("alice").firestore();
-    const inviteRef = doc(aliceDB, "users", "bob", "invites", inviteDocumentID());
-
+    await assertFails(setDoc(inviteRef, pendingInvite()));
+    await seedInvite(pendingInvite({ sentAt: new Date(Date.now() - 11_000) }));
     await assertFails(setDoc(inviteRef, pendingInvite({ generation: 2 })));
-    await assertFails(setDoc(inviteRef, pendingInvite({ fromNickname: "" })));
-    await assertFails(setDoc(inviteRef, pendingInvite({ fromNickname: "x".repeat(31) })));
-    await assertFails(setDoc(inviteRef, pendingInvite({ sentAt: new Date() })));
-    await assertFails(setDoc(inviteRef, { ...pendingInvite(), unexpected: true }));
-  });
-
-  it("enforces the ten-second cooldown and exact generation increment", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    await seedMutualFriends();
-    const aliceDB = testEnv.authenticatedContext("alice").firestore();
-
-    await seedInvite(pendingInvite({ sentAt: new Date(Date.now() - 9_000) }));
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID()),
-      pendingInvite({ generation: 2 })
-    ));
-
-    await seedInvite(pendingInvite({ sentAt: new Date(Date.now() - 11_000) }));
-    await assertSucceeds(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID()),
-      pendingInvite({ generation: 2, fromNickname: "New snapshot" })
-    ));
-
-    await seedInvite(pendingInvite({ sentAt: new Date(Date.now() - 11_000) }));
-    await assertFails(setDoc(
-      doc(aliceDB, "users", "bob", "invites", inviteDocumentID()),
-      pendingInvite({ generation: 3 })
-    ));
-  });
-
-  it("allows accepted to advance to the next generation but rejects identity changes", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    await seedMutualFriends();
-    const aliceDB = testEnv.authenticatedContext("alice").firestore();
-    await seedInvite(acceptedInvite({ sentAgoMS: 12_000, acceptingAgoMS: 11_000 }));
-    const inviteRef = doc(aliceDB, "users", "bob", "invites", inviteDocumentID());
-
-    await assertSucceeds(setDoc(inviteRef, pendingInvite({ generation: 2 })));
-    await seedInvite(acceptedInvite({ sentAgoMS: 12_000, acceptingAgoMS: 11_000 }));
-    await assertFails(setDoc(inviteRef, pendingInvite({ generation: 2, roomCode: "9999" })));
   });
 
   it("allows only the recipient to claim a non-expired pending generation", async () => {
@@ -435,7 +351,7 @@ describe("Cloud Firestore rules", () => {
     ));
   });
 
-  it("removes rollback proof on the next claim and sender generation", async () => {
+  it("removes rollback proof on the next recipient claim", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     await seedUser("bob", "BOB001", "Bob");
     await seedMutualFriends();
@@ -451,90 +367,19 @@ describe("Cloud Firestore rules", () => {
       acceptingAt: serverTimestamp(),
     }));
     assert.equal((await getDoc(bobRef)).data().rolledBackClaimID, undefined);
-
-    const oldSentAt = new Date(Date.now() - 11_000);
-    await seedInvite(rolledBackPendingInvite({ sentAt: oldSentAt }));
-    const aliceRef = doc(
-      testEnv.authenticatedContext("alice").firestore(),
-      "users", "bob", "invites", inviteDocumentID()
-    );
-    await assertSucceeds(setDoc(aliceRef, pendingInvite({ generation: 2 })));
-    assert.equal((await getDoc(aliceRef)).data().rolledBackClaimID, undefined);
   });
 
-  it("blocks sender replacement during the claim lease and allows it after the lease", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    await seedMutualFriends();
-    const aliceDB = testEnv.authenticatedContext("alice").firestore();
-    const inviteRef = doc(aliceDB, "users", "bob", "invites", inviteDocumentID());
-
-    await seedInvite(acceptingInvite({ sentAgoMS: 12_000, acceptingAgoMS: 9_000 }));
-    await assertFails(setDoc(inviteRef, pendingInvite({ generation: 2 })));
-    await seedInvite(acceptingInvite({ sentAgoMS: 12_000, acceptingAgoMS: 11_000 }));
-    await assertSucceeds(setDoc(inviteRef, pendingInvite({ generation: 2 })));
-  });
-
-  it("serializes an expired-lease re-invite against finalize", async () => {
-    await seedUser("alice", "ALICE1", "Alice");
-    await seedUser("bob", "BOB001", "Bob");
-    await seedMutualFriends();
-    const current = acceptingInvite({ sentAgoMS: 12_000, acceptingAgoMS: 11_000 });
-    await seedInvite(current);
-    const aliceRef = doc(
-      testEnv.authenticatedContext("alice").firestore(),
-      "users", "bob", "invites", inviteDocumentID()
-    );
-    const bobRef = doc(
-      testEnv.authenticatedContext("bob").firestore(),
-      "users", "bob", "invites", inviteDocumentID()
-    );
-
-    const results = await Promise.allSettled([
-      runFirestoreTransaction(aliceRef.firestore, async (transaction) => {
-        const snapshot = await transaction.get(aliceRef);
-        const data = snapshot.data();
-        if (data.status !== "accepting"
-          || data.generation !== 1
-          || data.acceptClaimID !== "claim-current") {
-          throw new Error("stale re-invite");
-        }
-        transaction.set(aliceRef, pendingInvite({ generation: 2 }));
-      }),
-      runFirestoreTransaction(bobRef.firestore, async (transaction) => {
-        const snapshot = await transaction.get(bobRef);
-        const data = snapshot.data();
-        if (data.status !== "accepting"
-          || data.generation !== 1
-          || data.acceptClaimID !== "claim-current") {
-          throw new Error("stale finalize");
-        }
-        transaction.set(bobRef, {
-          ...data,
-          status: "accepted",
-          acceptedAt: serverTimestamp(),
-        });
-      }),
-    ]);
-    assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
-  });
-
-  it("rejects old-claim finalize and rollback after the sender advances generation", async () => {
+  it("rejects old-claim finalize and rollback after the server advances generation", async () => {
     await seedUser("alice", "ALICE1", "Alice");
     await seedUser("bob", "BOB001", "Bob");
     await seedMutualFriends();
     const oldClaim = acceptingInvite({ sentAgoMS: 12_000, acceptingAgoMS: 11_000 });
-    await seedInvite(oldClaim);
-    const aliceRef = doc(
-      testEnv.authenticatedContext("alice").firestore(),
-      "users", "bob", "invites", inviteDocumentID()
-    );
+    await seedInvite(pendingInvite({ generation: 2, sentAt: new Date() }));
     const bobRef = doc(
       testEnv.authenticatedContext("bob").firestore(),
       "users", "bob", "invites", inviteDocumentID()
     );
 
-    await assertSucceeds(setDoc(aliceRef, pendingInvite({ generation: 2 })));
     await assertFails(setDoc(bobRef, {
       ...oldClaim,
       status: "accepted",
@@ -567,7 +412,7 @@ describe("Cloud Firestore rules", () => {
     await assertFails(deleteDoc(doc(bobDB, "users", "bob", "invites", inviteDocumentID())));
   });
 
-  it("allows the client-shaped profile, friend request, mutual acceptance, and invite flow", async () => {
+  it("allows the client-shaped friend flow but rejects its direct invite write", async () => {
     await seedUser("bob", "BOB001", "Bob");
     const aliceDB = testEnv.authenticatedContext("alice").firestore();
     const bobDB = testEnv.authenticatedContext("bob").firestore();
@@ -630,7 +475,7 @@ describe("Cloud Firestore rules", () => {
 
     await assertSucceeds(getDoc(doc(aliceDB, "users", "alice", "friends", "bob")));
     await assertSucceeds(getDoc(doc(bobDB, "users", "bob", "friends", "alice")));
-    await assertSucceeds(setDoc(
+    await assertFails(setDoc(
       doc(aliceDB, "users", friendUID, "invites", inviteDocumentID()),
       pendingInvite()
     ));

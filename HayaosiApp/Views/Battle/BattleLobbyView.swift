@@ -29,6 +29,7 @@ struct BattleLobbyView: View {
                     membersSection(state: state)
                     settingsCard(state: state)
                     if session.isOnline,
+                       session.isHost,
                        state.roomInstanceID != nil,
                        !friendService.friends.isEmpty {
                         inviteCard(state: state)
@@ -319,7 +320,8 @@ struct BattleLobbyView: View {
     }
 
     private func invite(_ friend: Friend, state: RoomState) {
-        guard let roomInstanceID = state.roomInstanceID,
+        guard session.isHost,
+              let roomInstanceID = state.roomInstanceID,
               sendingInviteFriendIDs.insert(friend.id).inserted else { return }
         Task {
             defer { sendingInviteFriendIDs.remove(friend.id) }
