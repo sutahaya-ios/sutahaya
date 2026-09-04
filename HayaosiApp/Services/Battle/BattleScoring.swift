@@ -3,6 +3,12 @@ import Foundation
 /// オンライン・CPU共通の「この問題で受理された回答」の境界。
 /// 順位・採点・全員回答済み判定・履歴は、必ずこの集合を入力にする。
 enum BattleAnswerAcceptance {
+    enum SubmissionConfirmation: Equatable {
+        case accepted
+        case pending
+        case rejected
+    }
+
     static func acceptedAnswers(
         in game: RoomState.Game,
         timeLimit: TimeInterval,
@@ -57,6 +63,26 @@ enum BattleAnswerAcceptance {
             timeLimit: timeLimit,
             participantIDs: participantIDs
         ).isEmpty
+    }
+
+    /// 回答write直後のreadを判定する。自分の回答がまだ見えない場合は、
+    /// server timestampやhost確定結果の反映待ちであり得るため、phaseを問わず拒否とは扱わない。
+    static func submissionConfirmation(
+        in game: RoomState.Game,
+        uid: String,
+        timeLimit: TimeInterval,
+        participantIDs: [String]
+    ) -> SubmissionConfirmation {
+        guard let answer = game.answers.first(where: { $0.uid == uid }) else {
+            return .pending
+        }
+        return isAccepted(
+            answer,
+            questionIndex: game.questionIndex,
+            effectiveStartedAtMS: game.effectiveStartedAtMS,
+            timeLimit: timeLimit,
+            participantIDs: participantIDs
+        ) ? .accepted : .rejected
     }
 
     static func orderedUniqueAnswers(

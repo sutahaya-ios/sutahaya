@@ -223,12 +223,15 @@ struct RoomState {
             .compactMap { uid, value -> Answer? in
                 guard let answerQuestionIndex = int(value["questionIndex"]),
                       answerQuestionIndex == index,
-                      let choice = value["choice"] as? String else { return nil }
+                      let choice = value["choice"] as? String,
+                      // ServerValue.timestampはserver確定前のlocal snapshotでは
+                      // {".sv":"timestamp"}。0秒の回答へ変換せず、確定値を待つ。
+                      let answeredAtMS = double(value["ts"]) else { return nil }
                 return Answer(
                     uid: uid,
                     questionIndex: answerQuestionIndex,
                     choice: choice,
-                    answeredAtMS: double(value["ts"]) ?? 0,
+                    answeredAtMS: answeredAtMS,
                     visibleCount: int(value["visibleCount"]) ?? 0
                 )
             }

@@ -2,7 +2,8 @@ import SwiftUI
 
 /// 1問目の前に表示する、CPU・オンライン共通の開始合図
 struct BattleStartView: View {
-    let progress: Double
+    /// server開始時刻の受信前はnil。受信後は0...1の進捗を表示する。
+    let progress: Double?
 
     var body: some View {
         VStack(spacing: 28) {
@@ -21,9 +22,14 @@ struct BattleStartView: View {
             Text("対戦開始！")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
 
-            ProgressView(value: progress)
-                .tint(.orange)
-                .frame(maxWidth: 180)
+            if let progress {
+                ProgressView(value: progress)
+                    .tint(.orange)
+                    .frame(maxWidth: 180)
+            } else {
+                ProgressView()
+                    .tint(.orange)
+            }
 
             Spacer()
         }

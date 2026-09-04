@@ -9,6 +9,7 @@ struct BattleView: View {
     let session: any BattleSession
 
     @State private var pendingAnswer: PendingAnswer?
+    @State private var isAwaitingHostResult = false
     @State private var answerErrorMessage: String?
     @State private var wrongFeedbackQuestionIndex: Int?
     @State private var wrongFeedbackTask: Task<Void, Never>?
@@ -57,6 +58,7 @@ struct BattleView: View {
         }
         .onChange(of: questionKey) { _, _ in
             pendingAnswer = nil
+            isAwaitingHostResult = false
             answerErrorMessage = nil
             wrongFeedbackTask?.cancel()
             wrongFeedbackQuestionIndex = nil
@@ -69,12 +71,14 @@ struct BattleView: View {
             if !oldIDs.contains(session.myID), newIDs.contains(session.myID),
                let questionIndex = session.state?.game?.questionIndex {
                 pendingAnswer = nil
+                isAwaitingHostResult = false
                 showWrongFeedback(for: questionIndex)
             }
         }
         .onChange(of: myAnswerChoice) { _, newChoice in
             if newChoice != nil {
                 pendingAnswer = nil
+                isAwaitingHostResult = false
                 answerErrorMessage = nil
             }
         }
@@ -238,7 +242,17 @@ struct BattleView: View {
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
             } else if pendingAnswer?.questionIndex == game.questionIndex {
-                Label("回答を送信中…", systemImage: "arrow.up.circle")
+                Label {
+                    if isAwaitingHostResult {
+                        Text("ホストの判定を待っています…")
+                    } else {
+                        // 送信中stateと表示領域は維持し、瞬間的な文言だけ見せない。
+                        Text("回答を送信中…")
+                            .hidden()
+                    }
+                } icon: {
+                    Image(systemName: isAwaitingHostResult ? "hourglass" : "arrow.up.circle")
+                }
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
             }
@@ -254,14 +268,22 @@ struct BattleView: View {
                     Haptics.impact(.heavy)
                     let pending = PendingAnswer(questionIndex: game.questionIndex, choice: choice)
                     pendingAnswer = pending
+                    isAwaitingHostResult = false
                     answerErrorMessage = nil
                     session.submitAnswer(
                         choice,
                         visibleCount: session.visibleCharacterCount(at: .now)
-                    ) { succeeded in
+                    ) { outcome in
                         guard pendingAnswer == pending else { return }
-                        if !succeeded {
+                        switch outcome {
+                        case .accepted:
                             pendingAnswer = nil
+                            isAwaitingHostResult = false
+                        case .awaitingHostResult:
+                            isAwaitingHostResult = true
+                        case .rejected:
+                            pendingAnswer = nil
+                            isAwaitingHostResult = false
                             if questionKey?.index == pending.questionIndex {
                                 answerErrorMessage = "制限時間を過ぎたか、通信により回答が受理されませんでした"
                             }

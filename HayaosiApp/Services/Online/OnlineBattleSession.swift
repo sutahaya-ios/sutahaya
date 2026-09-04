@@ -91,6 +91,7 @@ final class OnlineBattleSession: BattleSession {
     let nickname: String
     private(set) var roomCode = ""
     private(set) var isHost = false
+    private(set) var isStartingMatch = false
     private(set) var state: RoomState?
     var lastError: String?
     /// 自分が回答に関与した問題の正誤(復習リスト反映用)。questionID → isCorrect
@@ -402,6 +403,7 @@ final class OnlineBattleSession: BattleSession {
     func leave() {
         guard !hasLeft else { return }
         hasLeft = true
+        isStartingMatch = false
         stopHostTasks()
         stopObserving()
         guard !roomCode.isEmpty else { return }
@@ -422,6 +424,7 @@ final class OnlineBattleSession: BattleSession {
     /// 対戦開始。選択肢は全端末で同じ並びになるようホストがシャッフルして配信する
     func startGame(questions: [Question]) async {
         guard isHost, let state, state.players.count >= BattleRules.minPlayersToStart else { return }
+        isStartingMatch = true
         let payload: [[String: Any]] = questions.map { question in
             [
                 "id": question.id,
@@ -442,6 +445,7 @@ final class OnlineBattleSession: BattleSession {
                 ]
             ])
         } catch {
+            isStartingMatch = false
             lastError = "対戦の開始に失敗しました"
             print("対戦開始に失敗: \(error)")
         }
@@ -477,23 +481,26 @@ final class OnlineBattleSession: BattleSession {
         submitAnswer(choice, visibleCount: visibleCount) { _ in }
     }
 
-    /// Firebaseのサーバー時刻まで確定した回答が受付時間内ならtrueを返す。
-    /// 保存成功だけをacceptedと扱わず、締切後に確定した回答はfalseにする。
-    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
+    /// Firebase writeの正式拒否と、server timestamp／host採点の確定待ちを分けて返す。
+    func submitAnswer(
+        _ choice: String,
+        visibleCount: Int,
+        completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
+    ) {
         guard let state, state.status == .playing,
               let game = state.game, game.phase == .question else {
-            completion(false)
+            completion(.rejected)
             return
         }
         let nowMS = battleTimeMS(at: .now)
         let deadlineMS = game.effectiveStartedAtMS + state.settings.timeLimit * 1_000
         guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else {
-            completion(false)
+            completion(.rejected)
             return
         }
 
         guard canAnswerNow else {
-            completion(false)
+            completion(.rejected)
             return
         }
         let questionIndex = game.questionIndex
@@ -501,34 +508,51 @@ final class OnlineBattleSession: BattleSession {
         let participantIDs = state.players.map(\.id)
         Task { [weak self] in
             guard let self else {
-                completion(false)
+                completion(.rejected)
                 return
             }
+            let answerRef = roomRef.child("game/answers/\(myID)")
             do {
-                let answerRef = roomRef.child("game/answers/\(myID)")
                 try await answerRef.setValue([
                     "questionIndex": questionIndex,
                     "choice": choice,
                     "ts": ServerValue.timestamp(),
                     "visibleCount": visibleCount
                 ])
+            } catch {
+                lastError = "回答を送信できませんでした"
+                print("回答の送信に失敗: \(error)")
+                completion(.rejected)
+                return
+            }
+
+            do {
                 let gameSnapshot = try await roomRef.child("game").getData()
                 guard let gameValue = gameSnapshot.value as? [String: Any],
                       let savedGame = RoomState.game(databaseValue: gameValue),
                       savedGame.questionIndex == questionIndex else {
-                    completion(false)
+                    // writeは成功済み。snapshotの欠落・世代遷移だけでは拒否を証明できない。
+                    completion(.awaitingHostResult)
                     return
                 }
-                let accepted = BattleAnswerAcceptance.confirmedAnswers(
+                let confirmation = BattleAnswerAcceptance.submissionConfirmation(
                     in: savedGame,
+                    uid: self.myID,
                     timeLimit: timeLimit,
                     participantIDs: participantIDs
                 )
-                completion(accepted.contains { $0.uid == myID })
+                // 出題中のreadに回答がまだ現れない場合は観測反映待ちであり、
+                // write失敗や期限切れとして赤いエラーを出さない。
+                switch confirmation {
+                case .accepted, .pending:
+                    completion(.awaitingHostResult)
+                case .rejected:
+                    completion(.rejected)
+                }
             } catch {
-                lastError = "回答を送信できませんでした"
-                print("回答の送信に失敗: \(error)")
-                completion(false)
+                // 回答write成功後の確認read失敗は、hostのlistener結果を待てばよい。
+                print("回答の受理確認を待機: \(error)")
+                completion(.awaitingHostResult)
             }
         }
     }
@@ -610,6 +634,9 @@ final class OnlineBattleSession: BattleSession {
     }
 
     private func apply(state newState: RoomState) {
+        if newState.status != .waiting {
+            isStartingMatch = false
+        }
         if newState.status != .closed {
             pendingClosureTask?.cancel()
             pendingClosureTask = nil

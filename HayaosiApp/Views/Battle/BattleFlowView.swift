@@ -16,7 +16,13 @@ struct BattleFlowView: View {
         Group {
             switch session.state?.status {
             case .waiting:
-                BattleLobbyView(session: session, onLeave: leaveAndDismiss)
+                if session.isStartingMatch {
+                    // hostの開始write待ち中から既存の開始演出へ入り、
+                    // Firebase往復がロビー画面のフリーズに見えないようにする。
+                    BattleStartView(progress: nil)
+                } else {
+                    BattleLobbyView(session: session, onLeave: leaveAndDismiss)
+                }
             case .playing:
                 playingView
             case .finished:

@@ -104,6 +104,100 @@ final class BattleScoringTests: XCTestCase {
         ))
     }
 
+    func test_回答write直後の出題中readに回答が未反映でも拒否と扱わない() {
+        let game = RoomState.Game(
+            questionIndex: 0,
+            phase: .question,
+            startDelayMS: 0,
+            startedAtMS: 1_000,
+            failedIDs: [],
+            answers: [],
+            reveal: nil
+        )
+
+        XCTAssertEqual(BattleAnswerAcceptance.submissionConfirmation(
+            in: game,
+            uid: "guest",
+            timeLimit: 5,
+            participantIDs: ["host", "guest"]
+        ), .pending)
+    }
+
+    func test_host確定中のreadに回答が未反映でも拒否と扱わない() {
+        let game = RoomState.Game(
+            questionIndex: 0,
+            phase: .reveal,
+            startDelayMS: 0,
+            startedAtMS: 1_000,
+            failedIDs: [],
+            answers: [],
+            reveal: nil
+        )
+
+        XCTAssertEqual(BattleAnswerAcceptance.submissionConfirmation(
+            in: game,
+            uid: "guest",
+            timeLimit: 5,
+            participantIDs: ["host", "guest"]
+        ), .pending)
+    }
+
+    func test_RoomStateはserver確定前のtimestampを0秒の回答として復元しない() {
+        let room = RoomState(code: "1234", dict: [
+            "hostID": "host",
+            "status": RoomState.Status.playing.rawValue,
+            "game": [
+                "questionIndex": 0,
+                "phase": RoomState.GamePhase.question.rawValue,
+                "startedAt": 1_000,
+                "answers": [
+                    "guest": [
+                        "questionIndex": 0,
+                        "choice": "正答",
+                        "ts": [".sv": "timestamp"],
+                        "visibleCount": 1
+                    ]
+                ]
+            ]
+        ])
+
+        XCTAssertEqual(room?.game?.answers, [])
+    }
+
+    func test_回答write直後の確定回答は期限内だけacceptedにする() {
+        let accepted = RoomState.Game(
+            questionIndex: 0,
+            phase: .question,
+            startDelayMS: 0,
+            startedAtMS: 1_000,
+            failedIDs: [],
+            answers: [answer(uid: "guest", choice: "正答", time: 5_999)],
+            reveal: nil
+        )
+        let rejected = RoomState.Game(
+            questionIndex: 0,
+            phase: .question,
+            startDelayMS: 0,
+            startedAtMS: 1_000,
+            failedIDs: [],
+            answers: [answer(uid: "guest", choice: "正答", time: 6_001)],
+            reveal: nil
+        )
+
+        XCTAssertEqual(BattleAnswerAcceptance.submissionConfirmation(
+            in: accepted,
+            uid: "guest",
+            timeLimit: 5,
+            participantIDs: ["host", "guest"]
+        ), .accepted)
+        XCTAssertEqual(BattleAnswerAcceptance.submissionConfirmation(
+            in: rejected,
+            uid: "guest",
+            timeLimit: 5,
+            participantIDs: ["host", "guest"]
+        ), .rejected)
+    }
+
     func test_受付終了後は時刻内でもホスト確定結果に無い後着回答を順位から除外する() {
         let game = RoomState.Game(
             questionIndex: 0,

@@ -2,6 +2,15 @@ import Foundation
 import Observation
 import SwiftData
 
+enum BattleAnswerSubmissionOutcome: Equatable {
+    /// CPU対戦など、呼び出し内で結果まで確定した。
+    case accepted
+    /// RTDBへの送信は拒否されておらず、hostの採点結果を待っている。
+    case awaitingHostResult
+    /// 期限外、回答権なし、通信エラーなどにより正式に受理されなかった。
+    case rejected
+}
+
 /// 対戦セッションの共通インターフェース。
 /// オンライン対戦(OnlineBattleSession=Firebase)とCPU対戦(CPUBattleSession=ローカル)が実装し、
 /// ロビー・対戦・リザルト画面はこのプロトコル越しに描画する
@@ -13,6 +22,8 @@ protocol BattleSession: AnyObject, Observable {
     var isOnline: Bool { get }
     /// Firebaseのサーバー時刻 - 端末時刻(ms)。CPU対戦は0。
     var battleClockOffsetMS: Double { get }
+    /// ホストが開始操作済みで、Firebaseへ開始状態を書き込んでいる途中か。
+    var isStartingMatch: Bool { get }
     var state: RoomState? { get }
     /// この対戦で自分が間違えた問題。リザルトから既存の復習機能へ渡す
     var wrongQuestionIDs: Set<String> { get }
@@ -22,14 +33,19 @@ protocol BattleSession: AnyObject, Observable {
     /// 回答する。選択肢を押した瞬間が回答にあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
     func submitAnswer(_ choice: String, visibleCount: Int)
-    /// 通信結果まで必要な画面向け。失敗時にローカルの回答ロックを解除できるよう成否を返す。
-    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void)
+    /// 通信結果まで必要な画面向け。送信中とhost確定待ちを正式拒否から分離して返す。
+    func submitAnswer(
+        _ choice: String,
+        visibleCount: Int,
+        completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
+    )
     func leave()
     func saveResultsIfNeeded(context: ModelContext)
 }
 
 extension BattleSession {
     var battleClockOffsetMS: Double { 0 }
+    var isStartingMatch: Bool { false }
 
     /// 自分の順位を戦績として残す。二重保存を防ぐため `saveResultsIfNeeded` のガードの内側から呼ぶ
     func saveBattleRecord(matchType: BattleMatchType, context: ModelContext) {
@@ -46,9 +62,13 @@ extension BattleSession {
     }
 
     /// CPU対戦など同期的に回答できる実装は、従来の回答処理を呼んだ時点で成功とみなす。
-    func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
+    func submitAnswer(
+        _ choice: String,
+        visibleCount: Int,
+        completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
+    ) {
         submitAnswer(choice, visibleCount: visibleCount)
-        completion(true)
+        completion(.accepted)
     }
 
     var currentQuestion: RoomState.QuestionPayload? {
