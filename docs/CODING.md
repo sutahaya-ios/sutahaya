@@ -1,4 +1,4 @@
-# コーディング規約・ナレッジ(Swiftを書く/レビューする前に読む)
+# コーディング規約・ナレッジ(Swift実装上の規約確認が必要なときに読む)
 
 CLAUDE.md には守るべきルールだけを置き、コードを書くときの規約と手順はこのファイルに集約している。
 
@@ -29,6 +29,22 @@ CLAUDE.md には守るべきルールだけを置き、コードを書くとき�
 ## ビルド・テスト
 
 リポジトリのルートで実行する。
+
+検証が必要なNORMAL / STRICT作業では、必要に応じて次を使う。FASTでは標準実行しない。
+
+```bash
+scripts/verify.sh NORMAL --only-testing HayaosiAppTests/QuizSessionTests
+scripts/verify.sh STRICT
+```
+
+- FASTは対象diffだけで終えてよい。コンパイルや表示確認が必要なときだけ個別に実行する
+- NORMALは対象テストを `--only-testing`で指定する。関連ユニットテストが存在しない場合だけ `--no-tests` を明示する
+- STRICTは指定がなければSwiftの全テストを行う。Rules差分がある場合はFirebase Emulatorテストも行う
+- ファイル増減・`project.yml`変更・pull後は、先に `xcodegen generate` を行う(`verify.sh --xcodegen` でも可)
+- 実装途中に全テストを繰り返さない。実装完成後に必要分を実行し、失敗した対象だけ再実行する
+- 使い方の確認は `scripts/verify.sh --help`。`scripts/finish-task.sh` はcommit準備・push前確認・他開発者への引き渡し・大規模タスク・ユーザー指定時だけ使う
+
+個別の原因調査やスクリプトが使えない場合の直接コマンド:
 
 ```bash
 xcodegen generate && env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project HayaosiApp.xcodeproj -scheme HayaosiApp -destination 'generic/platform=iOS Simulator' build
