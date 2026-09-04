@@ -173,7 +173,9 @@ final class WordClassificationTests: XCTestCase {
         let entries = try QuestionSeeder.loadEntries()
 
         XCTAssertTrue(entries.filter { $0.category == .juniorHigh }.allSatisfy { $0.id.hasPrefix("jh_") })
-        XCTAssertTrue(entries.filter { $0.category == .highSchool }.allSatisfy { $0.id.hasPrefix("hs_") })
+        XCTAssertTrue(entries.filter { $0.category == .highSchool }.allSatisfy {
+            $0.id.hasPrefix("hs1_") || $0.id.hasPrefix("hs2_") || $0.id.hasPrefix("hs3_")
+        })
         // TOEICは銀のフレーズ=tc1_、金のフレーズ=tc2_ でシート別に分かれている
         XCTAssertTrue(entries.filter { $0.category == .toeic }.allSatisfy {
             $0.id.hasPrefix("tc1_") || $0.id.hasPrefix("tc2_")
@@ -211,7 +213,11 @@ final class WordClassificationTests: XCTestCase {
 
         let records = try context.fetch(FetchDescriptor<AnswerRecord>())
         let reviewItems = try context.fetch(FetchDescriptor<ReviewItem>())
-        XCTAssertEqual(records.map(\.questionID), ["jh_0001"])
-        XCTAssertEqual(reviewItems.map(\.questionID), ["jh_0001"])
+        let entries = try QuestionSeeder.loadEntries()
+        let expected = try XCTUnwrap(entries.first {
+            $0.category == .highSchool && $0.word.lowercased() == "benefit"
+        }).id
+        XCTAssertEqual(records.map(\.questionID), [expected])
+        XCTAssertEqual(reviewItems.map(\.questionID), [expected])
     }
 }

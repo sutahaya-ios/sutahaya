@@ -24,6 +24,8 @@ Config/local.xcconfig
 # 一方の追加語が消える恐れがある。正はHayaosiApp/Resources/*.json(word_bank/word_bank_to_json.pyで変換)。
 # 受け渡しはファイルを直接送る
 word_bank/*.xlsx
+# archive/ など下位フォルダへ退避したものも管理外にする
+word_bank/**/*.xlsx
 word_bank/~$word_bank*.xlsx
 # 旧配置に残ったファイルも誤ってgit管理しない
 word_bank.xlsx

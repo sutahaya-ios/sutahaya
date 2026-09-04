@@ -1,121 +1,10572 @@
 [
   {
     "id": "jh_0001",
-    "word": "benefit",
-    "meaning": "恩恵",
+    "word": "january",
+    "meaning": "1月",
     "pos": "名詞",
     "difficulty": 1
   },
   {
     "id": "jh_0002",
-    "word": "economy",
-    "meaning": "経済",
+    "word": "february",
+    "meaning": "2月",
     "pos": "名詞",
-    "difficulty": 2
+    "difficulty": 1
   },
   {
     "id": "jh_0003",
-    "word": "emergency",
-    "meaning": "緊急事態",
+    "word": "march",
+    "meaning": "3月",
     "pos": "名詞",
-    "difficulty": 3
+    "difficulty": 1
   },
   {
     "id": "jh_0004",
-    "word": "industry",
-    "meaning": "産業、工業",
+    "word": "april",
+    "meaning": "4月",
     "pos": "名詞",
-    "difficulty": 4
+    "difficulty": 1
   },
   {
     "id": "jh_0005",
-    "word": "opportunity",
-    "meaning": "機会",
+    "word": "may",
+    "meaning": "5月",
     "pos": "名詞",
-    "difficulty": 5
+    "difficulty": 1
   },
   {
     "id": "jh_0006",
-    "word": "visible",
-    "meaning": "目に見える",
-    "pos": "形容詞",
+    "word": "june",
+    "meaning": "6月",
+    "pos": "名詞",
     "difficulty": 1
   },
   {
     "id": "jh_0007",
-    "word": "admire",
-    "meaning": "〜を称賛する",
-    "pos": "動詞",
-    "difficulty": 2
+    "word": "july",
+    "meaning": "7月",
+    "pos": "名詞",
+    "difficulty": 1
   },
   {
     "id": "jh_0008",
-    "word": "announce",
-    "meaning": "〜を発表する",
-    "pos": "動詞",
-    "difficulty": 3
+    "word": "august",
+    "meaning": "8月",
+    "pos": "名詞",
+    "difficulty": 1
   },
   {
     "id": "jh_0009",
-    "word": "apply",
-    "meaning": "適用する、応募する",
-    "pos": "動詞",
-    "difficulty": 4
+    "word": "september",
+    "meaning": "9月",
+    "pos": "名詞",
+    "difficulty": 1
   },
   {
     "id": "jh_0010",
-    "word": "avoid",
-    "meaning": "〜を避ける",
-    "pos": "動詞",
-    "difficulty": 5
+    "word": "october",
+    "meaning": "10月",
+    "pos": "名詞",
+    "difficulty": 1
   },
   {
     "id": "jh_0011",
-    "word": "advantage",
-    "meaning": "利点、有利",
+    "word": "november",
+    "meaning": "11月",
     "pos": "名詞",
     "difficulty": 1
   },
   {
     "id": "jh_0012",
-    "word": "competition",
-    "meaning": "競争、競技会",
+    "word": "december",
+    "meaning": "12月",
     "pos": "名詞",
-    "difficulty": 2
+    "difficulty": 1
   },
   {
     "id": "jh_0013",
-    "word": "fuel",
-    "meaning": "燃料",
+    "word": "monday",
+    "meaning": "月曜日",
     "pos": "名詞",
-    "difficulty": 3
+    "difficulty": 1
   },
   {
     "id": "jh_0014",
-    "word": "income",
-    "meaning": "収入",
+    "word": "tuesday",
+    "meaning": "火曜日",
     "pos": "名詞",
-    "difficulty": 4
+    "difficulty": 1
   },
   {
     "id": "jh_0015",
-    "word": "item",
-    "meaning": "品目、項目",
+    "word": "wednesday",
+    "meaning": "水曜日",
     "pos": "名詞",
-    "difficulty": 5
+    "difficulty": 1
   },
   {
     "id": "jh_0016",
-    "word": "aware",
-    "meaning": "気づいている",
-    "pos": "形容詞",
+    "word": "thursday",
+    "meaning": "木曜日",
+    "pos": "名詞",
     "difficulty": 1
   },
   {
     "id": "jh_0017",
-    "word": "entire",
-    "meaning": "全体の",
+    "word": "friday",
+    "meaning": "金曜日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0018",
+    "word": "saturday",
+    "meaning": "土曜日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0019",
+    "word": "sunday",
+    "meaning": "日曜日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0020",
+    "word": "i",
+    "meaning": "私（主格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0021",
+    "word": "my",
+    "meaning": "私の（所有格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0022",
+    "word": "me",
+    "meaning": "私を（目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0023",
+    "word": "mine",
+    "meaning": "私のもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0024",
+    "word": "he",
+    "meaning": "彼（主格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0025",
+    "word": "his",
+    "meaning": "彼の（所有格）・彼のもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0026",
+    "word": "him",
+    "meaning": "彼を（目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0027",
+    "word": "she",
+    "meaning": "彼女（主格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0028",
+    "word": "her",
+    "meaning": "彼女の（所有格）・彼女を（目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0029",
+    "word": "hers",
+    "meaning": "彼女のもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0030",
+    "word": "you",
+    "meaning": "あなた（主格・目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0031",
+    "word": "your",
+    "meaning": "あなたの（所有格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0032",
+    "word": "yours",
+    "meaning": "あなたのもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0033",
+    "word": "it",
+    "meaning": "それ（主格・目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0034",
+    "word": "its",
+    "meaning": "それの（所有格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0035",
+    "word": "we",
+    "meaning": "私たち（主格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0036",
+    "word": "our",
+    "meaning": "私たちの（所有格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0037",
+    "word": "us",
+    "meaning": "私たちを（目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0038",
+    "word": "ours",
+    "meaning": "私たちのもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0039",
+    "word": "they",
+    "meaning": "彼ら（主格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0040",
+    "word": "their",
+    "meaning": "彼らの（所有格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0041",
+    "word": "them",
+    "meaning": "彼らを（目的格）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0042",
+    "word": "theirs",
+    "meaning": "彼らのもの（所有代名詞）",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0043",
+    "word": "myself",
+    "meaning": "私自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0044",
+    "word": "yourself",
+    "meaning": "あなた自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0045",
+    "word": "himself",
+    "meaning": "彼自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0046",
+    "word": "herself",
+    "meaning": "彼女自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0047",
+    "word": "itself",
+    "meaning": "それ自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0048",
+    "word": "ourselves",
+    "meaning": "私たち自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0049",
+    "word": "yourselves",
+    "meaning": "あなたたち自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0050",
+    "word": "themselves",
+    "meaning": "彼ら自身",
+    "pos": "代名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0051",
+    "word": "one",
+    "meaning": "1",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0052",
+    "word": "two",
+    "meaning": "2",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0053",
+    "word": "three",
+    "meaning": "3",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0054",
+    "word": "four",
+    "meaning": "4",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0055",
+    "word": "five",
+    "meaning": "5",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0056",
+    "word": "six",
+    "meaning": "6",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0057",
+    "word": "seven",
+    "meaning": "7",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0058",
+    "word": "eight",
+    "meaning": "8",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0059",
+    "word": "nine",
+    "meaning": "9",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0060",
+    "word": "ten",
+    "meaning": "10",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0061",
+    "word": "eleven",
+    "meaning": "11",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0062",
+    "word": "twelve",
+    "meaning": "12",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0063",
+    "word": "thirteen",
+    "meaning": "13",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0064",
+    "word": "fourteen",
+    "meaning": "14",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0065",
+    "word": "fifteen",
+    "meaning": "15",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0066",
+    "word": "sixteen",
+    "meaning": "16",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0067",
+    "word": "seventeen",
+    "meaning": "17",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0068",
+    "word": "eighteen",
+    "meaning": "18",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0069",
+    "word": "nineteen",
+    "meaning": "19",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0070",
+    "word": "twenty",
+    "meaning": "20",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0071",
+    "word": "thirty",
+    "meaning": "30",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0072",
+    "word": "forty",
+    "meaning": "40",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0073",
+    "word": "fifty",
+    "meaning": "50",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0074",
+    "word": "sixty",
+    "meaning": "60",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0075",
+    "word": "seventy",
+    "meaning": "70",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0076",
+    "word": "eighty",
+    "meaning": "80",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0077",
+    "word": "ninety",
+    "meaning": "90",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0078",
+    "word": "hundred",
+    "meaning": "100",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0079",
+    "word": "thousand",
+    "meaning": "1000",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0080",
+    "word": "first",
+    "meaning": "1番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0081",
+    "word": "second",
+    "meaning": "2番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0082",
+    "word": "third",
+    "meaning": "3番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0083",
+    "word": "fourth",
+    "meaning": "4番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0084",
+    "word": "fifth",
+    "meaning": "5番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0085",
+    "word": "sixth",
+    "meaning": "6番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0086",
+    "word": "seventh",
+    "meaning": "7番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0087",
+    "word": "eighth",
+    "meaning": "8番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0088",
+    "word": "ninth",
+    "meaning": "9番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0089",
+    "word": "tenth",
+    "meaning": "10番目の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0090",
+    "word": "red",
+    "meaning": "赤い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0091",
+    "word": "blue",
+    "meaning": "青い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0092",
+    "word": "yellow",
+    "meaning": "黄色い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0093",
+    "word": "green",
+    "meaning": "緑色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0094",
+    "word": "black",
+    "meaning": "黒い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0095",
+    "word": "white",
+    "meaning": "白い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0096",
+    "word": "brown",
+    "meaning": "茶色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0097",
+    "word": "pink",
+    "meaning": "ピンク色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0098",
+    "word": "purple",
+    "meaning": "紫色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0099",
+    "word": "orange",
+    "meaning": "オレンジ色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0100",
+    "word": "gray",
+    "meaning": "灰色の",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0101",
+    "word": "father",
+    "meaning": "父",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0102",
+    "word": "mother",
+    "meaning": "母",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0103",
+    "word": "brother",
+    "meaning": "兄弟",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0104",
+    "word": "sister",
+    "meaning": "姉妹",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0105",
+    "word": "grandfather",
+    "meaning": "祖父",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0106",
+    "word": "grandmother",
+    "meaning": "祖母",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0107",
+    "word": "uncle",
+    "meaning": "おじ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0108",
+    "word": "aunt",
+    "meaning": "おば",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0109",
+    "word": "cousin",
+    "meaning": "いとこ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0110",
+    "word": "parent",
+    "meaning": "親",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0111",
+    "word": "son",
+    "meaning": "息子",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0112",
+    "word": "daughter",
+    "meaning": "娘",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0113",
+    "word": "family",
+    "meaning": "家族",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0114",
+    "word": "baby",
+    "meaning": "赤ちゃん",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0115",
+    "word": "head",
+    "meaning": "頭",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0116",
+    "word": "face",
+    "meaning": "顔",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0117",
+    "word": "eye",
+    "meaning": "目",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0118",
+    "word": "ear",
+    "meaning": "耳",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0119",
+    "word": "nose",
+    "meaning": "鼻",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0120",
+    "word": "mouth",
+    "meaning": "口",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0121",
+    "word": "hand",
+    "meaning": "手",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0122",
+    "word": "finger",
+    "meaning": "指",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0123",
+    "word": "arm",
+    "meaning": "腕",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0124",
+    "word": "leg",
+    "meaning": "脚",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0125",
+    "word": "foot",
+    "meaning": "足",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0126",
+    "word": "hair",
+    "meaning": "髪",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0127",
+    "word": "tooth",
+    "meaning": "歯",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0128",
+    "word": "body",
+    "meaning": "体",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0129",
+    "word": "rice",
+    "meaning": "米",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0130",
+    "word": "bread",
+    "meaning": "パン",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0131",
+    "word": "egg",
+    "meaning": "卵",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0132",
+    "word": "milk",
+    "meaning": "牛乳",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0133",
+    "word": "water",
+    "meaning": "水",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0134",
+    "word": "tea",
+    "meaning": "お茶",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0135",
+    "word": "coffee",
+    "meaning": "コーヒー",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0136",
+    "word": "juice",
+    "meaning": "ジュース",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0137",
+    "word": "meat",
+    "meaning": "肉",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0138",
+    "word": "fish",
+    "meaning": "魚",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0139",
+    "word": "fruit",
+    "meaning": "果物",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0140",
+    "word": "apple",
+    "meaning": "りんご",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0141",
+    "word": "banana",
+    "meaning": "バナナ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0142",
+    "word": "vegetable",
+    "meaning": "野菜",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0143",
+    "word": "tomato",
+    "meaning": "トマト",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0144",
+    "word": "potato",
+    "meaning": "じゃがいも",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0145",
+    "word": "cake",
+    "meaning": "ケーキ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0146",
+    "word": "salad",
+    "meaning": "サラダ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0147",
+    "word": "soup",
+    "meaning": "スープ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0148",
+    "word": "breakfast",
+    "meaning": "朝食",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0149",
+    "word": "lunch",
+    "meaning": "昼食",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0150",
+    "word": "dinner",
+    "meaning": "夕食",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0151",
+    "word": "dog",
+    "meaning": "犬",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0152",
+    "word": "cat",
+    "meaning": "猫",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0153",
+    "word": "bird",
+    "meaning": "鳥",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0154",
+    "word": "horse",
+    "meaning": "馬",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0155",
+    "word": "cow",
+    "meaning": "牛",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0156",
+    "word": "pig",
+    "meaning": "豚",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0157",
+    "word": "sheep",
+    "meaning": "羊",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0158",
+    "word": "rabbit",
+    "meaning": "うさぎ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0159",
+    "word": "bear",
+    "meaning": "くま",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0160",
+    "word": "lion",
+    "meaning": "ライオン",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0161",
+    "word": "tiger",
+    "meaning": "とら",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0162",
+    "word": "elephant",
+    "meaning": "ぞう",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0163",
+    "word": "monkey",
+    "meaning": "さる",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0164",
+    "word": "animal",
+    "meaning": "動物",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0165",
+    "word": "school",
+    "meaning": "学校",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0166",
+    "word": "teacher",
+    "meaning": "先生",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0167",
+    "word": "student",
+    "meaning": "生徒",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0168",
+    "word": "class",
+    "meaning": "授業",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0169",
+    "word": "classroom",
+    "meaning": "教室",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0170",
+    "word": "textbook",
+    "meaning": "教科書",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0171",
+    "word": "notebook",
+    "meaning": "ノート",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0172",
+    "word": "pencil",
+    "meaning": "えんぴつ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0173",
+    "word": "pen",
+    "meaning": "ペン",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0174",
+    "word": "eraser",
+    "meaning": "消しゴム",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0175",
+    "word": "desk",
+    "meaning": "机",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0176",
+    "word": "chair",
+    "meaning": "いす",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0177",
+    "word": "bag",
+    "meaning": "かばん",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0178",
+    "word": "homework",
+    "meaning": "宿題",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0179",
+    "word": "test",
+    "meaning": "テスト",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0180",
+    "word": "library",
+    "meaning": "図書館",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0181",
+    "word": "science",
+    "meaning": "理科",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0182",
+    "word": "history",
+    "meaning": "歴史",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0183",
+    "word": "book",
+    "meaning": "本",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0184",
+    "word": "table",
+    "meaning": "テーブル",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0185",
+    "word": "door",
+    "meaning": "ドア",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0186",
+    "word": "window",
+    "meaning": "窓",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0187",
+    "word": "room",
+    "meaning": "部屋",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0188",
+    "word": "house",
+    "meaning": "家",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0189",
+    "word": "key",
+    "meaning": "かぎ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0190",
+    "word": "watch",
+    "meaning": "腕時計",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0191",
+    "word": "clock",
+    "meaning": "置き時計",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0192",
+    "word": "phone",
+    "meaning": "電話",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0193",
+    "word": "camera",
+    "meaning": "カメラ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0194",
+    "word": "box",
+    "meaning": "箱",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0195",
+    "word": "letter",
+    "meaning": "手紙",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0196",
+    "word": "picture",
+    "meaning": "写真",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0197",
+    "word": "money",
+    "meaning": "お金",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0198",
+    "word": "sun",
+    "meaning": "太陽",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0199",
+    "word": "moon",
+    "meaning": "月（天体）",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0200",
+    "word": "star",
+    "meaning": "星",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0201",
+    "word": "sky",
+    "meaning": "空",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0202",
+    "word": "sea",
+    "meaning": "海",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0203",
+    "word": "river",
+    "meaning": "川",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0204",
+    "word": "mountain",
+    "meaning": "山",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0205",
+    "word": "tree",
+    "meaning": "木",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0206",
+    "word": "flower",
+    "meaning": "花",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0207",
+    "word": "rain",
+    "meaning": "雨",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0208",
+    "word": "snow",
+    "meaning": "雪",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0209",
+    "word": "wind",
+    "meaning": "風",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0210",
+    "word": "cloud",
+    "meaning": "雲",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0211",
+    "word": "weather",
+    "meaning": "天気",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0212",
+    "word": "day",
+    "meaning": "日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0213",
+    "word": "night",
+    "meaning": "夜",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0214",
+    "word": "morning",
+    "meaning": "朝",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0215",
+    "word": "afternoon",
+    "meaning": "午後",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0216",
+    "word": "evening",
+    "meaning": "夕方",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0217",
+    "word": "week",
+    "meaning": "週",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0218",
+    "word": "month",
+    "meaning": "月（暦）",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0219",
+    "word": "year",
+    "meaning": "年",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0220",
+    "word": "time",
+    "meaning": "時間",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0221",
+    "word": "today",
+    "meaning": "今日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0222",
+    "word": "tomorrow",
+    "meaning": "明日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0223",
+    "word": "yesterday",
+    "meaning": "昨日",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0224",
+    "word": "hour",
+    "meaning": "1時間",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0225",
+    "word": "minute",
+    "meaning": "分",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0226",
+    "word": "park",
+    "meaning": "公園",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0227",
+    "word": "station",
+    "meaning": "駅",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0228",
+    "word": "hospital",
+    "meaning": "病院",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0229",
+    "word": "store",
+    "meaning": "店",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0230",
+    "word": "restaurant",
+    "meaning": "レストラン",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0231",
+    "word": "hotel",
+    "meaning": "ホテル",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0232",
+    "word": "city",
+    "meaning": "都市",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0233",
+    "word": "town",
+    "meaning": "町",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0234",
+    "word": "country",
+    "meaning": "国",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0235",
+    "word": "road",
+    "meaning": "道路",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0236",
+    "word": "bridge",
+    "meaning": "橋",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0237",
+    "word": "garden",
+    "meaning": "庭",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0238",
+    "word": "farm",
+    "meaning": "農場",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0239",
+    "word": "zoo",
+    "meaning": "動物園",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0240",
+    "word": "soccer",
+    "meaning": "サッカー",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0241",
+    "word": "baseball",
+    "meaning": "野球",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0242",
+    "word": "tennis",
+    "meaning": "テニス",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0243",
+    "word": "basketball",
+    "meaning": "バスケットボール",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0244",
+    "word": "swimming",
+    "meaning": "水泳",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0245",
+    "word": "music",
+    "meaning": "音楽",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0246",
+    "word": "song",
+    "meaning": "歌",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0247",
+    "word": "movie",
+    "meaning": "映画",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0248",
+    "word": "game",
+    "meaning": "ゲーム",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0249",
+    "word": "sport",
+    "meaning": "スポーツ",
+    "pos": "名詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0250",
+    "word": "big",
+    "meaning": "大きい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0251",
+    "word": "small",
+    "meaning": "小さい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0252",
+    "word": "long",
+    "meaning": "長い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0253",
+    "word": "short",
+    "meaning": "短い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0254",
+    "word": "new",
+    "meaning": "新しい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0255",
+    "word": "old",
+    "meaning": "古い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0256",
+    "word": "good",
+    "meaning": "よい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0257",
+    "word": "bad",
+    "meaning": "悪い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0258",
+    "word": "hot",
+    "meaning": "暑い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0259",
+    "word": "cold",
+    "meaning": "寒い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0260",
+    "word": "high",
+    "meaning": "高い（高さが）",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0261",
+    "word": "low",
+    "meaning": "低い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0262",
+    "word": "fast",
+    "meaning": "速い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0263",
+    "word": "slow",
+    "meaning": "遅い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0264",
+    "word": "happy",
+    "meaning": "うれしい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0265",
+    "word": "sad",
+    "meaning": "悲しい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0266",
+    "word": "easy",
+    "meaning": "やさしい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0267",
+    "word": "difficult",
+    "meaning": "難しい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0268",
+    "word": "young",
+    "meaning": "若い",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0269",
+    "word": "beautiful",
+    "meaning": "美しい",
+    "pos": "形容詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0270",
+    "word": "go",
+    "meaning": "行く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0271",
+    "word": "come",
+    "meaning": "来る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0272",
+    "word": "eat",
+    "meaning": "食べる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0273",
+    "word": "drink",
+    "meaning": "飲む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0274",
+    "word": "see",
+    "meaning": "見える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0275",
+    "word": "look",
+    "meaning": "（意識して）見る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0276",
+    "word": "run",
+    "meaning": "走る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0277",
+    "word": "walk",
+    "meaning": "歩く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0278",
+    "word": "play",
+    "meaning": "（スポーツを）する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0279",
+    "word": "read",
+    "meaning": "読む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0280",
+    "word": "write",
+    "meaning": "書く",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0281",
+    "word": "sing",
+    "meaning": "歌う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0282",
+    "word": "sleep",
+    "meaning": "眠る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0283",
+    "word": "study",
+    "meaning": "勉強する",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0284",
+    "word": "live",
+    "meaning": "住む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0285",
+    "word": "like",
+    "meaning": "好む",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0286",
+    "word": "have",
+    "meaning": "持っている",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0287",
+    "word": "make",
+    "meaning": "作る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0288",
+    "word": "take",
+    "meaning": "取る",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0289",
+    "word": "get",
+    "meaning": "手に入れる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0290",
+    "word": "give",
+    "meaning": "与える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0291",
+    "word": "know",
+    "meaning": "知っている",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0292",
+    "word": "think",
+    "meaning": "考える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0293",
+    "word": "say",
+    "meaning": "言う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0294",
+    "word": "speak",
+    "meaning": "（言語を）話す",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0295",
+    "word": "open",
+    "meaning": "開ける",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0296",
+    "word": "close",
+    "meaning": "閉める",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0297",
+    "word": "buy",
+    "meaning": "買う",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0298",
+    "word": "sit",
+    "meaning": "すわる",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0299",
+    "word": "stand",
+    "meaning": "立つ",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0300",
+    "word": "teach",
+    "meaning": "教える",
+    "pos": "動詞",
+    "difficulty": 1
+  },
+  {
+    "id": "jh_0301",
+    "word": "be",
+    "meaning": "〜である",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0302",
+    "word": "do",
+    "meaning": "する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0303",
+    "word": "want",
+    "meaning": "欲しい",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0304",
+    "word": "need",
+    "meaning": "必要とする",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0305",
+    "word": "help",
+    "meaning": "助ける",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0306",
+    "word": "use",
+    "meaning": "使う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0307",
+    "word": "call",
+    "meaning": "呼ぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0308",
+    "word": "ask",
+    "meaning": "たずねる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0309",
+    "word": "answer",
+    "meaning": "答える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0310",
+    "word": "start",
+    "meaning": "始める",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0311",
+    "word": "begin",
+    "meaning": "始まる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0312",
+    "word": "finish",
+    "meaning": "終える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0313",
+    "word": "stop",
+    "meaning": "止まる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0314",
+    "word": "wait",
+    "meaning": "待つ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0315",
+    "word": "work",
+    "meaning": "働く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0316",
+    "word": "hide",
+    "meaning": "かくれる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0317",
+    "word": "listen",
+    "meaning": "耳をかたむける",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0318",
+    "word": "hear",
+    "meaning": "聞こえる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0319",
+    "word": "feel",
+    "meaning": "感じる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0320",
+    "word": "find",
+    "meaning": "見つける",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0321",
+    "word": "put",
+    "meaning": "置く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0322",
+    "word": "keep",
+    "meaning": "保つ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0323",
+    "word": "show",
+    "meaning": "見せる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0324",
+    "word": "send",
+    "meaning": "送る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0325",
+    "word": "bring",
+    "meaning": "持ってくる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0326",
+    "word": "carry",
+    "meaning": "運ぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0327",
+    "word": "catch",
+    "meaning": "つかまえる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0328",
+    "word": "throw",
+    "meaning": "投げる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0329",
+    "word": "hold",
+    "meaning": "かかえる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0330",
+    "word": "move",
+    "meaning": "動く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0331",
+    "word": "turn",
+    "meaning": "曲がる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0332",
+    "word": "jump",
+    "meaning": "とぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0333",
+    "word": "swim",
+    "meaning": "泳ぐ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0334",
+    "word": "fly",
+    "meaning": "飛ぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0335",
+    "word": "ride",
+    "meaning": "乗る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0336",
+    "word": "drive",
+    "meaning": "運転する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0337",
+    "word": "wash",
+    "meaning": "洗う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0338",
+    "word": "clean",
+    "meaning": "そうじする",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0339",
+    "word": "cook",
+    "meaning": "料理する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0340",
+    "word": "cut",
+    "meaning": "切る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0341",
+    "word": "wear",
+    "meaning": "身につけている",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0342",
+    "word": "meet",
+    "meaning": "会う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0343",
+    "word": "visit",
+    "meaning": "訪れる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0344",
+    "word": "invite",
+    "meaning": "招待する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0345",
+    "word": "enjoy",
+    "meaning": "楽しむ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0346",
+    "word": "hope",
+    "meaning": "望む",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0347",
+    "word": "try",
+    "meaning": "ためす",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0348",
+    "word": "learn",
+    "meaning": "習う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0349",
+    "word": "talk",
+    "meaning": "語り合う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0350",
+    "word": "tell",
+    "meaning": "伝える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0351",
+    "word": "understand",
+    "meaning": "理解する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0352",
+    "word": "remember",
+    "meaning": "思い出す",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0353",
+    "word": "forget",
+    "meaning": "忘れる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0354",
+    "word": "choose",
+    "meaning": "選ぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0355",
+    "word": "decide",
+    "meaning": "決める",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0356",
+    "word": "agree",
+    "meaning": "同意する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0357",
+    "word": "believe",
+    "meaning": "信じる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0358",
+    "word": "worry",
+    "meaning": "心配する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0359",
+    "word": "smile",
+    "meaning": "ほほえむ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0360",
+    "word": "laugh",
+    "meaning": "笑う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0361",
+    "word": "cry",
+    "meaning": "泣く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0362",
+    "word": "sell",
+    "meaning": "売る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0363",
+    "word": "pay",
+    "meaning": "支払う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0364",
+    "word": "spend",
+    "meaning": "（時間を）過ごす",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0365",
+    "word": "save",
+    "meaning": "救う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0366",
+    "word": "borrow",
+    "meaning": "借りる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0367",
+    "word": "lend",
+    "meaning": "貸す",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0368",
+    "word": "build",
+    "meaning": "建てる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0369",
+    "word": "break",
+    "meaning": "こわす",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0370",
+    "word": "fix",
+    "meaning": "修理する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0371",
+    "word": "draw",
+    "meaning": "（線で）描く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0372",
+    "word": "paint",
+    "meaning": "（絵の具で）描く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0373",
+    "word": "dance",
+    "meaning": "おどる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0374",
+    "word": "practice",
+    "meaning": "練習する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0375",
+    "word": "join",
+    "meaning": "加わる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0376",
+    "word": "win",
+    "meaning": "勝つ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0377",
+    "word": "lose",
+    "meaning": "負ける",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0378",
+    "word": "become",
+    "meaning": "〜になる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0379",
+    "word": "seem",
+    "meaning": "〜のように思える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0380",
+    "word": "happen",
+    "meaning": "起こる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0381",
+    "word": "change",
+    "meaning": "変える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0382",
+    "word": "grow",
+    "meaning": "育つ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0383",
+    "word": "arrive",
+    "meaning": "到着する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0384",
+    "word": "leave",
+    "meaning": "去る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0385",
+    "word": "return",
+    "meaning": "もどる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0386",
+    "word": "travel",
+    "meaning": "旅行する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0387",
+    "word": "climb",
+    "meaning": "登る",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0388",
+    "word": "push",
+    "meaning": "押す",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0389",
+    "word": "pull",
+    "meaning": "引く",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0390",
+    "word": "touch",
+    "meaning": "さわる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0391",
+    "word": "taste",
+    "meaning": "味がする",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0392",
+    "word": "smell",
+    "meaning": "においがする",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0393",
+    "word": "shout",
+    "meaning": "さけぶ",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0394",
+    "word": "stay",
+    "meaning": "とどまる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0395",
+    "word": "rest",
+    "meaning": "休む",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0396",
+    "word": "wake",
+    "meaning": "目を覚ます",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0397",
+    "word": "wish",
+    "meaning": "願う",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0398",
+    "word": "thank",
+    "meaning": "感謝する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0399",
+    "word": "welcome",
+    "meaning": "歓迎する",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0400",
+    "word": "count",
+    "meaning": "数える",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0401",
+    "word": "check",
+    "meaning": "確かめる",
+    "pos": "動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0402",
+    "word": "man",
+    "meaning": "男性",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0403",
+    "word": "woman",
+    "meaning": "女性",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0404",
+    "word": "boy",
+    "meaning": "少年",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0405",
+    "word": "girl",
+    "meaning": "少女",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0406",
+    "word": "child",
+    "meaning": "子ども",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0407",
+    "word": "people",
+    "meaning": "人々",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0408",
+    "word": "friend",
+    "meaning": "友達",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0409",
+    "word": "name",
+    "meaning": "名前",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0410",
+    "word": "age",
+    "meaning": "年齢",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0411",
+    "word": "job",
+    "meaning": "仕事",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0412",
+    "word": "doctor",
+    "meaning": "医者",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0413",
+    "word": "nurse",
+    "meaning": "看護師",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0414",
+    "word": "police",
+    "meaning": "警察",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0415",
+    "word": "driver",
+    "meaning": "運転手",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0416",
+    "word": "singer",
+    "meaning": "歌手",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0417",
+    "word": "writer",
+    "meaning": "作家",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0418",
+    "word": "artist",
+    "meaning": "芸術家",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0419",
+    "word": "farmer",
+    "meaning": "農家",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0420",
+    "word": "baker",
+    "meaning": "パン屋",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0421",
+    "word": "player",
+    "meaning": "選手",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0422",
+    "word": "team",
+    "meaning": "チーム",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0423",
+    "word": "group",
+    "meaning": "集団",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0424",
+    "word": "member",
+    "meaning": "一員",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0425",
+    "word": "club",
+    "meaning": "部活",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0426",
+    "word": "party",
+    "meaning": "パーティー",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0427",
+    "word": "world",
+    "meaning": "世界",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0428",
+    "word": "earth",
+    "meaning": "地球",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0429",
+    "word": "air",
+    "meaning": "空気",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0430",
+    "word": "fire",
+    "meaning": "火",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0431",
+    "word": "ice",
+    "meaning": "氷",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0432",
+    "word": "light",
+    "meaning": "光",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0433",
+    "word": "color",
+    "meaning": "色",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0434",
+    "word": "sound",
+    "meaning": "音",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0435",
+    "word": "voice",
+    "meaning": "声",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0436",
+    "word": "word",
+    "meaning": "単語",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0437",
+    "word": "language",
+    "meaning": "言語",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0438",
+    "word": "story",
+    "meaning": "物語",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0439",
+    "word": "news",
+    "meaning": "ニュース",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0440",
+    "word": "question",
+    "meaning": "質問",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0441",
+    "word": "idea",
+    "meaning": "考え",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0442",
+    "word": "dream",
+    "meaning": "夢",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0443",
+    "word": "hobby",
+    "meaning": "趣味",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0444",
+    "word": "holiday",
+    "meaning": "休日",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0445",
+    "word": "vacation",
+    "meaning": "長期休暇",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0446",
+    "word": "festival",
+    "meaning": "祭り",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0447",
+    "word": "event",
+    "meaning": "行事",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0448",
+    "word": "meeting",
+    "meaning": "会議",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0449",
+    "word": "plan",
+    "meaning": "計画",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0450",
+    "word": "trip",
+    "meaning": "旅行",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0451",
+    "word": "ticket",
+    "meaning": "切符",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0452",
+    "word": "map",
+    "meaning": "地図",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0453",
+    "word": "street",
+    "meaning": "通り",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0454",
+    "word": "corner",
+    "meaning": "角",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0455",
+    "word": "center",
+    "meaning": "中心",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0456",
+    "word": "side",
+    "meaning": "側",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0457",
+    "word": "top",
+    "meaning": "頂上",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0458",
+    "word": "bottom",
+    "meaning": "底",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0459",
+    "word": "front",
+    "meaning": "正面",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0460",
+    "word": "back",
+    "meaning": "背中",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0461",
+    "word": "floor",
+    "meaning": "床",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0462",
+    "word": "wall",
+    "meaning": "壁",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0463",
+    "word": "roof",
+    "meaning": "屋根",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0464",
+    "word": "gate",
+    "meaning": "門",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0465",
+    "word": "stairs",
+    "meaning": "階段",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0466",
+    "word": "bed",
+    "meaning": "ベッド",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0467",
+    "word": "sofa",
+    "meaning": "ソファ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0468",
+    "word": "kitchen",
+    "meaning": "台所",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0469",
+    "word": "bathroom",
+    "meaning": "浴室",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0470",
+    "word": "garage",
+    "meaning": "車庫",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0471",
+    "word": "yard",
+    "meaning": "庭先",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0472",
+    "word": "bus",
+    "meaning": "バス",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0473",
+    "word": "train",
+    "meaning": "電車",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0474",
+    "word": "car",
+    "meaning": "自動車",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0475",
+    "word": "bike",
+    "meaning": "自転車",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0476",
+    "word": "plane",
+    "meaning": "飛行機",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0477",
+    "word": "ship",
+    "meaning": "船",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0478",
+    "word": "boat",
+    "meaning": "小舟",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0479",
+    "word": "airport",
+    "meaning": "空港",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0480",
+    "word": "port",
+    "meaning": "港",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0481",
+    "word": "bank",
+    "meaning": "銀行",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0482",
+    "word": "office",
+    "meaning": "事務所",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0483",
+    "word": "factory",
+    "meaning": "工場",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0484",
+    "word": "market",
+    "meaning": "市場",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0485",
+    "word": "shop",
+    "meaning": "小売店",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0486",
+    "word": "museum",
+    "meaning": "博物館",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0487",
+    "word": "temple",
+    "meaning": "寺",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0488",
+    "word": "shrine",
+    "meaning": "神社",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0489",
+    "word": "church",
+    "meaning": "教会",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0490",
+    "word": "castle",
+    "meaning": "城",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0491",
+    "word": "island",
+    "meaning": "島",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0492",
+    "word": "lake",
+    "meaning": "湖",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0493",
+    "word": "pond",
+    "meaning": "池",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0494",
+    "word": "field",
+    "meaning": "野原",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0495",
+    "word": "forest",
+    "meaning": "森",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0496",
+    "word": "beach",
+    "meaning": "浜辺",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0497",
+    "word": "hill",
+    "meaning": "丘",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0498",
+    "word": "rock",
+    "meaning": "岩",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0499",
+    "word": "stone",
+    "meaning": "石",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0500",
+    "word": "sand",
+    "meaning": "砂",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0501",
+    "word": "grass",
+    "meaning": "草",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0502",
+    "word": "leaf",
+    "meaning": "葉",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0503",
+    "word": "seed",
+    "meaning": "種",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0504",
+    "word": "root",
+    "meaning": "根",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0505",
+    "word": "branch",
+    "meaning": "枝",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0506",
+    "word": "nest",
+    "meaning": "巣",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0507",
+    "word": "insect",
+    "meaning": "昆虫",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0508",
+    "word": "butterfly",
+    "meaning": "ちょう",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0509",
+    "word": "bee",
+    "meaning": "はち",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0510",
+    "word": "spider",
+    "meaning": "くも",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0511",
+    "word": "snake",
+    "meaning": "へび",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0512",
+    "word": "frog",
+    "meaning": "かえる",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0513",
+    "word": "turtle",
+    "meaning": "かめ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0514",
+    "word": "whale",
+    "meaning": "くじら",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0515",
+    "word": "shark",
+    "meaning": "さめ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0516",
+    "word": "chicken",
+    "meaning": "にわとり",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0517",
+    "word": "duck",
+    "meaning": "あひる",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0518",
+    "word": "mouse",
+    "meaning": "ねずみ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0519",
+    "word": "wolf",
+    "meaning": "おおかみ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0520",
+    "word": "fox",
+    "meaning": "きつね",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0521",
+    "word": "deer",
+    "meaning": "しか",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0522",
+    "word": "meal",
+    "meaning": "食事",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0523",
+    "word": "dish",
+    "meaning": "料理",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0524",
+    "word": "plate",
+    "meaning": "皿",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0525",
+    "word": "cup",
+    "meaning": "カップ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0526",
+    "word": "glass",
+    "meaning": "コップ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0527",
+    "word": "spoon",
+    "meaning": "スプーン",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0528",
+    "word": "fork",
+    "meaning": "フォーク",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0529",
+    "word": "knife",
+    "meaning": "ナイフ",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0530",
+    "word": "bottle",
+    "meaning": "びん",
+    "pos": "名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0531",
+    "word": "tall",
+    "meaning": "背が高い",
     "pos": "形容詞",
     "difficulty": 2
+  },
+  {
+    "id": "jh_0532",
+    "word": "large",
+    "meaning": "広々とした",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0533",
+    "word": "little",
+    "meaning": "ちいさな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0534",
+    "word": "wide",
+    "meaning": "幅が広い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0535",
+    "word": "narrow",
+    "meaning": "幅がせまい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0536",
+    "word": "deep",
+    "meaning": "深い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0537",
+    "word": "shallow",
+    "meaning": "浅い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0538",
+    "word": "thick",
+    "meaning": "厚い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0539",
+    "word": "thin",
+    "meaning": "うすい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0540",
+    "word": "heavy",
+    "meaning": "重い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0541",
+    "word": "cute",
+    "meaning": "かわいい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0542",
+    "word": "strong",
+    "meaning": "強い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0543",
+    "word": "weak",
+    "meaning": "弱い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0544",
+    "word": "hard",
+    "meaning": "かたい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0545",
+    "word": "soft",
+    "meaning": "やわらかい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0546",
+    "word": "neat",
+    "meaning": "きちんとした",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0547",
+    "word": "dirty",
+    "meaning": "よごれた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0548",
+    "word": "wet",
+    "meaning": "ぬれた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0549",
+    "word": "dry",
+    "meaning": "かわいた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0550",
+    "word": "warm",
+    "meaning": "あたたかい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0551",
+    "word": "cool",
+    "meaning": "すずしい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0552",
+    "word": "bright",
+    "meaning": "明るい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0553",
+    "word": "dark",
+    "meaning": "暗い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0554",
+    "word": "quiet",
+    "meaning": "静かな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0555",
+    "word": "noisy",
+    "meaning": "そうぞうしい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0556",
+    "word": "busy",
+    "meaning": "いそがしい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0557",
+    "word": "free",
+    "meaning": "ひまな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0558",
+    "word": "full",
+    "meaning": "いっぱいの",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0559",
+    "word": "empty",
+    "meaning": "からの",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0560",
+    "word": "safe",
+    "meaning": "安全な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0561",
+    "word": "ready",
+    "meaning": "用意ができた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0562",
+    "word": "sure",
+    "meaning": "確信している",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0563",
+    "word": "famous",
+    "meaning": "有名な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0564",
+    "word": "popular",
+    "meaning": "人気のある",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0565",
+    "word": "important",
+    "meaning": "大切な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0566",
+    "word": "useful",
+    "meaning": "役に立つ",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0567",
+    "word": "interesting",
+    "meaning": "興味深い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0568",
+    "word": "exciting",
+    "meaning": "わくわくする",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0569",
+    "word": "boring",
+    "meaning": "たいくつな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0570",
+    "word": "funny",
+    "meaning": "こっけいな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0571",
+    "word": "kind",
+    "meaning": "親切な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0572",
+    "word": "gentle",
+    "meaning": "おだやかな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0573",
+    "word": "brave",
+    "meaning": "勇敢な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0574",
+    "word": "honest",
+    "meaning": "正直な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0575",
+    "word": "polite",
+    "meaning": "礼儀正しい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0576",
+    "word": "shy",
+    "meaning": "はずかしがりの",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0577",
+    "word": "clever",
+    "meaning": "りこうな",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0578",
+    "word": "lazy",
+    "meaning": "なまけた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0579",
+    "word": "angry",
+    "meaning": "おこった",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0580",
+    "word": "afraid",
+    "meaning": "こわがって",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0581",
+    "word": "tired",
+    "meaning": "つかれた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0582",
+    "word": "hungry",
+    "meaning": "空腹の",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0583",
+    "word": "thirsty",
+    "meaning": "のどがかわいた",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0584",
+    "word": "sick",
+    "meaning": "病気の",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0585",
+    "word": "healthy",
+    "meaning": "健康な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0586",
+    "word": "rich",
+    "meaning": "裕福な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0587",
+    "word": "poor",
+    "meaning": "貧しい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0588",
+    "word": "lucky",
+    "meaning": "運のよい",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0589",
+    "word": "careful",
+    "meaning": "注意深い",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0590",
+    "word": "dangerous",
+    "meaning": "危険な",
+    "pos": "形容詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0591",
+    "word": "very",
+    "meaning": "とても",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0592",
+    "word": "too",
+    "meaning": "〜すぎる",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0593",
+    "word": "so",
+    "meaning": "それほど",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0594",
+    "word": "really",
+    "meaning": "本当に",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0595",
+    "word": "just",
+    "meaning": "ちょうど",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0596",
+    "word": "only",
+    "meaning": "〜だけ",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0597",
+    "word": "also",
+    "meaning": "〜もまた",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0598",
+    "word": "again",
+    "meaning": "再び",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0599",
+    "word": "once",
+    "meaning": "一度",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0600",
+    "word": "twice",
+    "meaning": "二度",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0601",
+    "word": "always",
+    "meaning": "いつも",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0602",
+    "word": "usually",
+    "meaning": "たいてい",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0603",
+    "word": "often",
+    "meaning": "しばしば",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0604",
+    "word": "sometimes",
+    "meaning": "ときどき",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0605",
+    "word": "never",
+    "meaning": "一度も〜ない",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0606",
+    "word": "soon",
+    "meaning": "まもなく",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0607",
+    "word": "early",
+    "meaning": "早く",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0608",
+    "word": "late",
+    "meaning": "おそく",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0609",
+    "word": "now",
+    "meaning": "今",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0610",
+    "word": "then",
+    "meaning": "そのとき",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0611",
+    "word": "here",
+    "meaning": "ここに",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0612",
+    "word": "there",
+    "meaning": "そこに",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0613",
+    "word": "away",
+    "meaning": "はなれて",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0614",
+    "word": "together",
+    "meaning": "いっしょに",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0615",
+    "word": "alone",
+    "meaning": "ひとりで",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0616",
+    "word": "well",
+    "meaning": "うまく",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0617",
+    "word": "outside",
+    "meaning": "外で",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0618",
+    "word": "slowly",
+    "meaning": "ゆっくりと",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0619",
+    "word": "quickly",
+    "meaning": "すばやく",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0620",
+    "word": "carefully",
+    "meaning": "注意して",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0621",
+    "word": "easily",
+    "meaning": "たやすく",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0622",
+    "word": "suddenly",
+    "meaning": "突然",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0623",
+    "word": "finally",
+    "meaning": "ついに",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0624",
+    "word": "maybe",
+    "meaning": "もしかすると",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0625",
+    "word": "almost",
+    "meaning": "ほとんど",
+    "pos": "副詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0626",
+    "word": "in",
+    "meaning": "〜の中に",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0627",
+    "word": "on",
+    "meaning": "〜の上に",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0628",
+    "word": "at",
+    "meaning": "〜のところで",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0629",
+    "word": "to",
+    "meaning": "〜へ",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0630",
+    "word": "from",
+    "meaning": "〜から",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0631",
+    "word": "for",
+    "meaning": "〜のために",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0632",
+    "word": "with",
+    "meaning": "〜といっしょに",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0633",
+    "word": "of",
+    "meaning": "〜の",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0634",
+    "word": "by",
+    "meaning": "〜のそばに",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0635",
+    "word": "about",
+    "meaning": "〜について",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0636",
+    "word": "under",
+    "meaning": "〜の下に",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0637",
+    "word": "over",
+    "meaning": "〜の上方に",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0638",
+    "word": "into",
+    "meaning": "〜の中へ",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0639",
+    "word": "near",
+    "meaning": "〜の近くに",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0640",
+    "word": "between",
+    "meaning": "〜の間に",
+    "pos": "前置詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0641",
+    "word": "and",
+    "meaning": "そして",
+    "pos": "接続詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0642",
+    "word": "but",
+    "meaning": "しかし",
+    "pos": "接続詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0643",
+    "word": "or",
+    "meaning": "または",
+    "pos": "接続詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0644",
+    "word": "because",
+    "meaning": "なぜなら",
+    "pos": "接続詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0645",
+    "word": "if",
+    "meaning": "もし〜ならば",
+    "pos": "接続詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0646",
+    "word": "this",
+    "meaning": "これ",
+    "pos": "代名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0647",
+    "word": "that",
+    "meaning": "あれ",
+    "pos": "代名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0648",
+    "word": "these",
+    "meaning": "これら",
+    "pos": "代名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0649",
+    "word": "those",
+    "meaning": "それら",
+    "pos": "代名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0650",
+    "word": "what",
+    "meaning": "何",
+    "pos": "代名詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_0651",
+    "word": "appear",
+    "meaning": "現れる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0652",
+    "word": "disappear",
+    "meaning": "姿を消す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0653",
+    "word": "continue",
+    "meaning": "続ける",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0654",
+    "word": "increase",
+    "meaning": "増える",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0655",
+    "word": "decrease",
+    "meaning": "減る",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0656",
+    "word": "improve",
+    "meaning": "改善する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0657",
+    "word": "develop",
+    "meaning": "発展させる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0658",
+    "word": "produce",
+    "meaning": "生産する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0659",
+    "word": "create",
+    "meaning": "創造する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0660",
+    "word": "invent",
+    "meaning": "発明する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0661",
+    "word": "discover",
+    "meaning": "発見する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0662",
+    "word": "explain",
+    "meaning": "説明する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0663",
+    "word": "describe",
+    "meaning": "描写する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0664",
+    "word": "express",
+    "meaning": "表現する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0665",
+    "word": "introduce",
+    "meaning": "紹介する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0666",
+    "word": "suggest",
+    "meaning": "提案する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0667",
+    "word": "advise",
+    "meaning": "助言する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0668",
+    "word": "recommend",
+    "meaning": "すすめる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0669",
+    "word": "accept",
+    "meaning": "受け入れる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0670",
+    "word": "refuse",
+    "meaning": "断る",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0671",
+    "word": "allow",
+    "meaning": "許可する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0672",
+    "word": "forbid",
+    "meaning": "禁じる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0673",
+    "word": "promise",
+    "meaning": "約束する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0674",
+    "word": "expect",
+    "meaning": "予期する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0675",
+    "word": "prepare",
+    "meaning": "準備する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0676",
+    "word": "provide",
+    "meaning": "提供する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0677",
+    "word": "offer",
+    "meaning": "申し出る",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0678",
+    "word": "support",
+    "meaning": "支援する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0679",
+    "word": "protect",
+    "meaning": "守る",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0680",
+    "word": "prevent",
+    "meaning": "ふせぐ",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0681",
+    "word": "avoid",
+    "meaning": "さける",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0682",
+    "word": "escape",
+    "meaning": "にげる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0683",
+    "word": "attack",
+    "meaning": "攻撃する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0684",
+    "word": "defend",
+    "meaning": "防御する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0685",
+    "word": "fight",
+    "meaning": "戦う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0686",
+    "word": "solve",
+    "meaning": "解決する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0687",
+    "word": "succeed",
+    "meaning": "成功する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0688",
+    "word": "fail",
+    "meaning": "失敗する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0689",
+    "word": "achieve",
+    "meaning": "達成する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0690",
+    "word": "complete",
+    "meaning": "完了する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0691",
+    "word": "add",
+    "meaning": "加える",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0692",
+    "word": "realize",
+    "meaning": "気づく",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0693",
+    "word": "notice",
+    "meaning": "気がつく",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0694",
+    "word": "recognize",
+    "meaning": "見分ける",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0695",
+    "word": "consider",
+    "meaning": "よく考える",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0696",
+    "word": "imagine",
+    "meaning": "想像する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0697",
+    "word": "guess",
+    "meaning": "推測する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0698",
+    "word": "doubt",
+    "meaning": "疑う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0699",
+    "word": "compare",
+    "meaning": "比較する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0700",
+    "word": "select",
+    "meaning": "選び出す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0701",
+    "word": "prefer",
+    "meaning": "より好む",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0702",
+    "word": "respect",
+    "meaning": "尊敬する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0703",
+    "word": "admire",
+    "meaning": "感心する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0704",
+    "word": "trust",
+    "meaning": "信頼する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0705",
+    "word": "depend",
+    "meaning": "たよる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0706",
+    "word": "belong",
+    "meaning": "属する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0707",
+    "word": "include",
+    "meaning": "含む",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0708",
+    "word": "contain",
+    "meaning": "中に入っている",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0709",
+    "word": "consist",
+    "meaning": "成り立っている",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0710",
+    "word": "mean",
+    "meaning": "意味する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0711",
+    "word": "matter",
+    "meaning": "重要である",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0712",
+    "word": "affect",
+    "meaning": "影響をおよぼす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0713",
+    "word": "influence",
+    "meaning": "左右する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0714",
+    "word": "cause",
+    "meaning": "引き起こす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0715",
+    "word": "obey",
+    "meaning": "従う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0716",
+    "word": "follow",
+    "meaning": "あとを追う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0717",
+    "word": "lead",
+    "meaning": "導く",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0718",
+    "word": "guide",
+    "meaning": "案内する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0719",
+    "word": "manage",
+    "meaning": "運営する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0720",
+    "word": "control",
+    "meaning": "制御する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0721",
+    "word": "organize",
+    "meaning": "まとめる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0722",
+    "word": "arrange",
+    "meaning": "手配する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0723",
+    "word": "attend",
+    "meaning": "出席する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0724",
+    "word": "perform",
+    "meaning": "演じる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0725",
+    "word": "behave",
+    "meaning": "ふるまう",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0726",
+    "word": "repeat",
+    "meaning": "くり返す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0727",
+    "word": "review",
+    "meaning": "見直す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0728",
+    "word": "record",
+    "meaning": "記録する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0729",
+    "word": "report",
+    "meaning": "報告する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0730",
+    "word": "announce",
+    "meaning": "発表する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0731",
+    "word": "publish",
+    "meaning": "出版する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0732",
+    "word": "print",
+    "meaning": "印刷する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0733",
+    "word": "translate",
+    "meaning": "翻訳する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0734",
+    "word": "pronounce",
+    "meaning": "発音する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0735",
+    "word": "spell",
+    "meaning": "つづる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0736",
+    "word": "memorize",
+    "meaning": "暗記する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0737",
+    "word": "recall",
+    "meaning": "思い起こす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0738",
+    "word": "forgive",
+    "meaning": "許す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0739",
+    "word": "apologize",
+    "meaning": "あやまる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0740",
+    "word": "complain",
+    "meaning": "不平を言う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0741",
+    "word": "argue",
+    "meaning": "言い争う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0742",
+    "word": "discuss",
+    "meaning": "話し合う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0743",
+    "word": "communicate",
+    "meaning": "意思を伝え合う",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0744",
+    "word": "connect",
+    "meaning": "つなぐ",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0745",
+    "word": "separate",
+    "meaning": "切りはなす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0746",
+    "word": "divide",
+    "meaning": "分割する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0747",
+    "word": "donate",
+    "meaning": "寄付する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0748",
+    "word": "exchange",
+    "meaning": "交換する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0749",
+    "word": "replace",
+    "meaning": "取りかえる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0750",
+    "word": "repair",
+    "meaning": "直す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0751",
+    "word": "destroy",
+    "meaning": "破壊する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0752",
+    "word": "damage",
+    "meaning": "損害を与える",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0753",
+    "word": "hurt",
+    "meaning": "傷つける",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0754",
+    "word": "heal",
+    "meaning": "いやす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0755",
+    "word": "cure",
+    "meaning": "治す",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0756",
+    "word": "suffer",
+    "meaning": "苦しむ",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0757",
+    "word": "survive",
+    "meaning": "生きのびる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0758",
+    "word": "die",
+    "meaning": "死ぬ",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0759",
+    "word": "marry",
+    "meaning": "結婚する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0760",
+    "word": "raise",
+    "meaning": "育てる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0761",
+    "word": "feed",
+    "meaning": "えさをやる",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0762",
+    "word": "serve",
+    "meaning": "給仕する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0763",
+    "word": "order",
+    "meaning": "注文する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0764",
+    "word": "deliver",
+    "meaning": "配達する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0765",
+    "word": "supply",
+    "meaning": "供給する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0766",
+    "word": "waste",
+    "meaning": "むだにする",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0767",
+    "word": "reduce",
+    "meaning": "減らす",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0768",
+    "word": "recycle",
+    "meaning": "再生利用する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0769",
+    "word": "pollute",
+    "meaning": "汚染する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0770",
+    "word": "rescue",
+    "meaning": "救助する",
+    "pos": "動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0771",
+    "word": "society",
+    "meaning": "社会",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0772",
+    "word": "culture",
+    "meaning": "文化",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0773",
+    "word": "tradition",
+    "meaning": "伝統",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0774",
+    "word": "custom",
+    "meaning": "習慣",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0775",
+    "word": "religion",
+    "meaning": "宗教",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0776",
+    "word": "government",
+    "meaning": "政府",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0777",
+    "word": "law",
+    "meaning": "法律",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0778",
+    "word": "rule",
+    "meaning": "規則",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0779",
+    "word": "right",
+    "meaning": "権利",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0780",
+    "word": "duty",
+    "meaning": "義務",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0781",
+    "word": "freedom",
+    "meaning": "自由",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0782",
+    "word": "peace",
+    "meaning": "平和",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0783",
+    "word": "war",
+    "meaning": "戦争",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0784",
+    "word": "army",
+    "meaning": "軍隊",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0785",
+    "word": "weapon",
+    "meaning": "武器",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0786",
+    "word": "crime",
+    "meaning": "犯罪",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0787",
+    "word": "prison",
+    "meaning": "刑務所",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0788",
+    "word": "judge",
+    "meaning": "裁判官",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0789",
+    "word": "court",
+    "meaning": "法廷",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0790",
+    "word": "election",
+    "meaning": "選挙",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0791",
+    "word": "nation",
+    "meaning": "国家",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0792",
+    "word": "citizen",
+    "meaning": "市民",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0793",
+    "word": "population",
+    "meaning": "人口",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0794",
+    "word": "village",
+    "meaning": "村",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0795",
+    "word": "neighbor",
+    "meaning": "隣人",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0796",
+    "word": "relative",
+    "meaning": "親せき",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0797",
+    "word": "stranger",
+    "meaning": "見知らぬ人",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0798",
+    "word": "guest",
+    "meaning": "客",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0799",
+    "word": "host",
+    "meaning": "主人役",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0800",
+    "word": "owner",
+    "meaning": "所有者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0801",
+    "word": "customer",
+    "meaning": "顧客",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0802",
+    "word": "company",
+    "meaning": "会社",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0803",
+    "word": "business",
+    "meaning": "商売",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0804",
+    "word": "industry",
+    "meaning": "産業",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0805",
+    "word": "product",
+    "meaning": "製品",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0806",
+    "word": "goods",
+    "meaning": "商品",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0807",
+    "word": "price",
+    "meaning": "値段",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0808",
+    "word": "cost",
+    "meaning": "費用",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0809",
+    "word": "profit",
+    "meaning": "利益",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0810",
+    "word": "tax",
+    "meaning": "税金",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0811",
+    "word": "salary",
+    "meaning": "給料",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0812",
+    "word": "income",
+    "meaning": "収入",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0813",
+    "word": "debt",
+    "meaning": "借金",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0814",
+    "word": "trade",
+    "meaning": "貿易",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0815",
+    "word": "economy",
+    "meaning": "経済",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0816",
+    "word": "energy",
+    "meaning": "エネルギー",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0817",
+    "word": "power",
+    "meaning": "力",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0818",
+    "word": "machine",
+    "meaning": "機械",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0819",
+    "word": "engine",
+    "meaning": "エンジン",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0820",
+    "word": "tool",
+    "meaning": "道具",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0821",
+    "word": "material",
+    "meaning": "材料",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0822",
+    "word": "metal",
+    "meaning": "金属",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0823",
+    "word": "wood",
+    "meaning": "木材",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0824",
+    "word": "paper",
+    "meaning": "紙",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0825",
+    "word": "plastic",
+    "meaning": "プラスチック",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0826",
+    "word": "container",
+    "meaning": "容器",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0827",
+    "word": "cloth",
+    "meaning": "布",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0828",
+    "word": "technology",
+    "meaning": "科学技術",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0829",
+    "word": "computer",
+    "meaning": "コンピューター",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0830",
+    "word": "internet",
+    "meaning": "インターネット",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0831",
+    "word": "website",
+    "meaning": "ウェブサイト",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0832",
+    "word": "message",
+    "meaning": "伝言",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0833",
+    "word": "information",
+    "meaning": "情報",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0834",
+    "word": "data",
+    "meaning": "データ",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0835",
+    "word": "system",
+    "meaning": "仕組み",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0836",
+    "word": "program",
+    "meaning": "番組",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0837",
+    "word": "device",
+    "meaning": "装置",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0838",
+    "word": "screen",
+    "meaning": "画面",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0839",
+    "word": "robot",
+    "meaning": "ロボット",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0840",
+    "word": "space",
+    "meaning": "宇宙",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0841",
+    "word": "planet",
+    "meaning": "惑星",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0842",
+    "word": "universe",
+    "meaning": "全宇宙",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0843",
+    "word": "environment",
+    "meaning": "環境",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0844",
+    "word": "nature",
+    "meaning": "自然",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0845",
+    "word": "climate",
+    "meaning": "気候",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0846",
+    "word": "temperature",
+    "meaning": "気温",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0847",
+    "word": "pollution",
+    "meaning": "汚染",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0848",
+    "word": "garbage",
+    "meaning": "ごみ",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0849",
+    "word": "resource",
+    "meaning": "資源",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0850",
+    "word": "oil",
+    "meaning": "石油",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0851",
+    "word": "gas",
+    "meaning": "気体",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0852",
+    "word": "electricity",
+    "meaning": "電気",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0853",
+    "word": "heat",
+    "meaning": "熱",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0854",
+    "word": "chemical",
+    "meaning": "化学薬品",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0855",
+    "word": "medicine",
+    "meaning": "薬",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0856",
+    "word": "disease",
+    "meaning": "病気",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0857",
+    "word": "injury",
+    "meaning": "けが",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0858",
+    "word": "clinic",
+    "meaning": "診療所",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0859",
+    "word": "patient",
+    "meaning": "患者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0860",
+    "word": "dentist",
+    "meaning": "歯医者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0861",
+    "word": "scientist",
+    "meaning": "科学者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0862",
+    "word": "engineer",
+    "meaning": "技術者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0863",
+    "word": "lawyer",
+    "meaning": "弁護士",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0864",
+    "word": "soldier",
+    "meaning": "兵士",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0865",
+    "word": "president",
+    "meaning": "大統領",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0866",
+    "word": "leader",
+    "meaning": "指導者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0867",
+    "word": "expert",
+    "meaning": "専門家",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0868",
+    "word": "volunteer",
+    "meaning": "志願者",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0869",
+    "word": "education",
+    "meaning": "教育",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0870",
+    "word": "knowledge",
+    "meaning": "知識",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0871",
+    "word": "skill",
+    "meaning": "技能",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0872",
+    "word": "ability",
+    "meaning": "能力",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0873",
+    "word": "effort",
+    "meaning": "努力",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0874",
+    "word": "success",
+    "meaning": "成功",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0875",
+    "word": "failure",
+    "meaning": "失敗",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0876",
+    "word": "result",
+    "meaning": "結果",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0877",
+    "word": "reason",
+    "meaning": "理由",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0878",
+    "word": "purpose",
+    "meaning": "目的",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0879",
+    "word": "meaning",
+    "meaning": "意味",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0880",
+    "word": "example",
+    "meaning": "例",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0881",
+    "word": "fact",
+    "meaning": "事実",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0882",
+    "word": "truth",
+    "meaning": "真実",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0883",
+    "word": "opinion",
+    "meaning": "意見",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0884",
+    "word": "advice",
+    "meaning": "助言",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0885",
+    "word": "choice",
+    "meaning": "選択",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0886",
+    "word": "chance",
+    "meaning": "機会",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0887",
+    "word": "danger",
+    "meaning": "危険",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0888",
+    "word": "safety",
+    "meaning": "安全",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0889",
+    "word": "accident",
+    "meaning": "事故",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0890",
+    "word": "trouble",
+    "meaning": "困りごと",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0891",
+    "word": "problem",
+    "meaning": "課題",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0892",
+    "word": "solution",
+    "meaning": "解決策",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0893",
+    "word": "method",
+    "meaning": "方法",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0894",
+    "word": "subject",
+    "meaning": "教科",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0895",
+    "word": "lesson",
+    "meaning": "授業時間",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0896",
+    "word": "exam",
+    "meaning": "試験",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0897",
+    "word": "grade",
+    "meaning": "成績",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0898",
+    "word": "degree",
+    "meaning": "程度",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0899",
+    "word": "level",
+    "meaning": "水準",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0900",
+    "word": "amount",
+    "meaning": "量",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0901",
+    "word": "number",
+    "meaning": "数",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0902",
+    "word": "half",
+    "meaning": "半分",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0903",
+    "word": "part",
+    "meaning": "部分",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0904",
+    "word": "piece",
+    "meaning": "ひとかけら",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0905",
+    "word": "pair",
+    "meaning": "ひと組",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0906",
+    "word": "size",
+    "meaning": "大きさ",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0907",
+    "word": "shape",
+    "meaning": "形",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0908",
+    "word": "weight",
+    "meaning": "重さ",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0909",
+    "word": "distance",
+    "meaning": "距離",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0910",
+    "word": "speed",
+    "meaning": "速さ",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0911",
+    "word": "direction",
+    "meaning": "方向",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0912",
+    "word": "position",
+    "meaning": "位置",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0913",
+    "word": "condition",
+    "meaning": "状態",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0914",
+    "word": "situation",
+    "meaning": "状況",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0915",
+    "word": "period",
+    "meaning": "期間",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0916",
+    "word": "century",
+    "meaning": "世紀",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0917",
+    "word": "moment",
+    "meaning": "瞬間",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0918",
+    "word": "future",
+    "meaning": "未来",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0919",
+    "word": "past",
+    "meaning": "過去",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0920",
+    "word": "present",
+    "meaning": "現在",
+    "pos": "名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0921",
+    "word": "possible",
+    "meaning": "ありうる",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0922",
+    "word": "impossible",
+    "meaning": "不可能な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0923",
+    "word": "necessary",
+    "meaning": "必要な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0924",
+    "word": "enough",
+    "meaning": "必要なだけの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0925",
+    "word": "several",
+    "meaning": "いくつかの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0926",
+    "word": "various",
+    "meaning": "さまざまな",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0927",
+    "word": "similar",
+    "meaning": "似ている",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0928",
+    "word": "different",
+    "meaning": "異なる",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0929",
+    "word": "same",
+    "meaning": "同一の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0930",
+    "word": "special",
+    "meaning": "特別な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0931",
+    "word": "common",
+    "meaning": "ありふれた",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0932",
+    "word": "usual",
+    "meaning": "いつもの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0933",
+    "word": "strange",
+    "meaning": "奇妙な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0934",
+    "word": "terrible",
+    "meaning": "ひどい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0935",
+    "word": "wonderful",
+    "meaning": "すばらしい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0936",
+    "word": "perfect",
+    "meaning": "完ぺきな",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0937",
+    "word": "correct",
+    "meaning": "正しい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0938",
+    "word": "wrong",
+    "meaning": "まちがった",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0939",
+    "word": "true",
+    "meaning": "真実の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0940",
+    "word": "false",
+    "meaning": "いつわりの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0941",
+    "word": "real",
+    "meaning": "現実の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0942",
+    "word": "clear",
+    "meaning": "はっきりした",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0943",
+    "word": "simple",
+    "meaning": "単純な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0944",
+    "word": "complex",
+    "meaning": "複雑な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0945",
+    "word": "serious",
+    "meaning": "真剣な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0946",
+    "word": "silly",
+    "meaning": "ばかげた",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0947",
+    "word": "nervous",
+    "meaning": "緊張した",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0948",
+    "word": "calm",
+    "meaning": "落ち着いた",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0949",
+    "word": "proud",
+    "meaning": "誇りに思う",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0950",
+    "word": "glad",
+    "meaning": "喜んで",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0951",
+    "word": "pleasant",
+    "meaning": "感じのよい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0952",
+    "word": "comfortable",
+    "meaning": "心地よい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0953",
+    "word": "convenient",
+    "meaning": "便利な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0954",
+    "word": "expensive",
+    "meaning": "高価な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0955",
+    "word": "cheap",
+    "meaning": "安い",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0956",
+    "word": "valuable",
+    "meaning": "貴重な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0957",
+    "word": "modern",
+    "meaning": "現代的な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0958",
+    "word": "ancient",
+    "meaning": "古代の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0959",
+    "word": "traditional",
+    "meaning": "伝統的な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0960",
+    "word": "local",
+    "meaning": "地元の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0961",
+    "word": "national",
+    "meaning": "国民の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0962",
+    "word": "international",
+    "meaning": "国際的な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0963",
+    "word": "global",
+    "meaning": "地球規模の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0964",
+    "word": "public",
+    "meaning": "公共の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0965",
+    "word": "private",
+    "meaning": "私的な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0966",
+    "word": "official",
+    "meaning": "公式の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0967",
+    "word": "natural",
+    "meaning": "自然の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0968",
+    "word": "artificial",
+    "meaning": "人工の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0969",
+    "word": "physical",
+    "meaning": "身体の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0970",
+    "word": "mental",
+    "meaning": "精神の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0971",
+    "word": "social",
+    "meaning": "社会の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0972",
+    "word": "political",
+    "meaning": "政治の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0973",
+    "word": "economic",
+    "meaning": "経済の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0974",
+    "word": "scientific",
+    "meaning": "科学の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0975",
+    "word": "medical",
+    "meaning": "医学の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0976",
+    "word": "legal",
+    "meaning": "法律上の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0977",
+    "word": "total",
+    "meaning": "全体の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0978",
+    "word": "main",
+    "meaning": "主な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0979",
+    "word": "major",
+    "meaning": "主要な",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0980",
+    "word": "minor",
+    "meaning": "小さいほうの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0981",
+    "word": "single",
+    "meaning": "たった一つの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0982",
+    "word": "double",
+    "meaning": "二重の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0983",
+    "word": "blank",
+    "meaning": "空白の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0984",
+    "word": "crowded",
+    "meaning": "混雑した",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0985",
+    "word": "lively",
+    "meaning": "活気のある",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0986",
+    "word": "silent",
+    "meaning": "無言の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0987",
+    "word": "smooth",
+    "meaning": "なめらかな",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0988",
+    "word": "rough",
+    "meaning": "でこぼこの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0989",
+    "word": "sharp",
+    "meaning": "するどい",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0990",
+    "word": "flat",
+    "meaning": "平らな",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0991",
+    "word": "round",
+    "meaning": "丸い",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0992",
+    "word": "square",
+    "meaning": "正方形の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0993",
+    "word": "straight",
+    "meaning": "まっすぐな",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0994",
+    "word": "curved",
+    "meaning": "曲がった",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0995",
+    "word": "upper",
+    "meaning": "上のほうの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0996",
+    "word": "lower",
+    "meaning": "下のほうの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0997",
+    "word": "inner",
+    "meaning": "内側の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0998",
+    "word": "outer",
+    "meaning": "外側の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_0999",
+    "word": "central",
+    "meaning": "中央の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1000",
+    "word": "northern",
+    "meaning": "北の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1001",
+    "word": "southern",
+    "meaning": "南の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1002",
+    "word": "eastern",
+    "meaning": "東の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1003",
+    "word": "western",
+    "meaning": "西の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1004",
+    "word": "foreign",
+    "meaning": "外国の",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1005",
+    "word": "native",
+    "meaning": "生まれつきの",
+    "pos": "形容詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1006",
+    "word": "already",
+    "meaning": "すでに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1007",
+    "word": "still",
+    "meaning": "今もなお",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1008",
+    "word": "yet",
+    "meaning": "まだ",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1009",
+    "word": "ever",
+    "meaning": "今までに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1010",
+    "word": "recently",
+    "meaning": "最近",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1011",
+    "word": "lately",
+    "meaning": "このごろ",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1012",
+    "word": "nowadays",
+    "meaning": "近ごろでは",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1013",
+    "word": "someday",
+    "meaning": "いつか",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1014",
+    "word": "tonight",
+    "meaning": "今夜",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1015",
+    "word": "forever",
+    "meaning": "永遠に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1016",
+    "word": "immediately",
+    "meaning": "ただちに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1017",
+    "word": "gradually",
+    "meaning": "しだいに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1018",
+    "word": "meanwhile",
+    "meaning": "その間に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1019",
+    "word": "certainly",
+    "meaning": "確かに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1020",
+    "word": "probably",
+    "meaning": "おそらく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1021",
+    "word": "perhaps",
+    "meaning": "ひょっとすると",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1022",
+    "word": "possibly",
+    "meaning": "ことによると",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1023",
+    "word": "actually",
+    "meaning": "実際は",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1024",
+    "word": "indeed",
+    "meaning": "まったくもって",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1025",
+    "word": "truly",
+    "meaning": "心から",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1026",
+    "word": "especially",
+    "meaning": "とりわけ",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1027",
+    "word": "mainly",
+    "meaning": "主として",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1028",
+    "word": "mostly",
+    "meaning": "大部分は",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1029",
+    "word": "generally",
+    "meaning": "概して",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1030",
+    "word": "normally",
+    "meaning": "ふだんは",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1031",
+    "word": "rarely",
+    "meaning": "めったに〜ない",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1032",
+    "word": "seldom",
+    "meaning": "ごくまれに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1033",
+    "word": "hardly",
+    "meaning": "ほとんど〜ない",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1034",
+    "word": "nearly",
+    "meaning": "もう少しで",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1035",
+    "word": "otherwise",
+    "meaning": "さもなければ",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1036",
+    "word": "exactly",
+    "meaning": "正確に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1037",
+    "word": "clearly",
+    "meaning": "明らかに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1038",
+    "word": "simply",
+    "meaning": "単に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1039",
+    "word": "directly",
+    "meaning": "じかに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1040",
+    "word": "closely",
+    "meaning": "密接に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1041",
+    "word": "deeply",
+    "meaning": "深く",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1042",
+    "word": "widely",
+    "meaning": "広く",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1043",
+    "word": "highly",
+    "meaning": "大いに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1044",
+    "word": "greatly",
+    "meaning": "非常に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1045",
+    "word": "badly",
+    "meaning": "ひどく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1046",
+    "word": "safely",
+    "meaning": "安全に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1047",
+    "word": "politely",
+    "meaning": "礼儀正しく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1048",
+    "word": "bravely",
+    "meaning": "勇敢に",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1049",
+    "word": "quietly",
+    "meaning": "静かに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1050",
+    "word": "loudly",
+    "meaning": "大声で",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1051",
+    "word": "angrily",
+    "meaning": "おこって",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1052",
+    "word": "happily",
+    "meaning": "幸せに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1053",
+    "word": "sadly",
+    "meaning": "悲しげに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1054",
+    "word": "luckily",
+    "meaning": "運よく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1055",
+    "word": "unfortunately",
+    "meaning": "あいにく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1056",
+    "word": "however",
+    "meaning": "けれども",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1057",
+    "word": "therefore",
+    "meaning": "それゆえに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1058",
+    "word": "instead",
+    "meaning": "その代わりに",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1059",
+    "word": "besides",
+    "meaning": "その上",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1060",
+    "word": "anyway",
+    "meaning": "とにかく",
+    "pos": "副詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1061",
+    "word": "during",
+    "meaning": "〜の間ずっと",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1062",
+    "word": "through",
+    "meaning": "〜を通り抜けて",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1063",
+    "word": "across",
+    "meaning": "〜を横切って",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1064",
+    "word": "along",
+    "meaning": "〜に沿って",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1065",
+    "word": "around",
+    "meaning": "〜のまわりに",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1066",
+    "word": "behind",
+    "meaning": "〜の後ろに",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1067",
+    "word": "beside",
+    "meaning": "〜のとなりに",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1068",
+    "word": "above",
+    "meaning": "〜より上に",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1069",
+    "word": "below",
+    "meaning": "〜より下に",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1070",
+    "word": "against",
+    "meaning": "〜に対抗して",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1071",
+    "word": "among",
+    "meaning": "〜の中に混じって",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1072",
+    "word": "without",
+    "meaning": "〜なしで",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1073",
+    "word": "within",
+    "meaning": "〜以内で",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1074",
+    "word": "toward",
+    "meaning": "〜のほうへ",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1075",
+    "word": "until",
+    "meaning": "〜までずっと",
+    "pos": "前置詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1076",
+    "word": "when",
+    "meaning": "〜するとき",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1077",
+    "word": "while",
+    "meaning": "〜する間",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1078",
+    "word": "before",
+    "meaning": "〜する前に",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1079",
+    "word": "after",
+    "meaning": "〜したあとで",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1080",
+    "word": "since",
+    "meaning": "〜して以来",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1081",
+    "word": "though",
+    "meaning": "〜だけれども",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1082",
+    "word": "although",
+    "meaning": "〜ではあるが",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1083",
+    "word": "unless",
+    "meaning": "〜でない限り",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1084",
+    "word": "whether",
+    "meaning": "〜かどうか",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1085",
+    "word": "till",
+    "meaning": "〜するまで",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1086",
+    "word": "as",
+    "meaning": "〜につれて",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1087",
+    "word": "than",
+    "meaning": "〜よりも",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1088",
+    "word": "nor",
+    "meaning": "〜もまた〜ない",
+    "pos": "接続詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1089",
+    "word": "who",
+    "meaning": "だれ",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1090",
+    "word": "which",
+    "meaning": "どちら",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1091",
+    "word": "whose",
+    "meaning": "だれの",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1092",
+    "word": "whom",
+    "meaning": "だれを",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1093",
+    "word": "someone",
+    "meaning": "だれか",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1094",
+    "word": "something",
+    "meaning": "何か",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1095",
+    "word": "anyone",
+    "meaning": "だれでも",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1096",
+    "word": "anything",
+    "meaning": "何でも",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1097",
+    "word": "everyone",
+    "meaning": "みんな",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1098",
+    "word": "everything",
+    "meaning": "すべてのもの",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1099",
+    "word": "nobody",
+    "meaning": "だれも〜ない",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1100",
+    "word": "nothing",
+    "meaning": "何も〜ない",
+    "pos": "代名詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1101",
+    "word": "accomplish",
+    "meaning": "やりとげる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1102",
+    "word": "acquire",
+    "meaning": "習得する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1103",
+    "word": "adapt",
+    "meaning": "適応する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1104",
+    "word": "admit",
+    "meaning": "認める",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1105",
+    "word": "adopt",
+    "meaning": "採用する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1106",
+    "word": "apply",
+    "meaning": "当てはめる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1107",
+    "word": "approach",
+    "meaning": "近づく",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1108",
+    "word": "approve",
+    "meaning": "承認する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1109",
+    "word": "assist",
+    "meaning": "手助けする",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1110",
+    "word": "assume",
+    "meaning": "想定する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1111",
+    "word": "attach",
+    "meaning": "取りつける",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1112",
+    "word": "attempt",
+    "meaning": "試みる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1113",
+    "word": "attract",
+    "meaning": "引きつける",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1114",
+    "word": "endure",
+    "meaning": "耐えしのぶ",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1115",
+    "word": "blame",
+    "meaning": "責める",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1116",
+    "word": "bother",
+    "meaning": "わずらわせる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1117",
+    "word": "celebrate",
+    "meaning": "祝う",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1118",
+    "word": "challenge",
+    "meaning": "いどむ",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1119",
+    "word": "combine",
+    "meaning": "結合する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1120",
+    "word": "confirm",
+    "meaning": "裏づける",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1121",
+    "word": "confuse",
+    "meaning": "混同する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1122",
+    "word": "consume",
+    "meaning": "消費する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1123",
+    "word": "contribute",
+    "meaning": "貢献する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1124",
+    "word": "convince",
+    "meaning": "納得させる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1125",
+    "word": "declare",
+    "meaning": "宣言する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1126",
+    "word": "decline",
+    "meaning": "辞退する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1127",
+    "word": "define",
+    "meaning": "定義する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1128",
+    "word": "demand",
+    "meaning": "要求する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1129",
+    "word": "deny",
+    "meaning": "否定する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1130",
+    "word": "depart",
+    "meaning": "出発する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1131",
+    "word": "determine",
+    "meaning": "決定する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1132",
+    "word": "distinguish",
+    "meaning": "区別する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1133",
+    "word": "earn",
+    "meaning": "かせぐ",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1134",
+    "word": "educate",
+    "meaning": "教育する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1135",
+    "word": "emphasize",
+    "meaning": "強調する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1136",
+    "word": "encourage",
+    "meaning": "はげます",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1137",
+    "word": "establish",
+    "meaning": "設立する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1138",
+    "word": "estimate",
+    "meaning": "見積もる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1139",
+    "word": "examine",
+    "meaning": "調べる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1140",
+    "word": "exist",
+    "meaning": "存在する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1141",
+    "word": "expand",
+    "meaning": "拡大する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1142",
+    "word": "explore",
+    "meaning": "探検する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1143",
+    "word": "export",
+    "meaning": "輸出する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1144",
+    "word": "extend",
+    "meaning": "のばす",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1145",
+    "word": "focus",
+    "meaning": "集中する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1146",
+    "word": "gain",
+    "meaning": "獲得する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1147",
+    "word": "generate",
+    "meaning": "生み出す",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1148",
+    "word": "hesitate",
+    "meaning": "ためらう",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1149",
+    "word": "identify",
+    "meaning": "特定する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1150",
+    "word": "ignore",
+    "meaning": "無視する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1151",
+    "word": "import",
+    "meaning": "輸入する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1152",
+    "word": "indicate",
+    "meaning": "指し示す",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1153",
+    "word": "insist",
+    "meaning": "言いはる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1154",
+    "word": "inspire",
+    "meaning": "奮い立たせる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1155",
+    "word": "install",
+    "meaning": "設置する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1156",
+    "word": "interpret",
+    "meaning": "解釈する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1157",
+    "word": "investigate",
+    "meaning": "捜査する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1158",
+    "word": "involve",
+    "meaning": "巻きこむ",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1159",
+    "word": "maintain",
+    "meaning": "維持する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1160",
+    "word": "measure",
+    "meaning": "測定する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1161",
+    "word": "obtain",
+    "meaning": "入手する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1162",
+    "word": "occupy",
+    "meaning": "占める",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1163",
+    "word": "occur",
+    "meaning": "生じる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1164",
+    "word": "operate",
+    "meaning": "操作する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1165",
+    "word": "participate",
+    "meaning": "参加する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1166",
+    "word": "perceive",
+    "meaning": "知覚する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1167",
+    "word": "persuade",
+    "meaning": "説得する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1168",
+    "word": "possess",
+    "meaning": "所有する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1169",
+    "word": "predict",
+    "meaning": "予測する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1170",
+    "word": "preserve",
+    "meaning": "保存する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1171",
+    "word": "promote",
+    "meaning": "促進する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1172",
+    "word": "propose",
+    "meaning": "申しこむ",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1173",
+    "word": "purchase",
+    "meaning": "購入する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1174",
+    "word": "pursue",
+    "meaning": "追求する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1175",
+    "word": "recover",
+    "meaning": "回復する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1176",
+    "word": "reflect",
+    "meaning": "反映する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1177",
+    "word": "regard",
+    "meaning": "みなす",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1178",
+    "word": "register",
+    "meaning": "登録する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1179",
+    "word": "regret",
+    "meaning": "後悔する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1180",
+    "word": "reject",
+    "meaning": "はねつける",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1181",
+    "word": "release",
+    "meaning": "解放する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1182",
+    "word": "remove",
+    "meaning": "取りのぞく",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1183",
+    "word": "represent",
+    "meaning": "代表する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1184",
+    "word": "require",
+    "meaning": "要する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1185",
+    "word": "respond",
+    "meaning": "応答する",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1186",
+    "word": "reveal",
+    "meaning": "明らかにする",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1187",
+    "word": "seek",
+    "meaning": "探し求める",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1188",
+    "word": "settle",
+    "meaning": "落ち着かせる",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1189",
+    "word": "transfer",
+    "meaning": "移す",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1190",
+    "word": "wonder",
+    "meaning": "不思議に思う",
+    "pos": "動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1191",
+    "word": "minority",
+    "meaning": "少数派",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1192",
+    "word": "movement",
+    "meaning": "動き",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1193",
+    "word": "necessity",
+    "meaning": "必要性",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1194",
+    "word": "object",
+    "meaning": "物体",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1195",
+    "word": "obstacle",
+    "meaning": "障害",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1196",
+    "word": "occasion",
+    "meaning": "場合",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1197",
+    "word": "operation",
+    "meaning": "運用",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1198",
+    "word": "opportunity",
+    "meaning": "好機",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1199",
+    "word": "origin",
+    "meaning": "起源",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1200",
+    "word": "outcome",
+    "meaning": "成果",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1201",
+    "word": "percentage",
+    "meaning": "割合",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1202",
+    "word": "performance",
+    "meaning": "演奏",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1203",
+    "word": "permission",
+    "meaning": "許可",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1204",
+    "word": "perspective",
+    "meaning": "観点",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1205",
+    "word": "phenomenon",
+    "meaning": "現象",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1206",
+    "word": "policy",
+    "meaning": "方針",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1207",
+    "word": "possibility",
+    "meaning": "可能性",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1208",
+    "word": "presence",
+    "meaning": "存在感",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1209",
+    "word": "pressure",
+    "meaning": "圧力",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1210",
+    "word": "principle",
+    "meaning": "原理",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1211",
+    "word": "process",
+    "meaning": "過程",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1212",
+    "word": "progress",
+    "meaning": "進歩",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1213",
+    "word": "proof",
+    "meaning": "証明",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1214",
+    "word": "proportion",
+    "meaning": "比率",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1215",
+    "word": "quality",
+    "meaning": "品質",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1216",
+    "word": "quantity",
+    "meaning": "分量",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1217",
+    "word": "range",
+    "meaning": "範囲",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1218",
+    "word": "reaction",
+    "meaning": "反応",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1219",
+    "word": "relationship",
+    "meaning": "関係",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1220",
+    "word": "responsibility",
+    "meaning": "責任",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1221",
+    "word": "role",
+    "meaning": "役割",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1222",
+    "word": "sample",
+    "meaning": "見本",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1223",
+    "word": "scene",
+    "meaning": "場面",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1224",
+    "word": "sense",
+    "meaning": "感覚",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1225",
+    "word": "series",
+    "meaning": "連続",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1226",
+    "word": "service",
+    "meaning": "奉仕",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1227",
+    "word": "shortage",
+    "meaning": "不足",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1228",
+    "word": "source",
+    "meaning": "源",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1229",
+    "word": "stage",
+    "meaning": "段階",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1230",
+    "word": "standard",
+    "meaning": "基準",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1231",
+    "word": "statement",
+    "meaning": "陳述",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1232",
+    "word": "strategy",
+    "meaning": "戦略",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1233",
+    "word": "structure",
+    "meaning": "構造",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1234",
+    "word": "substance",
+    "meaning": "物質",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1235",
+    "word": "surface",
+    "meaning": "表面",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1236",
+    "word": "survey",
+    "meaning": "調査",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1237",
+    "word": "symbol",
+    "meaning": "象徴",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1238",
+    "word": "task",
+    "meaning": "任務",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1239",
+    "word": "tendency",
+    "meaning": "傾向",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1240",
+    "word": "theory",
+    "meaning": "理論",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1241",
+    "word": "treatment",
+    "meaning": "治療",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1242",
+    "word": "value",
+    "meaning": "価値",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1243",
+    "word": "variety",
+    "meaning": "種類の豊富さ",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1244",
+    "word": "view",
+    "meaning": "眺め",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1245",
+    "word": "wealth",
+    "meaning": "富",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1246",
+    "word": "absolute",
+    "meaning": "絶対的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1247",
+    "word": "abstract",
+    "meaning": "抽象的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1248",
+    "word": "accurate",
+    "meaning": "正確な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1249",
+    "word": "active",
+    "meaning": "活動的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1250",
+    "word": "actual",
+    "meaning": "実際の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1251",
+    "word": "adequate",
+    "meaning": "十分な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1252",
+    "word": "aggressive",
+    "meaning": "攻撃的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1253",
+    "word": "alive",
+    "meaning": "生きている",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1254",
+    "word": "anxious",
+    "meaning": "不安な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1255",
+    "word": "appropriate",
+    "meaning": "適切な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1256",
+    "word": "aware",
+    "meaning": "気づいて",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1257",
+    "word": "basic",
+    "meaning": "基本の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1258",
+    "word": "capable",
+    "meaning": "能力がある",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1259",
+    "word": "careless",
+    "meaning": "不注意な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1260",
+    "word": "certain",
+    "meaning": "確かな",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1261",
+    "word": "civil",
+    "meaning": "市民の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1262",
+    "word": "complicated",
+    "meaning": "込み入った",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1263",
+    "word": "constant",
+    "meaning": "絶え間ない",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1264",
+    "word": "crucial",
+    "meaning": "決定的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1265",
+    "word": "cultural",
+    "meaning": "文化の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1266",
+    "word": "curious",
+    "meaning": "好奇心の強い",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1267",
+    "word": "dependent",
+    "meaning": "依存した",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1268",
+    "word": "desperate",
+    "meaning": "必死の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1269",
+    "word": "distant",
+    "meaning": "遠く離れた",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1270",
+    "word": "dramatic",
+    "meaning": "劇的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1271",
+    "word": "eager",
+    "meaning": "熱心な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1272",
+    "word": "efficient",
+    "meaning": "効率のよい",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1273",
+    "word": "elderly",
+    "meaning": "年配の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1274",
+    "word": "emotional",
+    "meaning": "感情的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1275",
+    "word": "equal",
+    "meaning": "等しい",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1276",
+    "word": "essential",
+    "meaning": "不可欠な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1277",
+    "word": "eventual",
+    "meaning": "最終的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1278",
+    "word": "excellent",
+    "meaning": "優秀な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1279",
+    "word": "extreme",
+    "meaning": "極端な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1280",
+    "word": "familiar",
+    "meaning": "よく知られた",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1281",
+    "word": "financial",
+    "meaning": "財政の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1282",
+    "word": "flexible",
+    "meaning": "柔軟な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1283",
+    "word": "formal",
+    "meaning": "正式な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1284",
+    "word": "frequent",
+    "meaning": "たびたびの",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1285",
+    "word": "guilty",
+    "meaning": "有罪の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1286",
+    "word": "ideal",
+    "meaning": "理想的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1287",
+    "word": "independent",
+    "meaning": "独立した",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1288",
+    "word": "individual",
+    "meaning": "個々の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1289",
+    "word": "industrial",
+    "meaning": "工業の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1290",
+    "word": "initial",
+    "meaning": "最初の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1291",
+    "word": "intelligent",
+    "meaning": "知能の高い",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1292",
+    "word": "intense",
+    "meaning": "激しい",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1293",
+    "word": "mutual",
+    "meaning": "相互の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1294",
+    "word": "obvious",
+    "meaning": "明白な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1295",
+    "word": "original",
+    "meaning": "独創的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1296",
+    "word": "particular",
+    "meaning": "特定の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1297",
+    "word": "permanent",
+    "meaning": "永続的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1298",
+    "word": "practical",
+    "meaning": "実用的な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1299",
+    "word": "previous",
+    "meaning": "以前の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1300",
+    "word": "primary",
+    "meaning": "第一の",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1301",
+    "word": "rapid",
+    "meaning": "急速な",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1302",
+    "word": "rare",
+    "meaning": "まれな",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1303",
+    "word": "reasonable",
+    "meaning": "筋の通った",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1304",
+    "word": "relevant",
+    "meaning": "関連のある",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1305",
+    "word": "reliable",
+    "meaning": "信頼できる",
+    "pos": "形容詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1306",
+    "word": "absolutely",
+    "meaning": "絶対に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1307",
+    "word": "accordingly",
+    "meaning": "それに応じて",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1308",
+    "word": "apparently",
+    "meaning": "見たところ",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1309",
+    "word": "approximately",
+    "meaning": "およそ",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1310",
+    "word": "briefly",
+    "meaning": "手短に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1311",
+    "word": "commonly",
+    "meaning": "一般に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1312",
+    "word": "consequently",
+    "meaning": "その結果",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1313",
+    "word": "constantly",
+    "meaning": "絶えず",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1314",
+    "word": "currently",
+    "meaning": "現在のところ",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1315",
+    "word": "effectively",
+    "meaning": "効果的に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1316",
+    "word": "entirely",
+    "meaning": "まったく",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1317",
+    "word": "equally",
+    "meaning": "同等に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1318",
+    "word": "eventually",
+    "meaning": "結局は",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1319",
+    "word": "extremely",
+    "meaning": "極度に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1320",
+    "word": "frequently",
+    "meaning": "ひんぱんに",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1321",
+    "word": "further",
+    "meaning": "さらに",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1322",
+    "word": "hence",
+    "meaning": "このゆえに",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1323",
+    "word": "increasingly",
+    "meaning": "ますます",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1324",
+    "word": "largely",
+    "meaning": "大幅に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1325",
+    "word": "likely",
+    "meaning": "たぶん",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1326",
+    "word": "moreover",
+    "meaning": "そのうえ",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1327",
+    "word": "necessarily",
+    "meaning": "必ずしも",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1328",
+    "word": "nevertheless",
+    "meaning": "それにもかかわらず",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1329",
+    "word": "obviously",
+    "meaning": "明白に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1330",
+    "word": "originally",
+    "meaning": "もともとは",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1331",
+    "word": "partly",
+    "meaning": "部分的に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1332",
+    "word": "previously",
+    "meaning": "以前に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1333",
+    "word": "primarily",
+    "meaning": "何よりもまず",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1334",
+    "word": "rapidly",
+    "meaning": "急速に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1335",
+    "word": "relatively",
+    "meaning": "比較的",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1336",
+    "word": "significantly",
+    "meaning": "著しく",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1337",
+    "word": "similarly",
+    "meaning": "同様に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1338",
+    "word": "strongly",
+    "meaning": "強く",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1339",
+    "word": "typically",
+    "meaning": "典型的に",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1340",
+    "word": "virtually",
+    "meaning": "事実上",
+    "pos": "副詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1341",
+    "word": "beyond",
+    "meaning": "〜の向こうに",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1342",
+    "word": "despite",
+    "meaning": "〜にもかかわらず",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1343",
+    "word": "except",
+    "meaning": "〜を除いて",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1344",
+    "word": "throughout",
+    "meaning": "〜の至るところに",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1345",
+    "word": "upon",
+    "meaning": "〜の上へ",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1346",
+    "word": "via",
+    "meaning": "〜を経由して",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1347",
+    "word": "regarding",
+    "meaning": "〜に関して",
+    "pos": "前置詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1348",
+    "word": "whereas",
+    "meaning": "〜であるのに対し",
+    "pos": "接続詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1349",
+    "word": "whenever",
+    "meaning": "〜するときはいつでも",
+    "pos": "接続詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1350",
+    "word": "wherever",
+    "meaning": "〜するところはどこでも",
+    "pos": "接続詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1351",
+    "word": "advantage",
+    "meaning": "利点",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1352",
+    "word": "agreement",
+    "meaning": "合意",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1353",
+    "word": "aim",
+    "meaning": "ねらい",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1354",
+    "word": "analysis",
+    "meaning": "分析",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1355",
+    "word": "appearance",
+    "meaning": "外見",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1356",
+    "word": "application",
+    "meaning": "申しこみ",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1357",
+    "word": "argument",
+    "meaning": "論争",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1358",
+    "word": "aspect",
+    "meaning": "側面",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1359",
+    "word": "attention",
+    "meaning": "注意",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1360",
+    "word": "attitude",
+    "meaning": "態度",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1361",
+    "word": "audience",
+    "meaning": "聴衆",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1362",
+    "word": "author",
+    "meaning": "著者",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1363",
+    "word": "balance",
+    "meaning": "つりあい",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1364",
+    "word": "basis",
+    "meaning": "基礎",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1365",
+    "word": "behavior",
+    "meaning": "ふるまい",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1366",
+    "word": "belief",
+    "meaning": "信念",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1367",
+    "word": "benefit",
+    "meaning": "恩恵",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1368",
+    "word": "capacity",
+    "meaning": "収容力",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1369",
+    "word": "category",
+    "meaning": "分類",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1370",
+    "word": "character",
+    "meaning": "性格",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1371",
+    "word": "circumstance",
+    "meaning": "事情",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1372",
+    "word": "competition",
+    "meaning": "競争",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1373",
+    "word": "concept",
+    "meaning": "概念",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1374",
+    "word": "conclusion",
+    "meaning": "結論",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1375",
+    "word": "confidence",
+    "meaning": "自信",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1376",
+    "word": "conflict",
+    "meaning": "対立",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1377",
+    "word": "connection",
+    "meaning": "つながり",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1378",
+    "word": "consequence",
+    "meaning": "結末",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1379",
+    "word": "contrast",
+    "meaning": "対照",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1380",
+    "word": "conversation",
+    "meaning": "会話",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1381",
+    "word": "crisis",
+    "meaning": "危機",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1382",
+    "word": "decision",
+    "meaning": "決断",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1383",
+    "word": "detail",
+    "meaning": "細部",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1384",
+    "word": "development",
+    "meaning": "発展",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1385",
+    "word": "difference",
+    "meaning": "ちがい",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1386",
+    "word": "difficulty",
+    "meaning": "困難",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1387",
+    "word": "discovery",
+    "meaning": "発見",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1388",
+    "word": "discussion",
+    "meaning": "討論",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1389",
+    "word": "effect",
+    "meaning": "効果",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1390",
+    "word": "element",
+    "meaning": "要素",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1391",
+    "word": "emotion",
+    "meaning": "感情",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1392",
+    "word": "equipment",
+    "meaning": "設備",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1393",
+    "word": "evidence",
+    "meaning": "証拠",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1394",
+    "word": "expectation",
+    "meaning": "期待",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1395",
+    "word": "experience",
+    "meaning": "経験",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1396",
+    "word": "experiment",
+    "meaning": "実験",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1397",
+    "word": "expression",
+    "meaning": "表現",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1398",
+    "word": "factor",
+    "meaning": "要因",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1399",
+    "word": "feature",
+    "meaning": "特徴",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1400",
+    "word": "function",
+    "meaning": "機能",
+    "pos": "名詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1401",
+    "word": "abandon",
+    "meaning": "見捨てる",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1402",
+    "word": "accompany",
+    "meaning": "同行する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1403",
+    "word": "accumulate",
+    "meaning": "蓄積する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1404",
+    "word": "anticipate",
+    "meaning": "前もって見込む",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1405",
+    "word": "assert",
+    "meaning": "主張する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1406",
+    "word": "cease",
+    "meaning": "やむ",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1407",
+    "word": "compensate",
+    "meaning": "償う",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1408",
+    "word": "comprehend",
+    "meaning": "把握する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1409",
+    "word": "condemn",
+    "meaning": "非難する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1410",
+    "word": "deceive",
+    "meaning": "だます",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1411",
+    "word": "dedicate",
+    "meaning": "ささげる",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1412",
+    "word": "diminish",
+    "meaning": "減少させる",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1413",
+    "word": "eliminate",
+    "meaning": "除去する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1414",
+    "word": "enhance",
+    "meaning": "高める",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1415",
+    "word": "exaggerate",
+    "meaning": "誇張する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1416",
+    "word": "facilitate",
+    "meaning": "容易にする",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1417",
+    "word": "illustrate",
+    "meaning": "例示する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1418",
+    "word": "manipulate",
+    "meaning": "巧みに操る",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1419",
+    "word": "resolve",
+    "meaning": "決意する",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1420",
+    "word": "restore",
+    "meaning": "元に戻す",
+    "pos": "動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1421",
+    "word": "accomplishment",
+    "meaning": "業績",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1422",
+    "word": "ambition",
+    "meaning": "野心",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1423",
+    "word": "anxiety",
+    "meaning": "不安",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1424",
+    "word": "architecture",
+    "meaning": "建築",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1425",
+    "word": "assumption",
+    "meaning": "仮定",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1426",
+    "word": "authority",
+    "meaning": "権威",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1427",
+    "word": "bias",
+    "meaning": "偏見",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1428",
+    "word": "burden",
+    "meaning": "重荷",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1429",
+    "word": "capability",
+    "meaning": "素質",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1430",
+    "word": "commitment",
+    "meaning": "献身",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1431",
+    "word": "compromise",
+    "meaning": "妥協",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1432",
+    "word": "consensus",
+    "meaning": "総意",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1433",
+    "word": "controversy",
+    "meaning": "論議",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1434",
+    "word": "criterion",
+    "meaning": "判断基準",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1435",
+    "word": "dilemma",
+    "meaning": "板ばさみ",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1436",
+    "word": "discipline",
+    "meaning": "規律",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1437",
+    "word": "distinction",
+    "meaning": "区別",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1438",
+    "word": "diversity",
+    "meaning": "多様性",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1439",
+    "word": "dominance",
+    "meaning": "優位",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1440",
+    "word": "enterprise",
+    "meaning": "企業",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1441",
+    "word": "enthusiasm",
+    "meaning": "熱意",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1442",
+    "word": "equality",
+    "meaning": "平等",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1443",
+    "word": "ethics",
+    "meaning": "倫理",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1444",
+    "word": "framework",
+    "meaning": "枠組み",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1445",
+    "word": "heritage",
+    "meaning": "遺産",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1446",
+    "word": "hypothesis",
+    "meaning": "仮説",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1447",
+    "word": "ideology",
+    "meaning": "思想体系",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1448",
+    "word": "incentive",
+    "meaning": "動機づけ",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1449",
+    "word": "infrastructure",
+    "meaning": "社会基盤",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1450",
+    "word": "initiative",
+    "meaning": "主導権",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1451",
+    "word": "innovation",
+    "meaning": "革新",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1452",
+    "word": "insight",
+    "meaning": "洞察",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1453",
+    "word": "integrity",
+    "meaning": "誠実さ",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1454",
+    "word": "intuition",
+    "meaning": "直感",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1455",
+    "word": "legacy",
+    "meaning": "遺産相続物",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1456",
+    "word": "mechanism",
+    "meaning": "仕組みの装置",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1457",
+    "word": "norm",
+    "meaning": "規範",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1458",
+    "word": "obligation",
+    "meaning": "義務感",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1459",
+    "word": "paradox",
+    "meaning": "逆説",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1460",
+    "word": "perception",
+    "meaning": "認識",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1461",
+    "word": "prejudice",
+    "meaning": "先入観",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1462",
+    "word": "prosperity",
+    "meaning": "繁栄",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1463",
+    "word": "reputation",
+    "meaning": "評判",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1464",
+    "word": "sacrifice",
+    "meaning": "犠牲",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1465",
+    "word": "sustainability",
+    "meaning": "持続可能性",
+    "pos": "名詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1466",
+    "word": "ambiguous",
+    "meaning": "あいまいな",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1467",
+    "word": "apparent",
+    "meaning": "一見して明らかな",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1468",
+    "word": "arbitrary",
+    "meaning": "恣意的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1469",
+    "word": "coherent",
+    "meaning": "首尾一貫した",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1470",
+    "word": "comprehensive",
+    "meaning": "包括的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1471",
+    "word": "conservative",
+    "meaning": "保守的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1472",
+    "word": "controversial",
+    "meaning": "議論を呼ぶ",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1473",
+    "word": "diverse",
+    "meaning": "多様な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1474",
+    "word": "ethical",
+    "meaning": "倫理的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1475",
+    "word": "explicit",
+    "meaning": "明示的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1476",
+    "word": "fundamental",
+    "meaning": "根本的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1477",
+    "word": "implicit",
+    "meaning": "暗黙の",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1478",
+    "word": "inevitable",
+    "meaning": "避けられない",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1479",
+    "word": "innovative",
+    "meaning": "革新的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1480",
+    "word": "legitimate",
+    "meaning": "正当な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1481",
+    "word": "profound",
+    "meaning": "深遠な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1482",
+    "word": "radical",
+    "meaning": "急進的な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1483",
+    "word": "subtle",
+    "meaning": "微妙な",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1484",
+    "word": "sufficient",
+    "meaning": "足りている",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1485",
+    "word": "vulnerable",
+    "meaning": "傷つきやすい",
+    "pos": "形容詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1486",
+    "word": "alternatively",
+    "meaning": "あるいは",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1487",
+    "word": "arguably",
+    "meaning": "おそらくは",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1488",
+    "word": "collectively",
+    "meaning": "集合的に",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1489",
+    "word": "consistently",
+    "meaning": "一貫して",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1490",
+    "word": "deliberately",
+    "meaning": "故意に",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1491",
+    "word": "essentially",
+    "meaning": "本質的に",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1492",
+    "word": "explicitly",
+    "meaning": "明確に",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1493",
+    "word": "inherently",
+    "meaning": "本質的に見て",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1494",
+    "word": "initially",
+    "meaning": "当初は",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1495",
+    "word": "literally",
+    "meaning": "文字どおり",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1496",
+    "word": "notably",
+    "meaning": "特に目立って",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1497",
+    "word": "precisely",
+    "meaning": "まさしく",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1498",
+    "word": "presumably",
+    "meaning": "おそらくだが",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1499",
+    "word": "subsequently",
+    "meaning": "その後",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1500",
+    "word": "ultimately",
+    "meaning": "究極的には",
+    "pos": "副詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1501",
+    "word": "can",
+    "meaning": "〜できる",
+    "pos": "助動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_1502",
+    "word": "will",
+    "meaning": "〜するつもりだ",
+    "pos": "助動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_1503",
+    "word": "must",
+    "meaning": "〜しなければならない",
+    "pos": "助動詞",
+    "difficulty": 2
+  },
+  {
+    "id": "jh_1504",
+    "word": "should",
+    "meaning": "〜すべきだ",
+    "pos": "助動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1505",
+    "word": "could",
+    "meaning": "〜できた",
+    "pos": "助動詞",
+    "difficulty": 3
+  },
+  {
+    "id": "jh_1506",
+    "word": "would",
+    "meaning": "〜するだろう",
+    "pos": "助動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1507",
+    "word": "might",
+    "meaning": "ひょっとすると〜かもしれない",
+    "pos": "助動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1508",
+    "word": "shall",
+    "meaning": "〜しましょうか",
+    "pos": "助動詞",
+    "difficulty": 4
+  },
+  {
+    "id": "jh_1509",
+    "word": "ought",
+    "meaning": "当然〜すべきだ",
+    "pos": "助動詞",
+    "difficulty": 5
+  },
+  {
+    "id": "jh_1510",
+    "word": "used",
+    "meaning": "以前は〜したものだ",
+    "pos": "助動詞",
+    "difficulty": 5
   }
 ]

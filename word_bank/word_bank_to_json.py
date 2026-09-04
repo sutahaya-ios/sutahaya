@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""4つの単語入力xlsxから単語JSONを生成する。
+"""3つの単語入力xlsxから単語JSONを生成する。
 
     python3 word_bank/word_bank_to_json.py            # 検証だけして差分を表示
     python3 word_bank/word_bank_to_json.py --write    # JSONへ書き込む
@@ -21,8 +21,7 @@ WORD_BANK_DIR = Path(__file__).resolve().parent
 ROOT = WORD_BANK_DIR.parent
 DEFAULT_WORKBOOKS = {
     "junior_high": WORD_BANK_DIR / "junior_high_school.xlsx",
-    "takeru": WORD_BANK_DIR / "word_bank_takeru.xlsx",
-    "tokiya": WORD_BANK_DIR / "word_bank_tokiya.xlsx",
+    "high_school": WORD_BANK_DIR / "word_bank_high_school.xlsx",
     "toeic": WORD_BANK_DIR / "word_bank_toeic.xlsx",
 }
 RESOURCES = ROOT / "HayaosiApp" / "Resources"
@@ -41,22 +40,26 @@ CATEGORY_CONFIGS = (
     {
         "name": "高校英単語",
         "filename": "high_school.json",
-        "prefix": "hs_",
         "sources": (
             {
-                "workbook": "takeru",
+                "workbook": "high_school",
                 "sheet": "ターゲット1200",
                 "difficulties": frozenset({1, 2}),
+                "prefix": "hs1_",
             },
             {
-                "workbook": "takeru",
+                "workbook": "high_school",
                 "sheet": "ターゲット1400",
                 "difficulties": frozenset({3}),
+                "prefix": "hs2_",
+                "skip_duplicate_words": True,
             },
             {
-                "workbook": "tokiya",
+                "workbook": "high_school",
                 "sheet": "ターゲット1900",
                 "difficulties": frozenset({4, 5}),
+                "prefix": "hs3_",
+                "skip_duplicate_words": True,
             },
         ),
     },
@@ -67,7 +70,7 @@ CATEGORY_CONFIGS = (
             {
                 "workbook": "toeic",
                 "sheet": "銀のフレーズ",
-                "difficulties": frozenset({1, 2}),
+                "difficulties": frozenset({1, 2, 3}),
                 "prefix": "tc1_",
             },
             {
@@ -75,6 +78,7 @@ CATEGORY_CONFIGS = (
                 "sheet": "金のフレーズ",
                 "difficulties": frozenset({3, 4, 5}),
                 "prefix": "tc2_",
+                "skip_duplicate_words": True,
             },
         ),
     },
@@ -123,6 +127,31 @@ def read_sheet(
 
 def row_location(entry):
     return f"{entry['workbook']} / {entry['sheet']} {entry['row']}行目"
+
+
+def normalized_word(word):
+    """重複判定用に、単語の大文字小文字と前後空白を揃える。"""
+    if not isinstance(word, str):
+        return None
+    normalized = word.strip().lower()
+    return normalized or None
+
+
+def skip_duplicate_words(rows, seen_word_keys):
+    """カテゴリ内ですでに出た単語の行を除外する。"""
+    accepted_rows = []
+    skipped_words = []
+    for entry in rows:
+        word_key = normalized_word(entry["word"])
+        if word_key is not None and word_key in seen_word_keys:
+            skipped_words.append(entry["word"])
+            continue
+
+        accepted_rows.append(entry)
+        if word_key is not None:
+            seen_word_keys.add(word_key)
+
+    return accepted_rows, skipped_words
 
 
 def validate(rows):
@@ -261,7 +290,7 @@ def load_workbooks(paths):
     if missing:
         lines = ["必要な単語ファイルが見つかりません:"]
         lines.extend(f"  - {path}" for path in missing)
-        lines.append("4ファイルを同じフォルダへ揃えてから再実行してください。")
+        lines.append("3ファイルを同じフォルダへ揃えてから再実行してください。")
         sys.exit("\n".join(lines))
 
     return {
@@ -271,23 +300,21 @@ def load_workbooks(paths):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="4つの単語入力xlsxを単語JSONへ変換する")
+    parser = argparse.ArgumentParser(description="3つの単語入力xlsxを単語JSONへ変換する")
     parser.add_argument("--write", action="store_true", help="JSONへ書き込む(既定は確認のみ)")
     parser.add_argument("--junior-high-workbook", type=Path,
                         default=DEFAULT_WORKBOOKS["junior_high"],
                         help="中学英単語用xlsx")
-    parser.add_argument("--takeru-workbook", type=Path, default=DEFAULT_WORKBOOKS["takeru"],
-                        help="ターゲット1200・1400用xlsx")
-    parser.add_argument("--tokiya-workbook", type=Path, default=DEFAULT_WORKBOOKS["tokiya"],
-                        help="ターゲット1900用xlsx")
+    parser.add_argument("--high-school-workbook", type=Path,
+                        default=DEFAULT_WORKBOOKS["high_school"],
+                        help="ターゲット1200・1400・1900用xlsx")
     parser.add_argument("--toeic-workbook", type=Path, default=DEFAULT_WORKBOOKS["toeic"],
                         help="銀のフレーズ・金のフレーズ用xlsx")
     args = parser.parse_args()
 
     workbook_paths = {
         "junior_high": args.junior_high_workbook,
-        "takeru": args.takeru_workbook,
-        "tokiya": args.tokiya_workbook,
+        "high_school": args.high_school_workbook,
         "toeic": args.toeic_workbook,
     }
     workbooks = load_workbooks(workbook_paths)
@@ -295,9 +322,11 @@ def main():
     problems = []
     results = []
     all_rows = []
+    skipped_word_reports = []
     missing_sheet_found = False
     for config in CATEGORY_CONFIGS:
         rows = []
+        seen_word_keys = set()
         missing_sheet = False
         for source in config["sources"]:
             workbook_key = source["workbook"]
@@ -313,12 +342,25 @@ def main():
                 missing_sheet = True
                 missing_sheet_found = True
                 continue
-            rows.extend(read_sheet(
+            source_rows = read_sheet(
                 workbook[sheet_name],
                 workbook_path,
                 allowed_difficulties,
                 id_prefix,
-            ))
+            )
+            if source.get("skip_duplicate_words", False):
+                source_rows, skipped_words = skip_duplicate_words(
+                    source_rows,
+                    seen_word_keys,
+                )
+                skipped_word_reports.append((config["name"], sheet_name, skipped_words))
+            else:
+                seen_word_keys.update(
+                    word_key
+                    for entry in source_rows
+                    if (word_key := normalized_word(entry["word"])) is not None
+                )
+            rows.extend(source_rows)
 
         if missing_sheet:
             continue
@@ -330,6 +372,11 @@ def main():
 
     if not missing_sheet_found:
         problems.extend(validate_minimum_distractor_group_counts(all_rows))
+
+    for category_name, sheet_name, skipped_words in skipped_word_reports:
+        print(f"{category_name} / {sheet_name}: {len(skipped_words)}語を読み飛ばし")
+        for word in skipped_words:
+            print(f"    - {word}")
 
     if problems:
         print(f"入力を直してから実行する({len(problems)}件):\n", file=sys.stderr)
