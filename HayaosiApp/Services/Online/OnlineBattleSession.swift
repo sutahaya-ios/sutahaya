@@ -3,17 +3,68 @@ import Observation
 import SwiftData
 import FirebaseDatabase
 
+enum RTDBJoinRetryPolicy {
+    static let acceptOperationBudget: Duration = .seconds(6)
+    static let connectionWait: Duration = .seconds(3)
+    static let offlineReadRetryDelay: Duration = .milliseconds(250)
+    static let transientJoinRetryDelay: Duration = .milliseconds(250)
+    static let maxOfflineReadRetries = 1
+    static let maxTransientJoinRetries = 12
+
+    /// Firebase DatabaseのgetData()が、接続前かつcacheなしの場合だけ返す一時エラー。
+    static func isTransientOffline(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain == "com.firebase.core"
+            && error.code == 1
+            && error.localizedDescription.contains(
+                "client offline with no active listeners and no matching disk cache entries"
+            )
+    }
+
+    /// waitingのroom取得直後、ホストの一時切断によるclosed→復元と競合したjoinだけを再試行する。
+    static func isPermissionDenied(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain == "com.firebase"
+            && error.code == 1
+    }
+}
+
+enum HostDisconnectAction: Equatable {
+    case apply
+    case delayClosure
+    case restore(RoomState.Status)
+}
+
+enum HostDisconnectPolicy {
+    static func action(
+        incomingStatus: RoomState.Status,
+        isHost: Bool,
+        hasLeft: Bool,
+        lastActiveStatus: RoomState.Status?
+    ) -> HostDisconnectAction {
+        guard incomingStatus == .closed, !hasLeft else { return .apply }
+        if isHost, let lastActiveStatus, lastActiveStatus != .closed {
+            return .restore(lastActiveStatus)
+        }
+        return .delayClosure
+    }
+}
+
 /// 通信対戦セッション(要件 §5.1)
 /// ルームの作成・入室・観測と、プレイヤー操作(早押し・回答)を担当する。
 /// 進行の権威はホスト端末(OnlineBattleSession+Host.swift)が持つ。
 @MainActor
 @Observable
 final class OnlineBattleSession: BattleSession {
+    private static let hostDisconnectGraceNanoseconds: UInt64 = 3_000_000_000
+
     enum SessionError: LocalizedError {
         case databaseUnavailable
         case roomNotFound
         case roomFull
         case alreadyStarted
+        case roomInstanceChanged
+        case databaseConnectionTimedOut
         case codeGenerationFailed
 
         var errorDescription: String? {
@@ -26,6 +77,10 @@ final class OnlineBattleSession: BattleSession {
                 return "このルームは満員です(最大\(BattleRules.maxPlayers)人)"
             case .alreadyStarted:
                 return "このルームは対戦中のため入室できません"
+            case .roomInstanceChanged:
+                return "招待されたルームは終了しています"
+            case .databaseConnectionTimedOut:
+                return "通信の準備に時間がかかっています。もう一度お試しください"
             case .codeGenerationFailed:
                 return "ルームコードの発行に失敗しました。もう一度お試しください"
             }
@@ -52,6 +107,11 @@ final class OnlineBattleSession: BattleSession {
     private var serverTimeOffsetObserverHandle: DatabaseHandle?
     private var hasSavedResults = false
     private var hasLeft = false
+    private var lastActiveStatus: RoomState.Status?
+    private var pendingClosureTask: Task<Void, Never>?
+    private var hostRecoveryTask: Task<Void, Never>?
+    private var joinedPlayerSlot: Int?
+    private(set) var didCreatePlayerDuringLatestJoin = false
 
     /// `.info/serverTimeOffset`で補正したFirebaseサーバー時刻 - 端末時刻(ms)。
     private(set) var battleClockOffsetMS: Double = 0
@@ -67,6 +127,8 @@ final class OnlineBattleSession: BattleSession {
     var questionBaseScores: (index: Int, scores: [String: Int])?
     /// ホストの採点・問題送りをFirebaseへ書く順番。前問の遅延書き込みが次問へ追い越さないよう直列化する
     var hostWriteTask: Task<Void, Never>?
+    /// 回答受付のtransaction終了から最終結果の確定書き込みまでを直列に行う
+    var questionFinalizationTask: Task<Void, Never>?
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
 
@@ -83,23 +145,34 @@ final class OnlineBattleSession: BattleSession {
     // MARK: - ルーム作成・入室・退出
 
     func createRoom(settings: RoomState.Settings) async throws {
+        let roomInstanceID = UUID().uuidString.lowercased()
         for _ in 0..<BattleRules.createAttempts {
             let code = String(format: "%0\(BattleRules.codeDigits)d", Int.random(in: 0...9999))
             let snapshot = try await roomsRef.child(code).getData()
             if snapshot.exists() { continue }
 
             let value: [String: Any] = [
+                "roomInstanceID": roomInstanceID,
                 "hostID": myID,
                 "status": RoomState.Status.waiting.rawValue,
                 "createdAt": ServerValue.timestamp(),
                 "settings": settings.databaseValue,
+                "playerSlots": ["0": myID],
                 "players": [
-                    myID: ["nickname": nickname, "score": 0, "joinedAt": ServerValue.timestamp()]
+                    myID: [
+                        "nickname": nickname,
+                        "score": 0,
+                        "joinedAt": ServerValue.timestamp(),
+                        "roomInstanceID": roomInstanceID,
+                        "slot": 0
+                    ]
                 ]
             ]
             try await roomsRef.child(code).setValue(value)
             roomCode = code
             isHost = true
+            joinedPlayerSlot = 0
+            lastActiveStatus = .waiting
             // ホストが切断したらルームを解散扱いにする
             try await roomsRef.child(code).child("status")
                 .onDisconnectSetValue(RoomState.Status.closed.rawValue)
@@ -109,26 +182,219 @@ final class OnlineBattleSession: BattleSession {
         throw SessionError.codeGenerationFailed
     }
 
-    func joinRoom(code: String) async throws {
+    func joinRoom(
+        code: String,
+        expectedRoomInstanceID: String? = nil,
+        operationDeadline: ContinuousClock.Instant? = nil
+    ) async throws {
         let normalized = code.trimmingCharacters(in: .whitespacesAndNewlines)
-        let snapshot = try await roomsRef.child(normalized).getData()
-        guard snapshot.exists(),
-              let dict = snapshot.value as? [String: Any],
-              let current = RoomState(code: normalized, dict: dict) else {
-            throw SessionError.roomNotFound
-        }
-        guard current.status == .waiting else { throw SessionError.alreadyStarted }
-        guard current.players.count < BattleRules.maxPlayers else { throw SessionError.roomFull }
+        let targetRoomRef = roomsRef.child(normalized)
+        let deadline = operationDeadline
+            ?? ContinuousClock.now.advanced(by: RTDBJoinRetryPolicy.acceptOperationBudget)
+        var offlineReadRetriesRemaining = RTDBJoinRetryPolicy.maxOfflineReadRetries
+        didCreatePlayerDuringLatestJoin = false
 
-        roomCode = normalized
-        isHost = (current.hostID == myID)
-        let playerRef = roomRef.child("players/\(myID)")
-        try await playerRef.setValue([
-            "nickname": nickname,
-            "score": 0,
-            "joinedAt": ServerValue.timestamp()
-        ])
-        try await playerRef.onDisconnectRemoveValue()
+        try ensureJoinCanProceed(before: deadline)
+        try await waitForDatabaseConnection(before: deadline)
+
+        // slot競合時は最新roomを読み直し、別の空き枠で再試行する。
+        for _ in 0...BattleRules.maxPlayers {
+            let snapshot = try await getRoomSnapshot(
+                from: targetRoomRef,
+                before: deadline,
+                offlineReadRetriesRemaining: &offlineReadRetriesRemaining
+            )
+            guard snapshot.exists(),
+                  let value = snapshot.value as? [String: Any],
+                  let current = RoomState(code: normalized, dict: value) else {
+                throw SessionError.roomNotFound
+            }
+            try validateRoomIdentity(current, expectedRoomInstanceID: expectedRoomInstanceID)
+
+            if current.players.contains(where: { $0.id == myID }) {
+                let existingSlot = current.playerSlot(for: myID)
+                try await finishJoiningRoom(current, playerSlot: existingSlot)
+                return
+            }
+
+            guard current.status == .waiting else { throw SessionError.alreadyStarted }
+            guard let freeSlot = current.firstAvailablePlayerSlot else {
+                throw SessionError.roomFull
+            }
+            let instanceID = expectedRoomInstanceID ?? current.roomInstanceID
+            var playerValue: [String: Any] = [
+                "nickname": nickname,
+                "score": 0,
+                "joinedAt": ServerValue.timestamp(),
+                "slot": freeSlot
+            ]
+            if let instanceID {
+                playerValue["roomInstanceID"] = instanceID
+            }
+
+            do {
+                var transientJoinRetriesRemaining = RTDBJoinRetryPolicy.maxTransientJoinRetries
+                while true {
+                    try ensureJoinCanProceed(before: deadline)
+                    do {
+                        // 本番RTDB Rulesでは別枝を相互参照するatomic createが循環拒否になる。
+                        // 先にslotを予約し、その予約を根拠にplayerを作成する。
+                        let slotRef = targetRoomRef.child("playerSlots/\(freeSlot)")
+                        try await slotRef.setValue(myID)
+                        do {
+                            try await targetRoomRef.child("players/\(myID)").setValue(playerValue)
+                        } catch {
+                            _ = try? await slotRef.removeValue()
+                            throw error
+                        }
+                        break
+                    } catch {
+                        guard transientJoinRetriesRemaining > 0,
+                              RTDBJoinRetryPolicy.isPermissionDenied(error) else {
+                            throw error
+                        }
+                        transientJoinRetriesRemaining -= 1
+                        try await Task.sleep(for: RTDBJoinRetryPolicy.transientJoinRetryDelay)
+                    }
+                }
+                didCreatePlayerDuringLatestJoin = true
+                try await finishJoiningRoom(current, playerSlot: freeSlot)
+                if ContinuousClock.now >= deadline {
+                    // claim lease後まで遅延した参加を残さない。書き込み順にjoinの後でcleanupされる。
+                    leave()
+                    throw SessionError.databaseConnectionTimedOut
+                }
+                return
+            } catch {
+                if error is SessionError { throw error }
+                guard let latestSnapshot = try? await targetRoomRef.getData(),
+                      let latestValue = latestSnapshot.value as? [String: Any],
+                      let latest = RoomState(code: normalized, dict: latestValue) else {
+                    throw error
+                }
+                try validateRoomIdentity(latest, expectedRoomInstanceID: expectedRoomInstanceID)
+                if latest.players.contains(where: { $0.id == myID }) {
+                    continue
+                }
+                guard latest.status == .waiting else { throw SessionError.alreadyStarted }
+                guard latest.playerSlots.count < BattleRules.maxPlayers else {
+                    throw SessionError.roomFull
+                }
+                if latest.playerSlots[freeSlot] != nil {
+                    continue
+                }
+                throw error
+            }
+        }
+        throw SessionError.roomFull
+    }
+
+    private func ensureJoinCanProceed(before deadline: ContinuousClock.Instant) throws {
+        guard ContinuousClock.now < deadline else {
+            throw SessionError.databaseConnectionTimedOut
+        }
+    }
+
+    private func waitForDatabaseConnection(
+        before operationDeadline: ContinuousClock.Instant
+    ) async throws {
+        let now = ContinuousClock.now
+        guard now < operationDeadline else {
+            throw SessionError.databaseConnectionTimedOut
+        }
+        let connectionDeadline = min(
+            operationDeadline,
+            now.advanced(by: RTDBJoinRetryPolicy.connectionWait)
+        )
+        let waitDuration = now.duration(to: connectionDeadline)
+        let connectedRef = Database.database().reference(withPath: ".info/connected")
+
+        try await withCheckedThrowingContinuation { continuation in
+            var didFinish = false
+            var observerHandle: DatabaseHandle?
+            var timeoutTask: Task<Void, Never>?
+
+            let finish: (Result<Void, Error>) -> Void = { result in
+                guard !didFinish else { return }
+                didFinish = true
+                if let observerHandle {
+                    connectedRef.removeObserver(withHandle: observerHandle)
+                }
+                timeoutTask?.cancel()
+                continuation.resume(with: result)
+            }
+
+            observerHandle = connectedRef.observe(.value, with: { snapshot in
+                MainActor.assumeIsolated {
+                    guard (snapshot.value as? NSNumber)?.boolValue == true else { return }
+                    finish(.success(()))
+                }
+            }, withCancel: { error in
+                MainActor.assumeIsolated {
+                    finish(.failure(error))
+                }
+            })
+
+            if didFinish, let observerHandle {
+                connectedRef.removeObserver(withHandle: observerHandle)
+            } else {
+                timeoutTask = Task { @MainActor in
+                    try? await Task.sleep(for: waitDuration)
+                    guard !Task.isCancelled else { return }
+                    finish(.failure(SessionError.databaseConnectionTimedOut))
+                }
+            }
+        }
+    }
+
+    private func getRoomSnapshot(
+        from reference: DatabaseReference,
+        before deadline: ContinuousClock.Instant,
+        offlineReadRetriesRemaining: inout Int
+    ) async throws -> DataSnapshot {
+        while true {
+            try ensureJoinCanProceed(before: deadline)
+            do {
+                return try await reference.getData()
+            } catch {
+                guard offlineReadRetriesRemaining > 0,
+                      RTDBJoinRetryPolicy.isTransientOffline(error) else {
+                    throw error
+                }
+                offlineReadRetriesRemaining -= 1
+                try await waitForDatabaseConnection(before: deadline)
+                try await Task.sleep(for: RTDBJoinRetryPolicy.offlineReadRetryDelay)
+            }
+        }
+    }
+
+    private func validateRoomIdentity(
+        _ room: RoomState,
+        expectedRoomInstanceID: String?
+    ) throws {
+        guard room.status != .closed else { throw SessionError.roomNotFound }
+        if let expectedRoomInstanceID,
+           room.roomInstanceID != expectedRoomInstanceID {
+            throw SessionError.roomInstanceChanged
+        }
+    }
+
+    private func finishJoiningRoom(_ room: RoomState, playerSlot: Int?) async throws {
+        roomCode = room.code
+        isHost = room.hostID == myID
+        joinedPlayerSlot = playerSlot
+        lastActiveStatus = room.status
+        if isHost {
+            try await roomRef.child("status").onDisconnectSetValue(RoomState.Status.closed.rawValue)
+        } else if let playerSlot {
+            try await roomRef.onDisconnectUpdateChildValues([
+                "playerSlots/\(playerSlot)": NSNull(),
+                "players/\(myID)": NSNull()
+            ])
+        } else {
+            // 導入前の旧ルームへ再接続する場合だけ、旧schemaのcleanupを維持する。
+            try await roomRef.child("players/\(myID)").onDisconnectRemoveValue()
+        }
         startObserving()
     }
 
@@ -141,6 +407,11 @@ final class OnlineBattleSession: BattleSession {
         guard !roomCode.isEmpty else { return }
         if isHost {
             roomRef.child("status").setValue(RoomState.Status.closed.rawValue)
+        } else if let joinedPlayerSlot {
+            roomRef.updateChildValues([
+                "playerSlots/\(joinedPlayerSlot)": NSNull(),
+                "players/\(myID)": NSNull()
+            ])
         } else {
             roomRef.child("players/\(myID)").removeValue()
         }
@@ -206,14 +477,16 @@ final class OnlineBattleSession: BattleSession {
         submitAnswer(choice, visibleCount: visibleCount) { _ in }
     }
 
-    /// Firebaseへの保存完了まで通知し、競合やフェーズ切替で拒否された場合は画面の回答ロックを戻す。
+    /// Firebaseのサーバー時刻まで確定した回答が受付時間内ならtrueを返す。
+    /// 保存成功だけをacceptedと扱わず、締切後に確定した回答はfalseにする。
     func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
-        guard let game = currentGame, game.phase == .question else {
+        guard let state, state.status == .playing,
+              let game = state.game, game.phase == .question else {
             completion(false)
             return
         }
         let nowMS = battleTimeMS(at: .now)
-        let deadlineMS = game.effectiveStartedAtMS + (state?.settings.timeLimit ?? 0) * 1_000
+        let deadlineMS = game.effectiveStartedAtMS + state.settings.timeLimit * 1_000
         guard nowMS >= game.effectiveStartedAtMS, nowMS <= deadlineMS else {
             completion(false)
             return
@@ -224,19 +497,34 @@ final class OnlineBattleSession: BattleSession {
             return
         }
         let questionIndex = game.questionIndex
+        let timeLimit = state.settings.timeLimit
+        let participantIDs = state.players.map(\.id)
         Task { [weak self] in
             guard let self else {
                 completion(false)
                 return
             }
             do {
-                try await roomRef.child("game/answers/\(myID)").setValue([
+                let answerRef = roomRef.child("game/answers/\(myID)")
+                try await answerRef.setValue([
                     "questionIndex": questionIndex,
                     "choice": choice,
                     "ts": ServerValue.timestamp(),
                     "visibleCount": visibleCount
                 ])
-                completion(true)
+                let gameSnapshot = try await roomRef.child("game").getData()
+                guard let gameValue = gameSnapshot.value as? [String: Any],
+                      let savedGame = RoomState.game(databaseValue: gameValue),
+                      savedGame.questionIndex == questionIndex else {
+                    completion(false)
+                    return
+                }
+                let accepted = BattleAnswerAcceptance.confirmedAnswers(
+                    in: savedGame,
+                    timeLimit: timeLimit,
+                    participantIDs: participantIDs
+                )
+                completion(accepted.contains { $0.uid == myID })
             } catch {
                 lastError = "回答を送信できませんでした"
                 print("回答の送信に失敗: \(error)")
@@ -248,9 +536,12 @@ final class OnlineBattleSession: BattleSession {
     // MARK: - 状態参照ヘルパー
     // currentQuestion / player(for:) / remainingTime(at:) は BattleSession の共通実装を使う
 
-    private var currentGame: RoomState.Game? {
-        guard let state, state.status == .playing else { return nil }
-        return state.game
+    func acceptedAnswers(state: RoomState, game: RoomState.Game) -> [RoomState.Answer] {
+        BattleAnswerAcceptance.acceptedAnswers(
+            in: game,
+            timeLimit: state.settings.timeLimit,
+            participantIDs: state.players.map(\.id)
+        )
     }
 
     // MARK: - 観測
@@ -273,6 +564,10 @@ final class OnlineBattleSession: BattleSession {
             serverTimeOffsetRef.removeObserver(withHandle: serverTimeOffsetObserverHandle)
         }
         serverTimeOffsetObserverHandle = nil
+        pendingClosureTask?.cancel()
+        pendingClosureTask = nil
+        hostRecoveryTask?.cancel()
+        hostRecoveryTask = nil
     }
 
     private func startObservingServerTimeOffset() {
@@ -298,6 +593,28 @@ final class OnlineBattleSession: BattleSession {
             state = nil
             return
         }
+
+        switch HostDisconnectPolicy.action(
+            incomingStatus: newState.status,
+            isHost: isHost,
+            hasLeft: hasLeft,
+            lastActiveStatus: lastActiveStatus
+        ) {
+        case .apply:
+            apply(state: newState)
+        case .delayClosure:
+            scheduleClosureConfirmation(newState)
+        case .restore(let status):
+            recoverHostRoom(to: status)
+        }
+    }
+
+    private func apply(state newState: RoomState) {
+        if newState.status != .closed {
+            pendingClosureTask?.cancel()
+            pendingClosureTask = nil
+            lastActiveStatus = newState.status
+        }
         state = newState
         captureMyResults(from: newState)
         if isHost {
@@ -305,12 +622,50 @@ final class OnlineBattleSession: BattleSession {
         }
     }
 
+    /// `onDisconnect`は一時的な通信断でも実行されるため、参加者は短い猶予後も
+    /// `closed`のままの場合だけ、本当のホスト切断として画面へ反映する。
+    private func scheduleClosureConfirmation(_ closedState: RoomState) {
+        guard pendingClosureTask == nil else { return }
+        pendingClosureTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.hostDisconnectGraceNanoseconds)
+            guard !Task.isCancelled, let self, !self.hasLeft else { return }
+            self.pendingClosureTask = nil
+            self.apply(state: closedState)
+        }
+    }
+
+    /// ホストのセッションが生きているまま一時切断から復帰した場合は、
+    /// onDisconnectを再登録して直前のルーム状態へ戻す。明示退出時はhasLeftで除外する。
+    private func recoverHostRoom(to status: RoomState.Status) {
+        guard hostRecoveryTask == nil else { return }
+        hostRecoveryTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.hostRecoveryTask = nil }
+            do {
+                let statusRef = self.roomRef.child("status")
+                try await statusRef.onDisconnectSetValue(RoomState.Status.closed.rawValue)
+                guard !self.hasLeft else { return }
+                try await statusRef.setValue(status.rawValue)
+            } catch {
+                self.lastError = "ルームへの再接続に失敗しました"
+                print("ホストのルーム状態復元に失敗: \(error)")
+            }
+        }
+    }
+
     /// 自分が回答した問題の正誤を記録する
     private func captureMyResults(from state: RoomState) {
         guard let game = state.game,
+              game.phase != .question,
+              game.reveal != nil,
               state.questions.indices.contains(game.questionIndex) else { return }
         let questionID = state.questions[game.questionIndex].id
-        guard let answer = game.answers.first(where: { $0.uid == myID }) else { return }
+        guard let answer = BattleAnswerAcceptance.confirmedAnswers(
+            in: game,
+            timeLimit: state.settings.timeLimit,
+            participantIDs: state.players.map(\.id)
+        )
+            .first(where: { $0.uid == myID }) else { return }
         myResultsByQuestion[questionID] = answer.choice == state.questions[game.questionIndex].answer
     }
 

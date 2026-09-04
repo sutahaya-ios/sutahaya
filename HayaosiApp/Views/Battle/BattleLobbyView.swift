@@ -14,7 +14,8 @@ struct BattleLobbyView: View {
     let onLeave: () -> Void
 
     @Query private var allQuestions: [Question]
-    @State private var invitedFriendIDs: Set<String> = []
+    @State private var inviteSentAtByFriendID: [String: Date] = [:]
+    @State private var sendingInviteFriendIDs: Set<String> = []
 
     private var friendService: FriendService { .shared }
 
@@ -27,8 +28,10 @@ struct BattleLobbyView: View {
                     }
                     membersSection(state: state)
                     settingsCard(state: state)
-                    if session.isOnline && !friendService.friends.isEmpty {
-                        inviteCard(roomCode: state.code)
+                    if session.isOnline,
+                       state.roomInstanceID != nil,
+                       !friendService.friends.isEmpty {
+                        inviteCard(state: state)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -220,29 +223,52 @@ struct BattleLobbyView: View {
             .frame(height: 106)
     }
 
-    private func inviteCard(roomCode: String) -> some View {
+    private func inviteCard(state: RoomState) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("フレンドを招待")
                 .font(.headline)
-            ForEach(friendService.friends) { friend in
-                HStack {
-                    Text(friend.nickname)
-                    Spacer()
-                    if invitedFriendIDs.contains(friend.id) {
-                        Label("招待済み", systemImage: "checkmark")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    } else {
-                        Button("招待") {
-                            invite(friend, roomCode: roomCode)
+            TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(friendService.friends) { friend in
+                        HStack {
+                            Text(friend.nickname)
+                            Spacer()
+                            inviteControl(friend, state: state, now: timeline.date)
                         }
-                        .buttonStyle(.bordered)
                     }
                 }
             }
         }
         .padding(20)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    @ViewBuilder
+    private func inviteControl(_ friend: Friend, state: RoomState, now: Date) -> some View {
+        if state.players.contains(where: { $0.id == friend.id }) {
+            Label("参加中", systemImage: "person.fill.checkmark")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if sendingInviteFriendIDs.contains(friend.id) {
+            ProgressView()
+        } else if let sentAt = inviteSentAtByFriendID[friend.id] {
+            let remaining = sentAt.addingTimeInterval(RoomInvite.resendCooldown).timeIntervalSince(now)
+            if remaining > 0 {
+                Label("再招待まで\(Int(ceil(remaining)))秒", systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button("再招待") {
+                    invite(friend, state: state)
+                }
+                .buttonStyle(.bordered)
+            }
+        } else {
+            Button("招待") {
+                invite(friend, state: state)
+            }
+            .buttonStyle(.bordered)
+        }
     }
 
     @ViewBuilder
@@ -292,14 +318,27 @@ struct BattleLobbyView: View {
         return lines.joined(separator: Self.inviteLineSeparator)
     }
 
-    private func invite(_ friend: Friend, roomCode: String) {
-        invitedFriendIDs.insert(friend.id)
+    private func invite(_ friend: Friend, state: RoomState) {
+        guard let roomInstanceID = state.roomInstanceID,
+              sendingInviteFriendIDs.insert(friend.id).inserted else { return }
         Task {
+            defer { sendingInviteFriendIDs.remove(friend.id) }
             do {
-                try await friendService.sendInvite(to: friend.id, roomCode: roomCode)
+                let invite = try await friendService.sendInvite(
+                    to: friend.id,
+                    roomCode: state.code,
+                    roomInstanceID: roomInstanceID
+                )
+                inviteSentAtByFriendID[friend.id] = invite.sentAt
+            } catch let error as InviteLifecycleError {
+                if case let .cooldown(until) = error {
+                    inviteSentAtByFriendID[friend.id] = until.addingTimeInterval(
+                        -RoomInvite.resendCooldown
+                    )
+                }
+                print("招待の送信に失敗: \(error)")
             } catch {
                 print("招待の送信に失敗: \(error)")
-                invitedFriendIDs.remove(friend.id)
             }
         }
     }

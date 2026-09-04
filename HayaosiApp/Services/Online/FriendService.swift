@@ -88,19 +88,16 @@ final class FriendService {
                 }
             }
 
-        inviteListener = user.collection("invites").order(by: "createdAt", descending: true)
+        inviteListener = user.collection("invites").order(by: "sentAt", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 MainActor.assumeIsolated {
+                    guard self?.listeningUID == uid else { return }
                     if let error {
                         print("招待の取得に失敗: \(error)")
                         return
                     }
-                    self?.invites = snapshot?.documents.map { doc in
-                        RoomInvite(
-                            id: doc.documentID,
-                            roomCode: doc.data()["roomCode"] as? String ?? "",
-                            fromNickname: doc.data()["fromNickname"] as? String ?? "?"
-                        )
+                    self?.invites = snapshot?.documents.compactMap { doc in
+                        Self.decodeInvite(document: doc, recipientUID: uid)
                     } ?? []
                 }
             }
@@ -296,26 +293,302 @@ final class FriendService {
         ]
     }
 
-    /// フレンドにルーム招待を送る(相手の invites に書き込む)
-    func sendInvite(to friendUID: String, roomCode: String) async throws {
+    /// フレンドへ新規招待または再招待を送る。
+    /// canonical documentをtransactionで更新し、同一関係の有効generationを1つに保つ。
+    @discardableResult
+    func sendInvite(
+        to friendUID: String,
+        roomCode: String,
+        roomInstanceID: String
+    ) async throws -> RoomInvite {
         guard let myUID = AuthService.shared.uid else { throw OnlineError.notSignedIn }
-        try await db.collection("users").document(friendUID)
-            .collection("invites")
-            .addDocument(data: [
-                "roomCode": roomCode,
-                "fromUID": myUID,
-                "fromNickname": AuthService.shared.nickname,
-                "createdAt": FieldValue.serverTimestamp()
-            ])
+        let nickname = AuthService.shared.nickname
+        guard !friendUID.isEmpty,
+              !roomCode.isEmpty,
+              !roomInstanceID.isEmpty,
+              !myUID.contains("/"),
+              !roomInstanceID.contains("/"),
+              (1...30).contains(nickname.count) else {
+            throw InviteLifecycleError.invalidInvite
+        }
+        let inviteRef = inviteReference(
+            recipientUID: friendUID,
+            roomInstanceID: roomInstanceID,
+            senderUID: myUID
+        )
+        var lifecycleError: InviteLifecycleError?
+
+        do {
+            _ = try await db.runTransaction { transaction, errorPointer in
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(inviteRef)
+                } catch let error as NSError {
+                    errorPointer?.pointee = error
+                    return nil
+                }
+
+                let now = Date()
+                let generation: Int
+                if snapshot.exists {
+                    guard let current = Self.decodeInvite(
+                        document: snapshot,
+                        recipientUID: friendUID
+                    ),
+                    current.fromUID == myUID,
+                    current.toUID == friendUID,
+                    current.roomInstanceID == roomInstanceID,
+                    current.roomCode == roomCode else {
+                        lifecycleError = .invalidInvite
+                        errorPointer?.pointee = Self.transactionError(.invalidInvite)
+                        return nil
+                    }
+
+                    let cooldownUntil = current.sentAt.addingTimeInterval(RoomInvite.resendCooldown)
+                    guard now >= cooldownUntil else {
+                        lifecycleError = .cooldown(until: cooldownUntil)
+                        errorPointer?.pointee = Self.transactionError(lifecycleError!)
+                        return nil
+                    }
+                    if current.status == .accepting {
+                        guard let acceptingAt = current.acceptingAt else {
+                            lifecycleError = .invalidInvite
+                            errorPointer?.pointee = Self.transactionError(.invalidInvite)
+                            return nil
+                        }
+                        guard now >= acceptingAt.addingTimeInterval(RoomInvite.acceptingLease) else {
+                            lifecycleError = .claimInProgress
+                            errorPointer?.pointee = Self.transactionError(.claimInProgress)
+                            return nil
+                        }
+                    }
+                    generation = current.generation + 1
+                } else {
+                    generation = 1
+                }
+
+                transaction.setData([
+                    "roomInstanceID": roomInstanceID,
+                    "roomCode": roomCode,
+                    "fromUID": myUID,
+                    "toUID": friendUID,
+                    "fromNickname": nickname,
+                    "status": RoomInvite.Status.pending.rawValue,
+                    "generation": generation,
+                    "sentAt": FieldValue.serverTimestamp()
+                ], forDocument: inviteRef)
+                return generation
+            }
+        } catch {
+            if let lifecycleError { throw lifecycleError }
+            throw error
+        }
+
+        let snapshot = try await inviteRef.getDocument()
+        guard let invite = Self.decodeInvite(document: snapshot, recipientUID: friendUID) else {
+            throw InviteLifecycleError.invalidInvite
+        }
+        return invite
     }
 
-    func deleteInvite(id: String) async {
-        guard let myUID = AuthService.shared.uid else { return }
-        do {
-            try await db.collection("users").document(myUID)
-                .collection("invites").document(id).delete()
-        } catch {
-            print("招待の削除に失敗: \(error)")
+    /// pending招待をrecipient本人がclaimする。既に同じclaimでacceptingならretryとして再利用する。
+    func claimInvite(_ invite: RoomInvite) async throws -> RoomInviteClaim {
+        guard let myUID = AuthService.shared.uid, myUID == invite.toUID else {
+            throw OnlineError.notSignedIn
         }
+        let inviteRef = db.collection("users").document(myUID)
+            .collection("invites").document(invite.id)
+        var lifecycleError: InviteLifecycleError?
+        var claimedID: String?
+
+        do {
+            _ = try await db.runTransaction { transaction, errorPointer in
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(inviteRef)
+                } catch let error as NSError {
+                    errorPointer?.pointee = error
+                    return nil
+                }
+                guard let current = Self.decodeInvite(document: snapshot, recipientUID: myUID),
+                      current.generation == invite.generation,
+                      current.fromUID == invite.fromUID,
+                      current.roomInstanceID == invite.roomInstanceID,
+                      current.roomCode == invite.roomCode else {
+                    lifecycleError = .staleClaim
+                    errorPointer?.pointee = Self.transactionError(.staleClaim)
+                    return nil
+                }
+
+                switch current.status {
+                case .pending:
+                    guard !current.isLogicallyExpired(at: .now) else {
+                        lifecycleError = .expired
+                        errorPointer?.pointee = Self.transactionError(.expired)
+                        return nil
+                    }
+                    let claimID = UUID().uuidString.lowercased()
+                    claimedID = claimID
+                    transaction.updateData([
+                        "status": RoomInvite.Status.accepting.rawValue,
+                        "acceptClaimID": claimID,
+                        "acceptingAt": FieldValue.serverTimestamp(),
+                        "rolledBackClaimID": FieldValue.delete()
+                    ], forDocument: inviteRef)
+                    return claimID
+                case .accepting:
+                    guard let currentClaimID = current.acceptClaimID,
+                          invite.acceptClaimID == currentClaimID else {
+                        lifecycleError = .claimInProgress
+                        errorPointer?.pointee = Self.transactionError(.claimInProgress)
+                        return nil
+                    }
+                    claimedID = currentClaimID
+                    return currentClaimID
+                case .accepted, .cancelled:
+                    lifecycleError = .staleClaim
+                    errorPointer?.pointee = Self.transactionError(.staleClaim)
+                    return nil
+                }
+            }
+        } catch {
+            if let lifecycleError { throw lifecycleError }
+            throw error
+        }
+
+        guard let claimedID else { throw InviteLifecycleError.staleClaim }
+        return RoomInviteClaim(
+            inviteID: invite.id,
+            recipientUID: myUID,
+            roomCode: invite.roomCode,
+            roomInstanceID: invite.roomInstanceID,
+            generation: invite.generation,
+            claimID: claimedID
+        )
+    }
+
+    /// RTDB join成功後、同じgeneration・claimだけをacceptedへ確定する。
+    func finalizeInvite(_ claim: RoomInviteClaim) async throws {
+        try await updateClaim(claim, action: .finalize)
+    }
+
+    /// RTDB join失敗時、まだ30秒以内なら同じclaimだけをpendingへ戻す。
+    func rollbackInvite(_ claim: RoomInviteClaim) async throws {
+        try await updateClaim(claim, action: .rollback)
+    }
+
+    private enum ClaimAction {
+        case finalize
+        case rollback
+    }
+
+    private func updateClaim(_ claim: RoomInviteClaim, action: ClaimAction) async throws {
+        guard let myUID = AuthService.shared.uid, myUID == claim.recipientUID else {
+            throw OnlineError.notSignedIn
+        }
+        let inviteRef = db.collection("users").document(myUID)
+            .collection("invites").document(claim.inviteID)
+        var lifecycleError: InviteLifecycleError?
+
+        do {
+            _ = try await db.runTransaction { transaction, errorPointer in
+                let snapshot: DocumentSnapshot
+                do {
+                    snapshot = try transaction.getDocument(inviteRef)
+                } catch let error as NSError {
+                    errorPointer?.pointee = error
+                    return nil
+                }
+                guard let current = Self.decodeInvite(document: snapshot, recipientUID: myUID),
+                      current.status == .accepting,
+                      current.generation == claim.generation,
+                      current.acceptClaimID == claim.claimID,
+                      current.roomInstanceID == claim.roomInstanceID,
+                      current.roomCode == claim.roomCode else {
+                    lifecycleError = .staleClaim
+                    errorPointer?.pointee = Self.transactionError(.staleClaim)
+                    return nil
+                }
+
+                switch action {
+                case .finalize:
+                    transaction.updateData([
+                        "status": RoomInvite.Status.accepted.rawValue,
+                        "acceptedAt": FieldValue.serverTimestamp()
+                    ], forDocument: inviteRef)
+                case .rollback:
+                    guard !current.isLogicallyExpired(at: .now) else {
+                        lifecycleError = .rollbackExpired
+                        errorPointer?.pointee = Self.transactionError(.rollbackExpired)
+                        return nil
+                    }
+                    transaction.updateData([
+                        "status": RoomInvite.Status.pending.rawValue,
+                        // Rulesが直前のresource.acceptClaimIDとの一致を検証するrollback proof。
+                        "rolledBackClaimID": claim.claimID,
+                        "acceptClaimID": FieldValue.delete(),
+                        "acceptingAt": FieldValue.delete(),
+                        "acceptedAt": FieldValue.delete()
+                    ], forDocument: inviteRef)
+                }
+                return nil
+            }
+        } catch {
+            if let lifecycleError { throw lifecycleError }
+            throw error
+        }
+    }
+
+    private func inviteReference(
+        recipientUID: String,
+        roomInstanceID: String,
+        senderUID: String
+    ) -> DocumentReference {
+        db.collection("users").document(recipientUID)
+            .collection("invites")
+            .document("\(roomInstanceID)_\(senderUID)")
+    }
+
+    nonisolated private static func decodeInvite(
+        document: DocumentSnapshot,
+        recipientUID: String
+    ) -> RoomInvite? {
+        guard let data = document.data(),
+              let roomInstanceID = data["roomInstanceID"] as? String,
+              let roomCode = data["roomCode"] as? String,
+              let fromUID = data["fromUID"] as? String,
+              let toUID = data["toUID"] as? String,
+              toUID == recipientUID,
+              let fromNickname = data["fromNickname"] as? String,
+              (1...30).contains(fromNickname.count),
+              let statusRaw = data["status"] as? String,
+              let status = RoomInvite.Status(rawValue: statusRaw),
+              let generation = (data["generation"] as? NSNumber)?.intValue,
+              generation >= 1,
+              let sentAt = data["sentAt"] as? Timestamp else {
+            return nil
+        }
+        guard document.documentID == "\(roomInstanceID)_\(fromUID)" else { return nil }
+        return RoomInvite(
+            id: document.documentID,
+            roomCode: roomCode,
+            fromNickname: fromNickname,
+            roomInstanceID: roomInstanceID,
+            fromUID: fromUID,
+            toUID: toUID,
+            status: status,
+            generation: generation,
+            sentAt: sentAt.dateValue(),
+            acceptClaimID: data["acceptClaimID"] as? String,
+            acceptingAt: (data["acceptingAt"] as? Timestamp)?.dateValue()
+        )
+    }
+
+    nonisolated private static func transactionError(_ error: InviteLifecycleError) -> NSError {
+        NSError(
+            domain: "HayaosiApp.InviteLifecycle",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: error.localizedDescription]
+        )
     }
 }

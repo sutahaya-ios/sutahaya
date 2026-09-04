@@ -12,6 +12,7 @@ struct BattleView: View {
     @State private var answerErrorMessage: String?
     @State private var wrongFeedbackQuestionIndex: Int?
     @State private var wrongFeedbackTask: Task<Void, Never>?
+    @State private var liveScoreBase: LiveScoreBase?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -51,11 +52,15 @@ struct BattleView: View {
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
+        .onAppear {
+            captureLiveScoreBaseIfPossible()
+        }
         .onChange(of: questionKey) { _, _ in
             pendingAnswer = nil
             answerErrorMessage = nil
             wrongFeedbackTask?.cancel()
             wrongFeedbackQuestionIndex = nil
+            captureLiveScoreBaseIfPossible(replacingExisting: true)
         }
         .onChange(of: failedIDs) { oldIDs, newIDs in
             if !newIDs.subtracting(oldIDs).isEmpty {
@@ -104,15 +109,65 @@ struct BattleView: View {
         BattleScoreBoard(
             players: session.state?.players ?? [],
             hostID: session.state?.hostID ?? session.myID,
-            answers: session.state?.game?.answers ?? [],
+            answers: answersForDisplay,
             failedIDs: failedIDs,
             correctIDs: correctIDs
         )
     }
 
+    /// 最終結果の確定書き込み中は順位を出さない。確定後も締切内のaccepted回答だけを表示する。
+    private var answersForDisplay: [RoomState.Answer] {
+        guard let state = session.state, let game = state.game else { return [] }
+        let confirmed = BattleAnswerAcceptance.confirmedAnswers(
+            in: game,
+            timeLimit: state.settings.timeLimit,
+            participantIDs: state.players.map(\.id)
+        )
+        guard game.phase == .question else { return confirmed }
+        guard let question = session.currentQuestion,
+              let liveScoreBase,
+              liveScoreBase.key == questionKey else {
+            return []
+        }
+        let currentScores = Dictionary(
+            uniqueKeysWithValues: state.players.map { ($0.id, $0.score) }
+        )
+        let scoresAreReflected = BattleAnswerAcceptance.scoresMatch(
+            answers: confirmed,
+            correctAnswer: question.answer,
+            participantIDs: state.players.map(\.id),
+            baseScores: liveScoreBase.scores,
+            currentScores: currentScores
+        )
+        return scoresAreReflected ? confirmed : []
+    }
+
+    /// 問題開始時点の得点を保存する。途中参加・再接続で既に回答がある場合は、
+    /// 基準点を推測せず、その問題の順位を発表確定まで隠す。
+    private func captureLiveScoreBaseIfPossible(replacingExisting: Bool = false) {
+        guard (replacingExisting || liveScoreBase == nil),
+              let state = session.state,
+              let game = state.game,
+              game.phase == .question,
+              let questionKey else {
+            return
+        }
+        let accepted = BattleAnswerAcceptance.acceptedAnswers(
+            in: game,
+            timeLimit: state.settings.timeLimit,
+            participantIDs: state.players.map(\.id)
+        )
+        guard accepted.isEmpty else { return }
+        liveScoreBase = LiveScoreBase(
+            key: questionKey,
+            scores: Dictionary(uniqueKeysWithValues: state.players.map { ($0.id, $0.score) })
+        )
+    }
+
     /// 誤答済みのプレイヤー。発表中も残して、その問題の結果を確認できるようにする
     private var failedIDs: Set<String> {
-        session.state?.game?.failedIDs ?? []
+        guard let game = session.state?.game else { return [] }
+        return game.failedIDs.intersection(Set(answersForDisplay.map(\.uid)))
     }
 
     private var questionKey: QuestionKey? {
@@ -130,10 +185,10 @@ struct BattleView: View {
     private var correctIDs: Set<String> {
         guard let game = session.state?.game else { return [] }
         if game.phase == .reveal, let reveal = game.reveal {
-            return Set(reveal.correctIDs)
+            return Set(reveal.correctIDs).intersection(Set(answersForDisplay.map(\.uid)))
         }
         guard let question = session.currentQuestion else { return [] }
-        return Set(game.answers.filter { $0.choice == question.answer }.map(\.uid))
+        return Set(answersForDisplay.filter { $0.choice == question.answer }.map(\.uid))
     }
 
     private func progressHeader(state: RoomState, game: RoomState.Game) -> some View {
@@ -152,12 +207,16 @@ struct BattleView: View {
 
     @ViewBuilder
     private func interactionArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
-        if game.phase == .reveal, let reveal = game.reveal {
-            BattleRevealCard(
-                reveal: reveal,
-                correctNames: reveal.correctIDs.compactMap { displayName(for: $0) }
-            )
-                .transition(.scale(scale: 0.92).combined(with: .opacity))
+        if game.phase == .reveal {
+            if let reveal = game.reveal {
+                BattleRevealCard(
+                    reveal: reveal,
+                    correctNames: reveal.correctIDs.compactMap { displayName(for: $0) }
+                )
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+            } else {
+                ProgressView("結果を確定中…")
+            }
         } else {
             progressiveChoiceArea(game: game, question: question)
         }
@@ -204,7 +263,7 @@ struct BattleView: View {
                         if !succeeded {
                             pendingAnswer = nil
                             if questionKey?.index == pending.questionIndex {
-                                answerErrorMessage = "回答を送信できませんでした。もう一度お試しください"
+                                answerErrorMessage = "制限時間を過ぎたか、通信により回答が受理されませんでした"
                             }
                         }
                     }
@@ -214,7 +273,7 @@ struct BattleView: View {
     }
 
     private func myAnswer(in game: RoomState.Game) -> RoomState.Answer? {
-        game.answers.first { $0.uid == session.myID }
+        answersForDisplay.first { $0.uid == session.myID }
     }
 
     private func displayName(for playerID: String?) -> String? {
@@ -245,6 +304,11 @@ private struct PendingAnswer: Equatable {
 private struct QuestionKey: Equatable {
     let index: Int
     let startedAtMS: Double
+}
+
+private struct LiveScoreBase {
+    let key: QuestionKey
+    let scores: [String: Int]
 }
 
 private struct WrongAnswerFeedback: View {

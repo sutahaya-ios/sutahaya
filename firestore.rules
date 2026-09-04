@@ -69,6 +69,192 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)).data.uid == uid;
     }
 
+    function mutualFriends(senderUid, recipientUid) {
+      return existsAfter(/databases/$(database)/documents/users/$(senderUid)/friends/$(recipientUid))
+        && existsAfter(/databases/$(database)/documents/users/$(recipientUid)/friends/$(senderUid));
+    }
+
+    function validInviteIdentity(recipientUid, inviteId, data) {
+      return data.roomInstanceID is string
+        && data.roomInstanceID.size() >= 1
+        && data.roomInstanceID.size() <= 128
+        && data.roomInstanceID.matches('^[A-Za-z0-9-]+$')
+        && data.roomCode is string
+        && data.roomCode.matches('^[0-9]{4}$')
+        && data.fromUID is string
+        && data.toUID is string
+        && data.toUID == recipientUid
+        && inviteId == data.roomInstanceID + '_' + data.fromUID;
+    }
+
+    function validInviteBase(recipientUid, inviteId, data) {
+      return validInviteIdentity(recipientUid, inviteId, data)
+        && data.fromNickname is string
+        && data.fromNickname.size() >= 1
+        && data.fromNickname.size() <= 30
+        && data.generation is int
+        && data.generation >= 1
+        && data.sentAt is timestamp;
+    }
+
+    function validPendingInvite(recipientUid, inviteId, data) {
+      return data.keys().hasOnly([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt'
+        ])
+        && data.keys().hasAll([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt'
+        ])
+        && validInviteBase(recipientUid, inviteId, data)
+        && data.status == 'pending';
+    }
+
+    function validRolledBackPendingInvite(recipientUid, inviteId, data) {
+      return data.keys().hasOnly([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'rolledBackClaimID'
+        ])
+        && data.keys().hasAll([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'rolledBackClaimID'
+        ])
+        && validInviteBase(recipientUid, inviteId, data)
+        && data.status == 'pending'
+        && data.rolledBackClaimID is string
+        && data.rolledBackClaimID.size() >= 1
+        && data.rolledBackClaimID.size() <= 128;
+    }
+
+    function validAcceptingInvite(recipientUid, inviteId, data) {
+      return data.keys().hasOnly([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'acceptClaimID', 'acceptingAt'
+        ])
+        && data.keys().hasAll([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'acceptClaimID', 'acceptingAt'
+        ])
+        && validInviteBase(recipientUid, inviteId, data)
+        && data.status == 'accepting'
+        && data.acceptClaimID is string
+        && data.acceptClaimID.size() >= 1
+        && data.acceptClaimID.size() <= 128
+        && data.acceptingAt is timestamp;
+    }
+
+    function validAcceptedInvite(recipientUid, inviteId, data) {
+      return data.keys().hasOnly([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'acceptClaimID', 'acceptingAt',
+          'acceptedAt'
+        ])
+        && data.keys().hasAll([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt', 'acceptClaimID', 'acceptingAt',
+          'acceptedAt'
+        ])
+        && validInviteBase(recipientUid, inviteId, data)
+        && data.status == 'accepted'
+        && data.acceptClaimID is string
+        && data.acceptClaimID.size() >= 1
+        && data.acceptClaimID.size() <= 128
+        && data.acceptingAt is timestamp
+        && data.acceptedAt is timestamp;
+    }
+
+    function validCancelledInvite(recipientUid, inviteId, data) {
+      return data.keys().hasOnly([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt'
+        ])
+        && data.keys().hasAll([
+          'roomInstanceID', 'roomCode', 'fromUID', 'toUID', 'fromNickname',
+          'status', 'generation', 'sentAt'
+        ])
+        && validInviteBase(recipientUid, inviteId, data)
+        && data.status == 'cancelled';
+    }
+
+    function sameInviteGeneration() {
+      return request.resource.data.roomInstanceID == resource.data.roomInstanceID
+        && request.resource.data.roomCode == resource.data.roomCode
+        && request.resource.data.fromUID == resource.data.fromUID
+        && request.resource.data.toUID == resource.data.toUID
+        && request.resource.data.fromNickname == resource.data.fromNickname
+        && request.resource.data.generation == resource.data.generation
+        && request.resource.data.sentAt == resource.data.sentAt;
+    }
+
+    function senderReinvites(recipientUid, inviteId) {
+      return signedIn()
+        && request.auth.uid == resource.data.fromUID
+        && validPendingInvite(recipientUid, inviteId, request.resource.data)
+        && validInviteIdentity(recipientUid, inviteId, resource.data)
+        && request.resource.data.roomInstanceID == resource.data.roomInstanceID
+        && request.resource.data.roomCode == resource.data.roomCode
+        && request.resource.data.fromUID == resource.data.fromUID
+        && request.resource.data.toUID == resource.data.toUID
+        && resource.data.generation is int
+        && request.resource.data.generation == resource.data.generation + 1
+        && request.resource.data.sentAt == request.time
+        && request.time >= resource.data.sentAt + duration.value(10, 's')
+        && (resource.data.status != 'accepting'
+          || (resource.data.acceptingAt is timestamp
+            && request.time >= resource.data.acceptingAt + duration.value(10, 's')))
+        && resource.data.status in ['pending', 'accepting', 'accepted', 'cancelled']
+        && mutualFriends(resource.data.fromUID, recipientUid);
+    }
+
+    function recipientClaims(recipientUid, inviteId) {
+      return isOwner(recipientUid)
+        && resource.data.status == 'pending'
+        && (validPendingInvite(recipientUid, inviteId, resource.data)
+          || validRolledBackPendingInvite(recipientUid, inviteId, resource.data))
+        && validAcceptingInvite(recipientUid, inviteId, request.resource.data)
+        && sameInviteGeneration()
+        && request.resource.data.acceptingAt == request.time
+        && request.time < resource.data.sentAt + duration.value(30, 's')
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptClaimID', 'acceptingAt', 'rolledBackClaimID'])
+        && mutualFriends(resource.data.fromUID, recipientUid);
+    }
+
+    function recipientFinalizes(recipientUid, inviteId) {
+      return isOwner(recipientUid)
+        && resource.data.status == 'accepting'
+        && validAcceptingInvite(recipientUid, inviteId, resource.data)
+        && validAcceptedInvite(recipientUid, inviteId, request.resource.data)
+        && sameInviteGeneration()
+        && request.resource.data.acceptClaimID == resource.data.acceptClaimID
+        && request.resource.data.acceptingAt == resource.data.acceptingAt
+        && request.resource.data.acceptedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptedAt']);
+    }
+
+    function recipientRollsBack(recipientUid, inviteId) {
+      return isOwner(recipientUid)
+        && resource.data.status == 'accepting'
+        && validAcceptingInvite(recipientUid, inviteId, resource.data)
+        && request.resource.data.keys().hasAll(['rolledBackClaimID'])
+        && request.resource.data.rolledBackClaimID == resource.data.acceptClaimID
+        && validRolledBackPendingInvite(recipientUid, inviteId, request.resource.data)
+        && sameInviteGeneration()
+        && request.time < resource.data.sentAt + duration.value(30, 's')
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptClaimID', 'acceptingAt', 'rolledBackClaimID']);
+    }
+
+    function recipientCancels(recipientUid, inviteId) {
+      return isOwner(recipientUid)
+        && resource.data.status == 'pending'
+        && validPendingInvite(recipientUid, inviteId, resource.data)
+        && validCancelledInvite(recipientUid, inviteId, request.resource.data)
+        && sameInviteGeneration()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+
     match /users/{uid} {
       allow get: if signedIn();
       allow list: if false;
@@ -135,15 +321,27 @@ service cloud.firestore {
       }
 
       match /invites/{inviteId} {
-        allow read, delete: if isOwner(uid);
+        allow get: if isOwner(uid)
+          || (signedIn()
+            && inviteId.matches('^[A-Za-z0-9-]+_' + request.auth.uid + '$'));
+        allow list: if isOwner(uid);
         allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['roomCode', 'fromUID', 'fromNickname', 'createdAt'])
+          && validPendingInvite(uid, inviteId, request.resource.data)
           && request.resource.data.fromUID == request.auth.uid
-          && request.resource.data.fromNickname is string
-          && request.resource.data.roomCode is string
-          && request.resource.data.roomCode.matches('^[0-9]{4}$')
-          && exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(uid));
-        allow update: if false;
+          && request.resource.data.generation == 1
+          && request.resource.data.sentAt == request.time
+          && mutualFriends(request.auth.uid, uid);
+        allow update: if signedIn()
+          && ((request.auth.uid == resource.data.fromUID
+              && senderReinvites(uid, inviteId))
+            || (isOwner(uid)
+              && ((resource.data.status == 'pending'
+                  && (recipientClaims(uid, inviteId)
+                    || recipientCancels(uid, inviteId)))
+                || (resource.data.status == 'accepting'
+                  && (recipientFinalizes(uid, inviteId)
+                    || recipientRollsBack(uid, inviteId))))));
+        allow delete: if false;
       }
     }
 

@@ -55,6 +55,111 @@ final class BattleScoringTests: XCTestCase {
         XCTAssertTrue(result.pointChanges.isEmpty)
     }
 
+    func test_回答受付境界は開始時刻以上かつ締切時刻以下だけをacceptedにする() {
+        let game = RoomState.Game(
+            questionIndex: 2,
+            phase: .question,
+            startDelayMS: 500,
+            startedAtMS: 1_000,
+            failedIDs: [],
+            answers: [
+                answer(uid: "before", choice: "正答", time: 1_499, questionIndex: 2),
+                answer(uid: "at-start", choice: "誤答", time: 1_500, questionIndex: 2),
+                answer(uid: "at-deadline", choice: "正答", time: 6_500, questionIndex: 2),
+                answer(uid: "after", choice: "正答", time: 6_501, questionIndex: 2),
+                answer(uid: "previous", choice: "正答", time: 2_000, questionIndex: 1),
+                answer(uid: "outsider", choice: "正答", time: 2_500, questionIndex: 2)
+            ],
+            reveal: nil
+        )
+
+        let accepted = BattleAnswerAcceptance.acceptedAnswers(
+            in: game,
+            timeLimit: 5,
+            participantIDs: ["before", "at-start", "at-deadline", "after", "previous"]
+        )
+        let scoring = BattleScoring.result(
+            answers: accepted,
+            correctAnswer: "正答",
+            participantIDs: ["before", "at-start", "at-deadline", "after", "previous"]
+        )
+
+        XCTAssertEqual(accepted.map(\.uid), ["at-start", "at-deadline"])
+        XCTAssertEqual(scoring.wrongIDs, ["at-start"])
+        XCTAssertEqual(scoring.correctIDs, ["at-deadline"])
+        XCTAssertEqual(scoring.pointChanges["at-start"], BattleRules.wrongPoint)
+        XCTAssertEqual(scoring.pointChanges["at-deadline"], BattleRules.correctPoint(for: 1))
+        XCTAssertNil(scoring.pointChanges["after"], "締切後回答は順位にも得点にも含めない")
+    }
+
+    func test_Firebase保存成功でもサーバー確定時刻が締切後ならacceptedではない() {
+        let lateAnswer = answer(uid: "guest", choice: "正答", time: 6_001)
+
+        XCTAssertFalse(BattleAnswerAcceptance.isAccepted(
+            lateAnswer,
+            questionIndex: 0,
+            effectiveStartedAtMS: 1_000,
+            timeLimit: 5,
+            participantIDs: ["host", "guest"]
+        ))
+    }
+
+    func test_受付終了後は時刻内でもホスト確定結果に無い後着回答を順位から除外する() {
+        let game = RoomState.Game(
+            questionIndex: 0,
+            phase: .reveal,
+            startDelayMS: 0,
+            startedAtMS: 1_000,
+            failedIDs: ["wrong"],
+            answers: [
+                answer(uid: "correct", choice: "正答", time: 2_000),
+                answer(uid: "wrong", choice: "誤答", time: 2_100),
+                answer(uid: "arrived-after-close", choice: "正答", time: 2_200)
+            ],
+            reveal: .init(correctAnswer: "正答", correctIDs: ["correct"])
+        )
+
+        let confirmed = BattleAnswerAcceptance.confirmedAnswers(
+            in: game,
+            timeLimit: 5,
+            participantIDs: ["correct", "wrong", "arrived-after-close"]
+        )
+
+        XCTAssertEqual(confirmed.map(\.uid), ["correct", "wrong"])
+    }
+
+    func test_出題中はaccepted回答に対応する得点が未反映なら順位を表示できない() {
+        let answers = [answer(uid: "guest", choice: "正答", time: 2_000)]
+
+        XCTAssertFalse(BattleAnswerAcceptance.scoresMatch(
+            answers: answers,
+            correctAnswer: "正答",
+            participantIDs: ["host", "guest"],
+            baseScores: ["host": 0, "guest": 0],
+            currentScores: ["host": 0, "guest": 0]
+        ))
+    }
+
+    func test_出題中はaccepted回答と得点が一致した時だけ順位を表示できる() {
+        let correctAnswers = [answer(uid: "guest", choice: "正答", time: 2_000)]
+        let wrongAnswers = [answer(uid: "host", choice: "誤答", time: 2_000)]
+
+        XCTAssertTrue(BattleAnswerAcceptance.scoresMatch(
+            answers: correctAnswers,
+            correctAnswer: "正答",
+            participantIDs: ["host", "guest"],
+            baseScores: ["host": 5, "guest": 10],
+            currentScores: ["host": 5, "guest": 30]
+        ))
+        XCTAssertTrue(BattleAnswerAcceptance.scoresMatch(
+            answers: wrongAnswers,
+            correctAnswer: "正答",
+            participantIDs: ["host", "guest"],
+            baseScores: ["host": 5, "guest": 10],
+            currentScores: ["host": -5, "guest": 10]
+        ))
+    }
+
     func test_制限時間の初期値は5秒で選択肢の先頭にある() {
         XCTAssertEqual(QuizDefaults.timeLimit, 5)
         XCTAssertEqual(QuizDefaults.timeLimitOptions, [5, 10, 20, 30])
@@ -108,7 +213,18 @@ final class BattleScoringTests: XCTestCase {
         XCTAssertEqual(room?.game?.failedIDs, ["guest"])
     }
 
-    private func answer(uid: String, choice: String, time: Double) -> RoomState.Answer {
-        RoomState.Answer(uid: uid, questionIndex: 0, choice: choice, answeredAtMS: time, visibleCount: 1)
+    private func answer(
+        uid: String,
+        choice: String,
+        time: Double,
+        questionIndex: Int = 0
+    ) -> RoomState.Answer {
+        RoomState.Answer(
+            uid: uid,
+            questionIndex: questionIndex,
+            choice: choice,
+            answeredAtMS: time,
+            visibleCount: 1
+        )
     }
 }

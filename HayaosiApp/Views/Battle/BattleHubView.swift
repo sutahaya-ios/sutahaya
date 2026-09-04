@@ -58,7 +58,9 @@ struct BattleHubView: View {
                     onStart: startCPU
                 )
 
-                inviteBanners
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    inviteBanners(at: timeline.date)
+                }
 
                 if !isOnlineReady {
                     OnlinePreviewBanner()
@@ -136,12 +138,12 @@ struct BattleHubView: View {
     }
 
     @ViewBuilder
-    private var inviteBanners: some View {
-        ForEach(visibleInvites) { invite in
+    private func inviteBanners(at date: Date) -> some View {
+        ForEach(visibleInvites(at: date)) { invite in
             RoomInviteBanner(
                 invite: invite,
                 memberCount: 1,
-                isJoining: joiningInviteID == invite.id,
+                isJoining: joiningInviteID == invite.notificationID,
                 onAccept: { accept(invite, isPreview: !isOnlineReady) },
                 onDismiss: { dismiss(invite, isPreview: !isOnlineReady) }
             )
@@ -170,9 +172,23 @@ struct BattleHubView: View {
             )
     }
 
-    private var visibleInvites: [RoomInvite] {
+    private func visibleInvites(at date: Date) -> [RoomInvite] {
         let source = isOnlineReady ? friendService.invites : [Self.sampleInvite]
-        return source.filter { !hiddenInviteIDs.contains($0.id) }
+        guard isOnlineReady else {
+            return source.filter { !hiddenInviteIDs.contains($0.notificationID) }
+        }
+        return source.filter { invite in
+            invite.isVisibleInvitation(at: date)
+                && !hiddenInviteIDs.contains(invite.notificationID)
+                && !isAlreadyInInvitedRoom(invite)
+        }
+    }
+
+    private func isAlreadyInInvitedRoom(_ invite: RoomInvite) -> Bool {
+        guard let myID = AuthService.shared.uid,
+              let state = onlineSession?.state,
+              state.roomInstanceID == invite.roomInstanceID else { return false }
+        return state.players.contains { $0.id == myID }
     }
 
     private func createRoom() {
@@ -190,7 +206,7 @@ struct BattleHubView: View {
         Task {
             defer { isCreatingRoom = false }
             do {
-                let uid = try await AuthService.shared.ensureSignedIn()
+                let uid = try await AuthService.shared.ensureAuthenticated()
                 let session = try OnlineBattleSession(myID: uid, nickname: nickname)
                 try await session.createRoom(
                     settings: configuration.roomSettings(
@@ -231,16 +247,41 @@ struct BattleHubView: View {
         }
         guard joiningInviteID == nil, !isCreatingRoom else { return }
 
-        joiningInviteID = invite.id
+        joiningInviteID = invite.notificationID
         Task {
             defer { joiningInviteID = nil }
             do {
                 let uid = try await AuthService.shared.ensureSignedIn()
+                // claim取得前から6秒で打ち切り、10秒leaseに再招待可能な余白を残す。
+                let joinDeadline = ContinuousClock.now.advanced(
+                    by: RTDBJoinRetryPolicy.acceptOperationBudget
+                )
+                let claim = try await friendService.claimInvite(invite)
                 let session = try OnlineBattleSession(myID: uid, nickname: nickname)
-                try await session.joinRoom(code: invite.roomCode)
+                do {
+                    try await session.joinRoom(
+                        code: invite.roomCode,
+                        expectedRoomInstanceID: invite.roomInstanceID,
+                        operationDeadline: joinDeadline
+                    )
+                    try await friendService.finalizeInvite(claim)
+                } catch {
+                    // RTDB参加後にclaimがstaleになった場合も、参加者だけを残さない。
+                    if session.didCreatePlayerDuringLatestJoin {
+                        session.leave()
+                    }
+                    do {
+                        try await friendService.rollbackInvite(claim)
+                    } catch let rollbackError as InviteLifecycleError
+                        where rollbackError == .rollbackExpired {
+                        // 期限後はpendingへ戻さず、logical expiredのまま扱う。
+                    } catch {
+                        print("招待claimのrollbackに失敗: \(error)")
+                    }
+                    throw error
+                }
                 onlineSession = session
                 showOnlineRoom = true
-                await friendService.deleteInvite(id: invite.id)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -252,7 +293,7 @@ struct BattleHubView: View {
             showPreviewAlert = true
             return
         }
-        hiddenInviteIDs.insert(invite.id)
+        hiddenInviteIDs.insert(invite.notificationID)
     }
 
     private func signIn() async {

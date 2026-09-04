@@ -116,22 +116,38 @@ struct RoomState {
     }
 
     let code: String
+    /// ルームコードが将来再利用されても別ルームと識別する、作成ごとの不変ID。
+    /// nilは導入前の旧ルームとFirebaseを使わないCPU対戦だけ。
+    let roomInstanceID: String?
     let hostID: String
     let status: Status
     let settings: Settings
     /// 入室順に並んだ参加者
     let players: [Player]
+    /// 0...7の固定参加枠。新規playerと同じatomic writeでclaim/releaseする。
+    let playerSlots: [Int: String]
     let questions: [QuestionPayload]
     let game: Game?
 
+    func playerSlot(for uid: String) -> Int? {
+        playerSlots.first { $0.value == uid }?.key
+    }
+
+    var firstAvailablePlayerSlot: Int? {
+        (0..<BattleRules.maxPlayers).first { playerSlots[$0] == nil }
+    }
+
     /// ローカル(CPU対戦)用に直接組み立てるイニシャライザ
-    init(code: String, hostID: String, status: Status, settings: Settings,
-         players: [Player], questions: [QuestionPayload], game: Game?) {
+    init(code: String, roomInstanceID: String? = nil, hostID: String, status: Status, settings: Settings,
+         players: [Player], playerSlots: [Int: String] = [:],
+         questions: [QuestionPayload], game: Game?) {
         self.code = code
+        self.roomInstanceID = roomInstanceID
         self.hostID = hostID
         self.status = status
         self.settings = settings
         self.players = players
+        self.playerSlots = playerSlots
         self.questions = questions
         self.game = game
     }
@@ -142,6 +158,7 @@ struct RoomState {
               let status = Status(rawValue: statusRaw) else { return nil }
 
         self.code = code
+        self.roomInstanceID = dict["roomInstanceID"] as? String
         self.hostID = hostID
         self.status = status
 
@@ -159,6 +176,8 @@ struct RoomState {
         }
         .sorted { $0.joinedAtMS < $1.joinedAtMS }
 
+        self.playerSlots = Self.parsePlayerSlots(dict["playerSlots"])
+
         self.questions = (dict["questions"] as? [[String: Any]] ?? []).compactMap { q in
             guard let id = q["id"] as? String,
                   let text = q["text"] as? String,
@@ -168,6 +187,24 @@ struct RoomState {
         }
 
         self.game = Self.parseGame(dict["game"] as? [String: Any])
+    }
+
+    /// RTDBは0から連続する数値キーを配列として返し、途中に空きがある場合は辞書として返す。
+    /// どちらの表現でも同じslot集合へ正規化する。
+    private static func parsePlayerSlots(_ value: Any?) -> [Int: String] {
+        if let slots = value as? [Any] {
+            return Dictionary(uniqueKeysWithValues: slots.enumerated().compactMap { slot, value in
+                guard (0..<BattleRules.maxPlayers).contains(slot),
+                      let uid = value as? String else { return nil }
+                return (slot, uid)
+            })
+        }
+        let slots = value as? [String: Any] ?? [:]
+        return Dictionary(uniqueKeysWithValues: slots.compactMap { key, value in
+            guard let slot = Int(key), (0..<BattleRules.maxPlayers).contains(slot),
+                  let uid = value as? String else { return nil }
+            return (slot, uid)
+        })
     }
 
     private static func parseGame(_ dict: [String: Any]?) -> Game? {
@@ -216,6 +253,11 @@ struct RoomState {
             answers: answers,
             reveal: reveal
         )
+    }
+
+    /// `game`単体のtransaction確定スナップショットを、通常のルーム監視と同じ規則で復元する。
+    static func game(databaseValue: [String: Any]) -> Game? {
+        parseGame(databaseValue)
     }
 
     private static func int(_ any: Any?) -> Int? { (any as? NSNumber)?.intValue }

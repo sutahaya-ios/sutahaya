@@ -36,6 +36,16 @@ final class AuthService {
         return String(value.prefix(Self.bioMaxLength))
     }
 
+    /// RTDBなどFirebase Authenticationだけを必要とする処理向け。
+    /// FirestoreのプロフィールやfriendCodes索引に障害があっても、認証済みuidは利用できるようにする。
+    @discardableResult
+    func ensureAuthenticated() async throws -> String {
+        guard OnlineService.isConfigured else { throw OnlineError.notConfigured }
+        let user = try await authenticatedUser()
+        uid = user.uid
+        return user.uid
+    }
+
     /// サインイン済みならそのuidを返し、未サインインなら匿名サインインしてプロフィールを用意する
     @discardableResult
     func ensureSignedIn() async throws -> String {
@@ -59,15 +69,17 @@ final class AuthService {
     }
 
     private func signInAndEnsureProfile() async throws -> String {
-        let user: User
-        if let current = Auth.auth().currentUser {
-            user = current
-        } else {
-            user = try await Auth.auth().signInAnonymously().user
-        }
+        let user = try await authenticatedUser()
         try await ensureProfile(uid: user.uid)
         uid = user.uid
         return user.uid
+    }
+
+    private func authenticatedUser() async throws -> User {
+        if let current = Auth.auth().currentUser {
+            return current
+        }
+        return try await Auth.auth().signInAnonymously().user
     }
 
     func updateProfileIfSignedIn(nickname: String, icon: String, bio: String) async {

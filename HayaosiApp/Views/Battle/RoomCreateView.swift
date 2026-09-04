@@ -117,7 +117,7 @@ struct RoomCreateView: View {
         defer { isCreating = false }
         do {
             configuration.save()
-            let uid = try await AuthService.shared.ensureSignedIn()
+            let uid = try await AuthService.shared.ensureAuthenticated()
             let newSession = try OnlineBattleSession(myID: uid, nickname: nickname)
             try await newSession.createRoom(
                 settings: configuration.roomSettings(
