@@ -12,7 +12,6 @@
 - 実機2台での通信対戦の通し・反復検証、早押し遅延、切断・再入室、ホスト切断は未検証
 
 ---
-
 ## リリース計画
 
 **8/11公開の計画は延期(2026年8月7日決定)。新しい目標日は未定。** 対戦体験(タップ即回答方式)とホーム画面を固めてから日程を引き直す。当時の日割り計画は `STATUS_ARCHIVE.md` を参照。
@@ -45,6 +44,7 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
+| Codex統合担当 | `project.yml`、`firebase.json`、`functions/`、`FriendService.swift`、`BattleLobbyView.swift`、`firestore.rules`、`FirebaseRulesTests/`、`FIREBASE_SETUP.md` | TASK 3: RTDBのhost真正性をCloud Functionで検証してから招待を作成し、guestの直接書き込みをbackendで拒否する | 2026-09-05 |
 ---
 ## 最新更新(2026年8月25日〜9月4日)
 
