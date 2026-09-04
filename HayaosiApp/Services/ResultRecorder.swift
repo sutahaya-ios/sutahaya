@@ -36,6 +36,27 @@ enum ResultRecorder {
         save(context: context)
     }
 
+    /// 対戦1試合ぶんの順位を残す(問題ごとの正誤は `record(...)` が別に保存する)
+    static func recordBattle(
+        matchType: BattleMatchType,
+        rank: Int,
+        participantCount: Int,
+        score: Int,
+        playedAt: Date = .now,
+        context: ModelContext
+    ) {
+        context.insert(
+            BattleRecord(
+                matchType: matchType,
+                rank: rank,
+                participantCount: participantCount,
+                score: score,
+                playedAt: playedAt
+            )
+        )
+        save(context: context, label: "対戦結果")
+    }
+
     private static func insertResults(
         _ results: [(questionID: String, isCorrect: Bool)],
         mode: PlayMode,
@@ -91,11 +112,11 @@ enum ResultRecorder {
         }
     }
 
-    private static func save(context: ModelContext) {
+    private static func save(context: ModelContext, label: String = "解答履歴") {
         do {
             try context.save()
         } catch {
-            print("解答履歴の保存に失敗: \(error)")
+            print("\(label)の保存に失敗: \(error)")
         }
     }
 

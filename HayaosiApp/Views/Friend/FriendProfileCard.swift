@@ -1,37 +1,37 @@
 import SwiftUI
 
-/// 将来ローカルの対戦結果履歴から集計した戦績を表示するための受け皿。
-/// 現在は試合単位の順位履歴がないため、マイページでは `nil` を渡して未集計表示にする。
-struct ProfileBattleStats: Equatable {
-    let battleCount: Int
-    let firstPlaceCount: Int
-
-    var firstPlaceRate: Double {
-        guard battleCount > 0 else { return 0 }
-        return Double(firstPlaceCount) / Double(battleCount)
-    }
-}
-
 /// 自分のプロフィールカード。プロフィールを主役にし、戦績とフレンドコードを1枚へまとめる。
-/// `footer` は自分のマイページだけに出したい行を差し込む口。
-/// フレンドのカードとして使うときは省略する
-struct FriendProfileCard<Footer: View>: View {
+/// ヘッダと戦績をタップすると `detailDestination` へ進む。
+/// フレンドコード行をリンクの外に置いているのは、中のコピー・シェアボタンと
+/// タップが競合しないようにするため
+struct FriendProfileCard<Detail: View>: View {
     private static var copiedResetDelay: TimeInterval { 2 }
 
     let nickname: String
     let friendCode: String?
     var icon: String = ProfileIcon.none
     var bio: String = ""
-    var battleStats: ProfileBattleStats? = nil
-    @ViewBuilder var footer: () -> Footer
+    var battleStats: ProfileBattleStats
+    @ViewBuilder var detailDestination: () -> Detail
 
     @Environment(\.colorScheme) private var colorScheme
     @State private var copied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            profileHeader
-            detailPanel
+            NavigationLink {
+                detailDestination()
+            } label: {
+                VStack(alignment: .leading, spacing: 14) {
+                    profileHeader
+                    statsPanel
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("プロフィールの詳細を開く")
+
+            friendCodePanel
         }
         .padding(16)
         .background(cardBackground)
@@ -64,87 +64,61 @@ struct FriendProfileCard<Footer: View>: View {
         }
     }
 
-    private var detailPanel: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 0) {
-                metric(
-                    value: battleStats.map { String($0.battleCount) } ?? "—",
-                    title: "対戦数",
-                    systemImage: "gamecontroller.fill",
-                    color: .indigo
-                )
+    private var statsPanel: some View {
+        HStack(spacing: 8) {
+            BattleStatsRow(stats: battleStats)
 
-                metricDivider
-
-                metric(
-                    value: battleStats.map { String($0.firstPlaceCount) } ?? "—",
-                    title: "1位回数",
-                    systemImage: "crown.fill",
-                    color: .yellow
-                )
-
-                metricDivider
-
-                metric(
-                    value: battleStats.map {
-                        $0.firstPlaceRate.formatted(.percent.precision(.fractionLength(1)))
-                    } ?? "—",
-                    title: "1位率",
-                    systemImage: "trophy.fill",
-                    color: .blue
-                )
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("フレンドコード")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-
-                HStack(spacing: 10) {
-                    Text(friendCode ?? "------")
-                        .font(.system(.headline, design: .monospaced).bold())
-                        .foregroundStyle(.primary)
-                        .kerning(2)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.18 : 0.07))
-                        )
-
-                    if let friendCode {
-                        Button {
-                            copy(friendCode)
-                        } label: {
-                            Label(copied ? "済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .font(.caption)
-                        .fixedSize()
-
-                        ShareLink(item: "スタはやでフレンドになろう!マイコード:\(friendCode)") {
-                            Label("シェア", systemImage: "square.and.arrow.up")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .font(.caption)
-                        .fixedSize()
-                    }
-                }
-            }
-
-            footer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.tertiary)
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
-        )
+        .background(panelBackground)
+    }
+
+    private var friendCodePanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("フレンドコード")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+
+            HStack(spacing: 10) {
+                Text(friendCode ?? "------")
+                    .font(.system(.headline, design: .monospaced).bold())
+                    .foregroundStyle(.primary)
+                    .kerning(2)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.18 : 0.07))
+                    )
+
+                if let friendCode {
+                    Button {
+                        copy(friendCode)
+                    } label: {
+                        Label(copied ? "済み" : "コピー", systemImage: copied ? "checkmark" : "doc.on.doc")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .font(.caption)
+                    .fixedSize()
+
+                    ShareLink(item: "スタはやでフレンドになろう!マイコード:\(friendCode)") {
+                        Label("シェア", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .font(.caption)
+                    .fixedSize()
+                }
+            }
+        }
+        .padding(12)
+        .background(panelBackground)
     }
 
     private var cardBackground: some View {
@@ -158,25 +132,9 @@ struct FriendProfileCard<Footer: View>: View {
             )
     }
 
-    private var metricDivider: some View {
-        Divider()
-            .frame(height: 60)
-    }
-
-    private func metric(value: String, title: String, systemImage: String, color: Color) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: systemImage)
-                .foregroundStyle(color)
-            Text(value)
-                .font(.title3.bold())
-                .monospacedDigit()
-                .foregroundStyle(.primary)
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+    private var panelBackground: some View {
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(Color(.secondarySystemBackground))
     }
 
     private func copy(_ friendCode: String) {
@@ -193,34 +151,18 @@ struct FriendProfileCard<Footer: View>: View {
     }
 }
 
-extension FriendProfileCard where Footer == EmptyView {
-    /// 差し込む行がないとき(フレンドのカードなど)に使う
-    init(
-        nickname: String,
-        friendCode: String?,
-        icon: String = ProfileIcon.none,
-        bio: String = "",
-        battleStats: ProfileBattleStats? = nil
-    ) {
-        self.init(
-            nickname: nickname,
-            friendCode: friendCode,
-            icon: icon,
-            bio: bio,
-            battleStats: battleStats,
-            footer: { EmptyView() }
-        )
-    }
-}
-
 #Preview {
-    FriendProfileCard(
-        nickname: "TOKIYA TEST DEMO",
-        friendCode: "VH49YR",
-        icon: "✏️",
-        bio: "実務経験はありません。Codexの扱いは得意です。",
-        battleStats: ProfileBattleStats(battleCount: 42, firstPlaceCount: 18)
-    )
-    .padding()
-    .background(Color(.systemGroupedBackground))
+    NavigationStack {
+        FriendProfileCard(
+            nickname: "TOKIYA TEST DEMO",
+            friendCode: "VH49YR",
+            icon: "✏️",
+            bio: "実務経験はありません。Codexの扱いは得意です。",
+            battleStats: ProfileBattleStats(battleCount: 42, firstPlaceCount: 18)
+        ) {
+            Text("詳細")
+        }
+        .padding()
+        .background(Color(.systemGroupedBackground))
+    }
 }

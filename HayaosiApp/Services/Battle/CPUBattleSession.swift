@@ -112,7 +112,7 @@ final class CPUBattleSession: BattleSession {
         cancelAllTasks()
     }
 
-    /// CPU対戦は一人練習扱いで学習履歴・復習リストに反映する
+    /// CPU対戦は一人練習扱いで学習履歴・復習リストに反映し、戦績はフレンド戦へ合算する
     func saveResultsIfNeeded(context: ModelContext) {
         guard !hasSavedResults, status == .finished else { return }
         hasSavedResults = true
@@ -121,6 +121,7 @@ final class CPUBattleSession: BattleSession {
             mode: .practice,
             context: context
         )
+        saveBattleRecord(matchType: .friend, context: context)
     }
 
     // MARK: - 進行(オンライン版のホストエンジンと同じルール)

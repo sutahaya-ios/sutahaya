@@ -314,7 +314,7 @@ final class OnlineBattleSession: BattleSession {
         myResultsByQuestion[questionID] = answer.choice == state.questions[game.questionIndex].answer
     }
 
-    /// 対戦終了時に一度だけ、正誤履歴と復習リストへ反映する(要件 §5.4)
+    /// 対戦終了時に一度だけ、正誤履歴・復習リストと戦績へ反映する(要件 §5.4)
     func saveResultsIfNeeded(context: ModelContext) {
         guard !hasSavedResults, state?.status == .finished else { return }
         hasSavedResults = true
@@ -323,5 +323,6 @@ final class OnlineBattleSession: BattleSession {
             mode: .battle,
             context: context
         )
+        saveBattleRecord(matchType: .friend, context: context)
     }
 }

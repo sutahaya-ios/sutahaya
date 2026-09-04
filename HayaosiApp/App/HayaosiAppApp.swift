@@ -21,6 +21,8 @@ struct HayaosiAppApp: App {
                     Task { await SubscriptionService.shared.refreshEntitlements() }
                 }
         }
-        .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self])
+        .modelContainer(
+            for: [Question.self, AnswerRecord.self, ReviewItem.self, DailyStudyTime.self, BattleRecord.self]
+        )
     }
 }

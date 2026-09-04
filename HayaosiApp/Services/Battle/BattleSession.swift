@@ -31,6 +31,20 @@ protocol BattleSession: AnyObject, Observable {
 extension BattleSession {
     var battleClockOffsetMS: Double { 0 }
 
+    /// 自分の順位を戦績として残す。二重保存を防ぐため `saveResultsIfNeeded` のガードの内側から呼ぶ
+    func saveBattleRecord(matchType: BattleMatchType, context: ModelContext) {
+        guard let players = state?.players,
+              let me = players.first(where: { $0.id == myID }) else { return }
+
+        ResultRecorder.recordBattle(
+            matchType: matchType,
+            rank: BattleRanking.rank(of: me, in: players),
+            participantCount: players.count,
+            score: me.score,
+            context: context
+        )
+    }
+
     /// CPU対戦など同期的に回答できる実装は、従来の回答処理を呼んだ時点で成功とみなす。
     func submitAnswer(_ choice: String, visibleCount: Int, completion: @escaping (Bool) -> Void) {
         submitAnswer(choice, visibleCount: visibleCount)

@@ -3,7 +3,7 @@ import SwiftData
 
 /// マイページ。プロフィールを主役にし、友達・設定への入口をまとめる
 struct MyPageView: View {
-    @Query private var dailyStudyTimes: [DailyStudyTime]
+    @Query private var battleRecords: [BattleRecord]
     @AppStorage("nickname") private var nickname = "ゲスト"
     @AppStorage("profileIcon") private var profileIcon = ProfileIcon.none
     @AppStorage("profileBio") private var profileBio = ""
@@ -57,52 +57,14 @@ struct MyPageView: View {
                 nickname: nickname,
                 friendCode: auth.friendCode,
                 icon: profileIcon,
-                bio: profileBio
+                bio: profileBio,
+                battleStats: BattleStatsSummary.calculate(records: battleRecords)
             ) {
-                studyRecordRow
+                ProfileDetailView()
             }
 
             onlineProfileStatus
         }
-    }
-
-    /// カード全体ではなくこの行だけをタップ領域にする(右上の「編集」と競合させないため)
-    private var studyRecordRow: some View {
-        VStack(spacing: 12) {
-            Divider()
-
-            NavigationLink {
-                StudyRecordView()
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .foregroundStyle(Color.accentColor)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("学習記録")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Text(StudyDuration.text(seconds: totalStudySeconds))
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.primary)
-                            .monospacedDigit()
-                    }
-
-                    Spacer(minLength: 8)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var totalStudySeconds: Double {
-        dailyStudyTimes.reduce(0) { $0 + max($1.totalSeconds, 0) }
     }
 
     @ViewBuilder
