@@ -13,6 +13,7 @@ struct SubscriptionView: View {
             statusSection
             productSection
             restoreSection
+            legalSection
         }
         .navigationTitle("プレミアム")
         .task {
@@ -97,6 +98,14 @@ struct SubscriptionView: View {
             .disabled(isProcessing)
         } footer: {
             Text("以前購入したサブスクリプションが反映されない場合にお試しください。")
+        }
+    }
+
+    /// 自動更新サブスクの購入画面には、利用規約とプライバシーポリシーへの導線が要る(審査ガイドライン3.1.2)
+    private var legalSection: some View {
+        Section {
+            Link("利用規約(EULA)", destination: AppLinks.termsOfUse)
+            Link("プライバシーポリシー", destination: AppLinks.privacyPolicy)
         }
     }
 
