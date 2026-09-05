@@ -25,61 +25,33 @@ struct RoomCreateView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                LabeledContent("ジャンル", value: Genre.englishWord.displayName)
-                WordClassificationPicker(
-                    category: $configuration.category,
-                    difficulty: $configuration.difficulty
-                )
-                Picker("問題数", selection: $configuration.questionCount) {
-                    ForEach(QuizDefaults.questionCountOptions, id: \.self) { count in
-                        Text("\(count)問").tag(count)
-                    }
-                }
-                Picker("制限時間", selection: $configuration.timeLimit) {
-                    ForEach(QuizDefaults.timeLimitOptions, id: \.self) { seconds in
-                        Text("\(Int(seconds))秒 / 問").tag(seconds)
-                    }
-                }
-            } header: {
-                Text("対戦設定")
-            } footer: {
-                Text("\(configuration.category.displayName) \(configuration.difficulty.starDisplay)の収録問題数:\(availableQuestions.count)問\n設定した問題数に満たない場合は、収録されている問題だけを出題します。")
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                modeSection
 
-            if availableQuestions.isEmpty {
-                Section {
+                BattleSettingsSelector(
+                    configuration: $configuration,
+                    availableWordCount: availableQuestions.count
+                )
+
+                if availableQuestions.isEmpty {
                     QuestionAvailabilityNotice(
                         category: configuration.category,
                         difficulty: configuration.difficulty
                     )
                 }
-            } else {
-                Section {
-                    Button {
-                        if mode == .editPreferences {
-                            configuration.save()
-                            dismiss()
-                        } else {
-                            Task { await create() }
-                        }
-                    } label: {
-                        if isCreating {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Text(mode == .editPreferences ? "この設定を使う" : "ルームを作成")
-                        }
-                    }
-                    .buttonStyle(SoundButtonStyle())
-                    .disabled(isCreating)
-                } footer: {
-                    Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")
-                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+        }
+        .background(Color(.systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) {
+            if !availableQuestions.isEmpty {
+                primaryControl
             }
         }
         .navigationTitle(mode == .editPreferences ? "対戦設定" : "ルーム作成")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $showRoom) {
             if let session {
                 BattleFlowView(session: session)
@@ -98,6 +70,62 @@ struct RoomCreateView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    /// 出題の種類。いまは英単語だけだが、増えたときにここが伸びる
+    private var modeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("モード")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+
+            Picker("モード", selection: .constant(Genre.englishWord)) {
+                ForEach(Genre.allCases) { genre in
+                    Text(genre.displayName).tag(genre)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+    }
+
+    private var primaryControl: some View {
+        VStack(spacing: 8) {
+            if mode == .create {
+                Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button {
+                if mode == .editPreferences {
+                    configuration.save()
+                    dismiss()
+                } else {
+                    Task { await create() }
+                }
+            } label: {
+                Group {
+                    if isCreating {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text(mode == .editPreferences ? "この設定を使う" : "ルームを作成")
+                            .font(.headline.bold())
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            }
+            .buttonStyle(SoundButtonStyle())
+            .disabled(isCreating)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(.bar)
     }
 
     private var availableQuestions: [Question] {
