@@ -94,8 +94,11 @@ npm run test:firebase-functions
 
 ```bash
 firebase deploy --project hayaosiapp --only functions:sendRoomInvite
+firebase functions:artifacts:setpolicy --project hayaosiapp --location asia-northeast1 --days 1 --force
 firebase deploy --project hayaosiapp --only firestore:rules
 ```
+
+Artifact Registryのcleanup policyは、Functionの動作に不要な過去のデプロイ用コンテナを1日後に削除し、保存料金の蓄積を防ぐ。
 
 ## 5. 動作確認
 

@@ -44,10 +44,10 @@
 
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| Codex統合担当 | `project.yml`、`firebase.json`、`functions/`、`FriendService.swift`、`BattleLobbyView.swift`、`firestore.rules`、`FirebaseRulesTests/`、`FIREBASE_SETUP.md` | TASK 3: RTDBのhost真正性をCloud Functionで検証してから招待を作成し、guestの直接書き込みをbackendで拒否する | 2026-09-05 |
 ---
-## 最新更新(2026年8月25日〜9月4日)
+## 最新更新(2026年8月25日〜9月5日)
 
+- Codex統合担当: **TASK 3「ホスト以外も招待できる」を完了**。ロビーの招待UIと送信処理をhostに限定し、callable Function `sendRoomInvite`がRTDBの`hostID`・`roomInstanceID`・waiting状態とFirestoreの相互フレンド関係を検証してcanonical inviteを作成する。Firestore Rulesはクライアントからの招待create/reinviteを拒否し、recipientのclaim/finalize/rollbackは維持。Functions Emulator 6件、Rules Emulator 37件、Simulator Swiftテスト109件、物理iPhone向けbuildに成功。本番`hayaosiapp`でFunctionが東京リージョン・Node.js 22のACTIVE、Firestore Rules公開済み、古いコンテナは1日後に自動削除。物理iPhone＋Simulatorでhostの招待送信→guestの受信・参加→2人ロビーと、guestに招待欄が表示されないことをE2E確認済み。改造guestのbackend拒否はFunctions Emulatorで確認済み
 - Codex統合担当: **ルーム作成がFirebase障害で止まる経路を修正**。本番RTDB Rulesが要求する`roomInstanceID`・`playerSlots`・hostの`slot`を含む新schemaと、main上の旧クライアントpayloadに版ずれがあったため、関連する通信対戦実装・Rules・テストを同時にGitへ反映する。また、RTDBルーム作成に不要なFirestoreプロフィール・`friendCodes`索引の準備をFirebase Authenticationから分離し、プロフィール側のpermission deniedがあっても認証済みuidでルームを作成できるようにした。Rules Emulator 43件成功、未完成の未追跡UIモックをビルド対象から除外したSimulator向けbuild成功。修正版をiPhone 17 Simulatorへinstallし、一時XCUITestで**実在Firebaseの「ルーム作成」タップからルームID・host 1/8表示までE2E成功**。同時間帯にpermission denied等のFirebaseエラーは検出されなかった。**物理iPhone回帰と本番deployは今回未実施**
 - Codex(たける側): **高校英単語の統合・ターゲット1900追加をJSONへ反映し、データ依存で古くなった分類テスト2か所を修正**。変換ツールの`--write`実行で差分は`high_school.json`のみ、2194語から2998語へ更新。中学1510語・TOEIC1443語は変更なし。読み飛ばしはターゲット1400=638語・1900=1063語・金のフレーズ=557語、高校内訳は★1:699 / ★2:700 / ★3:762 / ★4:418 / ★5:419。`QuestionSeeder.dataVersion`は11。高校ID接頭辞テストを`hs1_`/`hs2_`/`hs3_`対応にし、旧ID移行テストは`loadEntries()`から高校`benefit`のIDを取得して比較するよう変更。指定の`WordClassificationTests`全11件成功
 - Codex(たける側): **TOEIC金のフレーズで、同一カテゴリの先行語と同じシート内の既出語を検証・ID採番前に読み飛ばすよう変換ツールを変更し、生成JSONへ反映**。source単位のフラグは金だけ有効にし、比較は小文字化・前後空白除去したwordのみで行う。実行時は`--write`の有無にかかわらず読み飛ばした件数と語一覧を表示する。銀の許容難易度へ3を追加。`--write`で`junior_high.json`と`toeic.json`へ反映し、`QuestionSeeder.dataVersion`を10へ更新。再実行で3カテゴリとも変更なし、入力エラー0件、金から557語を読み飛ばし、中学1510語・高校183語・TOEIC1443語、TOEIC内訳★1:400 / ★2:300 / ★3:301 / ★4:157 / ★5:285を確認。全88テスト中86件成功。収録データのカテゴリ内ID・単語重複なしを含む今回関連テストは成功したが、旧ID移行テスト1件の2検証は、旧固定値`benefit = jh_0001`が生成後に中学`jh_1367`・TOEIC`tc1_0463`の2カテゴリへ存在するため失敗
@@ -116,7 +116,7 @@
 2. **Firebase本格ルールの実機整合性確認**:Firestore・RTDBとも本番公開済み。実機2台の通信対戦で拒否や進行停止がないか確認し、不整合があればルールとテストを同時に修正する
 3. **対戦の追加テストと既存バグの改善**:`CPUBattleSession`を含む進行ロジックの不足ケースを追加し、発見した不具合を修正する
 4. 通信対戦検証後の切断・再入室・遅延対策
-5. Cloud Functions開発(v1.5準備):採点のサーバー移行。着手前に作業中宣言必須
+5. Cloud Functions採点(v1.5準備):採点のサーバー移行。着手前に作業中宣言必須
 
 ### 担当:未定
 
@@ -138,7 +138,7 @@
 - バックエンド全般(Firebase/Auth/DB/セキュリティルール/Cloud Functions等)は原則としてTOKIYA-YAMAMOTO氏が担当する。たける側の機能で変更が必要な場合は、独断で実装せず担当間で調整する
 - 通信対戦の進行権威はホスト端末(v1.0)。Cloud Functions採点はv1.5で検討
 - 対戦の出題はホストが端末内の問題からシャッフルしてRTDBに配信(全員同じ選択肢順)
-- フレンドは申請を相手が承認した時に双方へ登録する相互承認方式。申請時は相手の `friendRequests` と自分の `sentFriendRequests` を同じバッチで作成し、承認・拒否時も同時に削除する。ルーム招待は相手の `invites` サブコレクションに書き込む
+- フレンドは申請を相手が承認した時に双方へ登録する相互承認方式。申請時は相手の `friendRequests` と自分の `sentFriendRequests` を同じバッチで作成し、承認・拒否時も同時に削除する。ルーム招待はhost検証済みCloud Functionが相手の `invites` サブコレクションに書き込む
 - 対戦ルール定数は `Services/Battle/BattleRules.swift`、文字送りの間隔は `ProgressiveReveal.characterInterval` が唯一の出典(ドキュメントに数値を書かない)
 - **対戦は文字送り型のみ**:問題文を1文字ずつ表示し、4択は全員に最初から見せる。選択肢タップが回答となる。正解者内の回答時刻順で+20/+10/+5/4位以降+1、不正解−10、無回答0
 - **得点は回答のたびに、その時点で確定したぶんを反映する**(発表まで待たせない)。毎回ゼロから計算し直して問題開始時の得点へ置き直すので二重加算しない。発表へ進むのは「制限時間切れ」か「回答しうる全員が答え終えた」時。CPU対戦では参加を見送ったCPUを待ち対象に含めない
