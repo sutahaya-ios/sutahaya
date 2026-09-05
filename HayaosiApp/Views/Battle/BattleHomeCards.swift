@@ -50,7 +50,6 @@ struct BattleScopeCard: View {
 /// 対戦ホームの2つの主操作を同じ見た目で描画する。
 struct BattleModeButton: View {
     let title: String
-    let subtitle: String
     let systemImage: String
     let action: () -> Void
 
@@ -64,11 +63,6 @@ struct BattleModeButton: View {
                     .font(.headline.bold())
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 116)
@@ -95,13 +89,11 @@ struct BattleModeButton: View {
             HStack(spacing: 12) {
                 BattleModeButton(
                     title: "オンライン対戦",
-                    subtitle: "全国のプレイヤーと対戦！",
                     systemImage: "globe",
                     action: {}
                 )
                 BattleModeButton(
                     title: "フレンド対戦",
-                    subtitle: "友だちと対戦！",
                     systemImage: "person.2.fill",
                     action: {}
                 )

@@ -308,14 +308,12 @@ struct BattleHubView: View {
         HStack(spacing: 12) {
             BattleModeButton(
                 title: "オンライン対戦",
-                subtitle: "全国のプレイヤーと対戦！",
                 systemImage: "globe",
                 action: { showOnlineMatch = true }
             )
 
             BattleModeButton(
                 title: "フレンド対戦",
-                subtitle: "友だちと対戦！",
                 systemImage: "person.2.fill",
                 action: { showFriendMenu = true }
             )
