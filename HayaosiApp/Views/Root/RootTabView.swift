@@ -9,8 +9,13 @@ struct RootTabView: View {
         case myPage
     }
 
+    /// 一瞬で消えるちらつきを避けるため、スプラッシュは最低これだけ出す
+    private static let minimumSplashDuration = Duration.milliseconds(700)
+    private static let splashFadeDuration = 0.35
+
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = AppTab.battle
+    @State private var isPreparing = true
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -26,9 +31,26 @@ struct RootTabView: View {
                 .tabItem { Label("マイページ", systemImage: "person.crop.circle.fill") }
                 .tag(AppTab.myPage)
         }
-        .task {
-            QuestionSeeder.seedIfNeeded(context: modelContext)
+        .overlay {
+            if isPreparing {
+                SplashView()
+                    .transition(.opacity)
+            }
         }
+        .task { await prepareQuestionData() }
+    }
+
+    /// 問題データの投入が終わるまでスプラッシュで覆う。
+    /// 投入はメインスレッドを占有するため、覆っておかないと描きかけのタブバーが固まって見える
+    private func prepareQuestionData() async {
+        let startedAt = ContinuousClock.now
+        QuestionSeeder.seedIfNeeded(context: modelContext)
+
+        let remaining = Self.minimumSplashDuration - startedAt.duration(to: .now)
+        if remaining > .zero {
+            try? await Task.sleep(for: remaining)
+        }
+        withAnimation(.easeInOut(duration: Self.splashFadeDuration)) { isPreparing = false }
     }
 }
 
