@@ -16,6 +16,7 @@ struct BattleLobbyView: View {
     @Query private var allQuestions: [Question]
     @State private var inviteSentAtByFriendID: [String: Date] = [:]
     @State private var sendingInviteFriendIDs: Set<String> = []
+    @State private var showNPCManagement = false
 
     private var friendService: FriendService { .shared }
 
@@ -46,6 +47,14 @@ struct BattleLobbyView: View {
         .safeAreaInset(edge: .bottom) {
             if let state = session.state {
                 startControl(state: state)
+            }
+        }
+        .sheet(isPresented: $showNPCManagement) {
+            if let npcSession {
+                NavigationStack {
+                    NPCManagementView(session: npcSession)
+                }
+                .presentationDetents([.medium, .large])
             }
         }
     }
@@ -95,9 +104,45 @@ struct BattleLobbyView: View {
                     ForEach(state.players) { player in
                         playerCard(player, state: state)
                     }
+                    if session.isOnline,
+                       session.isHost,
+                       state.status == .waiting,
+                       state.players.count < BattleRules.maxPlayers,
+                       npcSession != nil {
+                        addNPCSlot
+                    }
                 }
             }
         }
+    }
+
+    private var npcSession: (any NPCManageableBattleSession)? {
+        session as? any NPCManageableBattleSession
+    }
+
+    private var addNPCSlot: some View {
+        Button {
+            showNPCManagement = true
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 29, weight: .semibold))
+                    .foregroundStyle(.blue)
+                    .frame(width: 76, height: 76)
+                    .background(Color.blue.opacity(0.08), in: Circle())
+                    .overlay {
+                        Circle()
+                            .strokeBorder(Color.blue.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [5]))
+                    }
+
+                Text("NPC追加")
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                    .frame(width: 82)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("NPCを追加")
     }
 
     private func playerCard(_ player: RoomState.Player, state: RoomState) -> some View {

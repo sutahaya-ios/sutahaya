@@ -181,6 +181,19 @@ async function joinPlayer(db, uid, slot, options = {}) {
   }
 }
 
+async function addNPC(db, profileID, slot) {
+  const slotRef = ref(db, `rooms/1234/playerSlots/${slot}`);
+  await set(slotRef, profileID);
+  try {
+    await set(ref(db, `rooms/1234/players/${profileID}`), playerPayload(profileID, slot, {
+      nickname: profileID,
+    }));
+  } catch (error) {
+    await remove(slotRef).catch(() => {});
+    throw error;
+  }
+}
+
 function leavePlayer(db, uid, slot) {
   return update(ref(db, "rooms/1234"), {
     [`playerSlots/${slot}`]: null,
@@ -792,6 +805,35 @@ describe("Realtime Database rules", () => {
 
     const ninthDB = testEnv.authenticatedContext("player9").database();
     await assertFails(joinPlayer(ninthDB, "player9", 8));
+  });
+
+  it("allows only the host to add NPCs into the remaining eight player slots", async () => {
+    await seedRoom({ status: "waiting" });
+    const hostDB = testEnv.authenticatedContext("host").database();
+    const guestDB = testEnv.authenticatedContext("guest").database();
+
+    await assertFails(addNPC(guestDB, "cpu-normal", 2));
+    await assertSucceeds(addNPC(hostDB, "cpu-normal", 2));
+    await assertSucceeds(addNPC(hostDB, "cpu-strong", 3));
+    assert.equal(
+      (await get(ref(guestDB, "rooms/1234/players/cpu-normal/nickname"))).val(),
+      "cpu-normal"
+    );
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const updates = {};
+      for (let slot = 4; slot <= 7; slot += 1) {
+        const profileID = `cpu-fill-${slot}`;
+        updates[`playerSlots/${slot}`] = profileID;
+        updates[`players/${profileID}`] = playerPayload(profileID, slot);
+      }
+      await update(ref(context.database(), "rooms/1234"), updates);
+    });
+
+    assert.equal((await get(ref(hostDB, "rooms/1234/players"))).size, 8);
+    await assertFails(addNPC(hostDB, "cpu-ninth", 8));
+    await assertFails(set(ref(hostDB, "rooms/1234/players/cpu-without-slot"),
+      playerPayload("cpu-without-slot", 7)));
   });
 
   it("treats an existing UID join as idempotent without changing score or joinedAt", async () => {

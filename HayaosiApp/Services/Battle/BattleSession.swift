@@ -45,6 +45,15 @@ protocol BattleSession: AnyObject, Observable {
     func saveResultsIfNeeded(context: ModelContext)
 }
 
+/// 既存NPC選択UIからNPCを追加・削除できるセッション。
+/// ローカル対戦とオンラインhostで同じUI・CPUProfileを再利用する。
+@MainActor
+protocol NPCManageableBattleSession: BattleSession {
+    var cpuProfiles: [CPUProfile] { get }
+    func addCPU(_ profile: CPUProfile)
+    func removeCPU(id: String)
+}
+
 extension BattleSession {
     var battleClockOffsetMS: Double { 0 }
     var isStartingMatch: Bool { false }

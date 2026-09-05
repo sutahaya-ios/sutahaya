@@ -43,7 +43,7 @@
 |---|---|---|---|
 ---
 ## 最新更新(2026年8月25日〜9月5日)
-
+- Codex統合担当: **既存NPCをフレンドルームの空き枠へ追加できる統合を実装**。オンラインhostのメンバー末尾だけに「NPC追加」枠を出し、既存`NPCManagementView`・`CPUProfile`・`CPUAnswerStrategy`をローカル/オンラインで共用。NPCも既存`players`と0〜7固定`playerSlots`へ保存し、host端末だけが回答を予定・送信するため全参加者で表示・得点・正誤を共有する。アプリ側とRTDB Rulesの両方でhost限定・待機中限定・人間＋NPC最大8人を保証。Simulator Build、既存CPU回帰＋採点34件、Rules Emulator 38件、`git diff --check`成功。**RTDB Rulesは本番`hayaosiapp`へdeploy済み、物理iPhone＋SimulatorでのNPC追加・同期・対戦E2Eは未確認**
 - Codex統合担当: **ルーム入室前の対戦詳細設定画面を廃止**。フレンド対戦の「ルーム作成」は保存済み設定(未保存・不正値は既存既定値)でオンラインルームを直接作成し、「NPCと対戦」も同じ設定でNPC未参加のローカルロビーへ直接入る。NPCはロビー内で追加でき、ルーム内の設定変更・host権限・同期処理は維持。`RoomCreateView`からルーム作成責務を外して設定編集専用にした。Simulator向けBuildと関連テスト24件成功、`git diff --check`成功。**実在Firebaseでの直接ルーム作成と、現行buildでの画面遷移E2Eは未確認**
 - Codex統合担当: **対戦詳細設定の戻り先固定とオンラインguestへの設定同期を修正**。ロビーの「変更」が退出処理を呼んでHomeへ戻っていた経路を、同じ`BattleSession`上へ設定画面をpushして完了時にpopする構造へ変更。オンラインhostは待機中の`rooms/{code}/settings`だけを更新し、Picker変更を順序保証付きで即時writeするためguestの既存room listenerへ共有される。CPUルームも同じsession・参加者・NPCを維持して設定だけ更新する。友達側のNPC管理と最新4分割設定UIを保持して競合解消し、`xcodegen generate`、関連Simulatorテスト32件成功。遷移とルーム維持は物理iPhone＋Simulatorでユーザー確認済み。**最新4分割UIへ統合後の即時同期E2Eは未再確認**
 - Claude(たける側): **対戦設定を4分割セレクタへ刷新し、用語をジャンル/レベルへ統一**(たけるの指示で今回もClaudeが実装まで担当)。`Form`のメニュー4つで選択肢が見えなかったため、ロビーの設定カードと同じ並び・同じSF Symbolsの4分割(ジャンル/レベル/問題数/制限時間)をタップで切り替え、選んだ項目の選択肢だけをチップで出す`BattleSettingsSelector`を新設した。出題の種類は`Genre`を「モード」としてカード外のセグメントに置き、1種類でも将来の追加に備える。収録数のフッター2行は削除し、「この設定で出せる問題◯語」の1行に置き換えて、設定した問題数を下回るときだけ数字を警告色にする。表示文字列だけ「カテゴリ→ジャンル」「難易度→レベル」に統一し(`WordClassificationPicker`経由でCPU対戦設定にも反映、学習タブの1文言も追従)、型名`Genre`/`WordCategory`とデータは未変更

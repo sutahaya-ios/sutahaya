@@ -22,6 +22,7 @@ extension OnlineBattleSession {
             revealScheduledIndex = nil
             ensureQuestionTimer(game: game, timeLimit: state.settings.timeLimit)
             captureBaseScoresIfNeeded(state: state, game: game)
+            ensureCPUAnswers(state: state, game: game)
             // 全員が回答権を使い切ったら、制限時間を待たずに採点して発表へ進む
             if hasEveryoneAnswered(state: state, game: game) {
                 finishQuestion(index: game.questionIndex)
@@ -30,6 +31,7 @@ extension OnlineBattleSession {
             }
         case .reveal:
             cancelQuestionTimer()
+            cancelCPUAnswerTasks()
             if game.reveal == nil {
                 // phaseだけ確定して結果書き込みが未完了なら、再接続時もここから再開する。
                 finishQuestion(index: game.questionIndex)
@@ -53,13 +55,97 @@ extension OnlineBattleSession {
         hostWriteTask = nil
         questionFinalizationTask?.cancel()
         questionFinalizationTask = nil
+        cancelCPUAnswerTasks()
     }
 
     /// 参加者全員が1回ずつ回答を終えたか(正誤は問わない)
     private func hasEveryoneAnswered(state: RoomState, game: RoomState.Game) -> Bool {
         guard !state.players.isEmpty else { return false }
         let answeredIDs = Set(acceptedAnswers(state: state, game: game).map(\.uid))
-        return state.players.allSatisfy { answeredIDs.contains($0.id) }
+        return state.players.allSatisfy { player in
+            let isCPU = CPUProfile.roster.contains { $0.id == player.id }
+            return (isCPU && !participatingCPUIds.contains(player.id))
+                || answeredIDs.contains(player.id)
+        }
+    }
+
+    // MARK: - NPC回答
+
+    /// オンラインでも既存CPUAnswerStrategyで参加・回答内容・回答時刻を決める。
+    /// 実際のRTDB書き込みだけをhostが担当し、guest端末ではNPCロジックを動かさない。
+    private func ensureCPUAnswers(state: RoomState, game: RoomState.Game) {
+        guard state.questions.indices.contains(game.questionIndex) else { return }
+        let questionKey = (game.questionIndex, game.effectiveStartedAtMS)
+        if scheduledCPUQuestion?.index != questionKey.0
+            || scheduledCPUQuestion?.effectiveStartedAtMS != questionKey.1 {
+            cancelCPUAnswerTasks()
+            scheduledCPUQuestion = questionKey
+            participatingCPUIds = []
+
+            let question = state.questions[game.questionIndex]
+            let profiles = state.players.compactMap { player in
+                CPUProfile.roster.first { $0.id == player.id }
+            }
+            for profile in profiles where cpuAnswerStrategy.participates(profile) {
+                participatingCPUIds.insert(profile.id)
+                let plan = cpuAnswerStrategy.progressivePlan(
+                    for: profile,
+                    question: question,
+                    timeLimit: state.settings.timeLimit
+                )
+                let answerAtMS = game.effectiveStartedAtMS + plan.delay * 1_000
+                let remaining = max(0, (answerAtMS - battleTimeMS(at: .now)) / 1_000)
+                cpuAnswerTasks[profile.id] = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(remaining))
+                    guard !Task.isCancelled, let self else { return }
+                    await self.submitCPUAnswer(
+                        profileID: profile.id,
+                        choice: plan.choice,
+                        visibleCount: plan.visibleCount,
+                        questionIndex: game.questionIndex,
+                        effectiveStartedAtMS: game.effectiveStartedAtMS
+                    )
+                }
+            }
+        }
+    }
+
+    private func submitCPUAnswer(
+        profileID: String,
+        choice: String,
+        visibleCount: Int,
+        questionIndex: Int,
+        effectiveStartedAtMS: Double
+    ) async {
+        guard isHost,
+              let state,
+              state.status == .playing,
+              let game = state.game,
+              game.phase == .question,
+              game.questionIndex == questionIndex,
+              game.effectiveStartedAtMS == effectiveStartedAtMS,
+              state.players.contains(where: { $0.id == profileID }),
+              !game.failedIDs.contains(profileID),
+              !game.answers.contains(where: { $0.uid == profileID }) else { return }
+
+        do {
+            try await roomRef.child("game/answers/\(profileID)").setValue([
+                "questionIndex": questionIndex,
+                "choice": choice,
+                "ts": ServerValue.timestamp(),
+                "visibleCount": visibleCount
+            ])
+        } catch {
+            lastError = "NPCの回答を送信できませんでした"
+            print("NPC回答の送信に失敗: \(error)")
+        }
+    }
+
+    private func cancelCPUAnswerTasks() {
+        cpuAnswerTasks.values.forEach { $0.cancel() }
+        cpuAnswerTasks = [:]
+        scheduledCPUQuestion = nil
+        participatingCPUIds = []
     }
 
     // MARK: - 回答状態の反映

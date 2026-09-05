@@ -10,7 +10,7 @@ import SwiftData
 /// そのものなので、アクセス制御を弱めないためにこのファイルに残す
 @MainActor
 @Observable
-final class CPUBattleSession: BattleSession {
+final class CPUBattleSession: NPCManageableBattleSession {
     /// タイマーの生成方法。テストでは即時・手動発火の実装に差し替える(既定は実時間で待つ)
     typealias TimerScheduler = @MainActor (_ seconds: TimeInterval, _ action: @escaping @MainActor () -> Void) -> Task<Void, Never>
 

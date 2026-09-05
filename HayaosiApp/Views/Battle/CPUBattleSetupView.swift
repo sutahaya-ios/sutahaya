@@ -115,9 +115,9 @@ struct CPUBattleRoomView: View {
     }
 }
 
-/// ホストが待機中のローカルルームに、既存プロファイルのNPCを追加・削除する。
-private struct NPCManagementView: View {
-    let session: CPUBattleSession
+/// ホストが待機中ルームに、既存プロファイルのNPCを追加・削除する共通UI。
+struct NPCManagementView: View {
+    let session: any NPCManageableBattleSession
 
     @Environment(\.dismiss) private var dismiss
 

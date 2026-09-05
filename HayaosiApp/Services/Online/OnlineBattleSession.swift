@@ -55,7 +55,7 @@ enum HostDisconnectPolicy {
 /// 進行の権威はホスト端末(OnlineBattleSession+Host.swift)が持つ。
 @MainActor
 @Observable
-final class OnlineBattleSession: BattleSession {
+final class OnlineBattleSession: NPCManageableBattleSession {
     private static let hostDisconnectGraceNanoseconds: UInt64 = 3_000_000_000
 
     enum SessionError: LocalizedError {
@@ -116,6 +116,8 @@ final class OnlineBattleSession: BattleSession {
     private var hostRecoveryTask: Task<Void, Never>?
     private var joinedPlayerSlot: Int?
     private(set) var didCreatePlayerDuringLatestJoin = false
+    private var pendingCPUProfileIDs: Set<String> = []
+    private var pendingCPUSlots: Set<Int> = []
 
     /// `.info/serverTimeOffset`で補正したFirebaseサーバー時刻 - 端末時刻(ms)。
     private(set) var battleClockOffsetMS: Double = 0
@@ -133,10 +135,20 @@ final class OnlineBattleSession: BattleSession {
     var hostWriteTask: Task<Void, Never>?
     /// 回答受付のtransaction終了から最終結果の確定書き込みまでを直列に行う
     var questionFinalizationTask: Task<Void, Never>?
+    var scheduledCPUQuestion: (index: Int, effectiveStartedAtMS: Double)?
+    var cpuAnswerTasks: [String: Task<Void, Never>] = [:]
+    var participatingCPUIds: Set<String> = []
+    let cpuAnswerStrategy = CPUAnswerStrategy()
 
     var roomRef: DatabaseReference { roomsRef.child(roomCode) }
 
     var isOnline: Bool { true }
+
+    var cpuProfiles: [CPUProfile] {
+        state?.players.compactMap { player in
+            CPUProfile.roster.first { $0.id == player.id }
+        } ?? []
+    }
 
     init(myID: String, nickname: String) throws {
         guard OnlineService.isDatabaseAvailable else { throw SessionError.databaseUnavailable }
@@ -480,6 +492,78 @@ final class OnlineBattleSession: BattleSession {
             throw SessionError.settingsUnavailable
         }
         try await roomRef.child("settings").setValue(settings.databaseValue)
+    }
+
+    /// hostが待機中ルームの空きslotへ既存NPCを追加する。slot予約とplayer作成は
+    /// 人間のjoinと同じ順序にし、同時参加でも合計8人を超えないようにする。
+    func addCPU(_ profile: CPUProfile) {
+        guard isHost,
+              let state,
+              state.status == .waiting,
+              CPUProfile.roster.contains(where: { $0.id == profile.id }),
+              !state.players.contains(where: { $0.id == profile.id }),
+              !pendingCPUProfileIDs.contains(profile.id),
+              state.players.count + pendingCPUProfileIDs.count < BattleRules.maxPlayers,
+              let roomInstanceID = state.roomInstanceID,
+              let slot = (0..<BattleRules.maxPlayers).first(where: {
+                  state.playerSlots[$0] == nil && !pendingCPUSlots.contains($0)
+              }) else { return }
+
+        pendingCPUProfileIDs.insert(profile.id)
+        pendingCPUSlots.insert(slot)
+        Task { [weak self] in
+            await self?.addCPU(profile, slot: slot, roomInstanceID: roomInstanceID)
+        }
+    }
+
+    private func addCPU(_ profile: CPUProfile, slot: Int, roomInstanceID: String) async {
+        defer {
+            pendingCPUProfileIDs.remove(profile.id)
+            pendingCPUSlots.remove(slot)
+        }
+
+        let slotRef = roomRef.child("playerSlots/\(slot)")
+        do {
+            try await slotRef.setValue(profile.id)
+            do {
+                try await roomRef.child("players/\(profile.id)").setValue([
+                    "nickname": profile.nickname,
+                    "score": 0,
+                    "joinedAt": ServerValue.timestamp(),
+                    "roomInstanceID": roomInstanceID,
+                    "slot": slot
+                ])
+            } catch {
+                _ = try? await slotRef.removeValue()
+                throw error
+            }
+        } catch {
+            lastError = "NPCを追加できませんでした"
+            print("NPCの追加に失敗: \(error)")
+        }
+    }
+
+    /// hostだけが、待機中ルームから既存NPCとそのslotを同時に外す。
+    func removeCPU(id: String) {
+        guard isHost,
+              let state,
+              state.status == .waiting,
+              CPUProfile.roster.contains(where: { $0.id == id }),
+              state.players.contains(where: { $0.id == id }),
+              let slot = state.playerSlot(for: id) else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await roomRef.updateChildValues([
+                    "playerSlots/\(slot)": NSNull(),
+                    "players/\(id)": NSNull()
+                ])
+            } catch {
+                lastError = "NPCを削除できませんでした"
+                print("NPCの削除に失敗: \(error)")
+            }
+        }
     }
 
     // MARK: - プレイヤー操作
