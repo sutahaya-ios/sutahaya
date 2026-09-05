@@ -31,7 +31,7 @@ struct CategoryHeatmapView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("難易度をタップして練習を始める")
+                Text("レベルをタップして練習を始める")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
 

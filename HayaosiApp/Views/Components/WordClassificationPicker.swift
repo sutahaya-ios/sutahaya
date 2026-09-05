@@ -6,12 +6,12 @@ struct WordClassificationPicker: View {
     @Binding var difficulty: WordDifficulty
 
     var body: some View {
-        Picker("カテゴリ", selection: $category) {
+        Picker("ジャンル", selection: $category) {
             ForEach(WordCategory.allCases) { category in
                 Text(category.displayName).tag(category)
             }
         }
-        Picker("難易度", selection: $difficulty) {
+        Picker("レベル", selection: $difficulty) {
             ForEach(WordDifficulty.allCases) { difficulty in
                 Text(difficulty.starDisplay).tag(difficulty)
             }
