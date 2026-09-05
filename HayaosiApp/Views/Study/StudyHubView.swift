@@ -13,8 +13,6 @@ struct StudyHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
-
                 PinnedStudyBoardView(
                     categories: pinnedCategories,
                     records: records,
@@ -25,27 +23,25 @@ struct StudyHubView: View {
 
                 addMaterialButton
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 28)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("学習")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(isEditingBoard ? "完了" : "編集") {
+                    withAnimation {
+                        isEditingBoard.toggle()
+                    }
+                }
+            }
         }
         .safeAreaInset(edge: .bottom) { AdBannerView() }
         .sheet(isPresented: $isShowingMaterialSheet) {
             StudyMaterialAddSheet(pinnedCategories: pinnedCategoriesBinding)
-        }
-    }
-
-    private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("学習メニュー")
-                .font(.title3.bold())
-
-            Spacer()
-
-            Button(isEditingBoard ? "完了" : "編集") {
-                withAnimation {
-                    isEditingBoard.toggle()
-                }
-            }
-            .font(.subheadline.weight(.semibold))
         }
     }
 
