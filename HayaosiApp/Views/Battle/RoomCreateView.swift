@@ -1,21 +1,17 @@
 import SwiftUI
 import SwiftData
 
-/// ルーム作成:設定を決めてルームを発行し、待機ロビーへ(要件 §5.1.1・§9-3)
+/// 保存済み設定または待機中ルームの設定を編集する再利用画面。
 struct RoomCreateView: View {
     enum Mode: Equatable {
-        case create
         case editPreferences
         case editRoom
     }
 
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("nickname") private var nickname = "ゲスト"
     @Query private var allQuestions: [Question]
     @State private var configuration: OnlineRoomConfiguration
-    @State private var session: OnlineBattleSession?
     @State private var isCreating = false
-    @State private var showRoom = false
     @State private var errorMessage: String?
     @State private var settingsUpdateTask: Task<Void, Error>?
 
@@ -24,7 +20,7 @@ struct RoomCreateView: View {
     private let onSaveSettings: (@MainActor (RoomState.Settings) async throws -> Void)?
 
     init(
-        mode: Mode = .create,
+        mode: Mode,
         initialConfiguration: OnlineRoomConfiguration? = nil,
         synchronizesChangesImmediately: Bool = false,
         onSaveSettings: (@MainActor (RoomState.Settings) async throws -> Void)? = nil
@@ -61,19 +57,8 @@ struct RoomCreateView: View {
                 primaryControl
             }
         }
-        .navigationTitle(mode == .create ? "ルーム作成" : "対戦設定")
+        .navigationTitle("対戦設定")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(isPresented: $showRoom) {
-            if let session {
-                BattleFlowView(session: session)
-            }
-        }
-        .onChange(of: showRoom) { _, isShowing in
-            if !isShowing {
-                session?.leave()
-                session = nil
-            }
-        }
         .onChange(of: configuration) { _, newConfiguration in
             guard mode == .editRoom, synchronizesChangesImmediately else { return }
             synchronizeRoomSettings(newConfiguration)
@@ -106,13 +91,6 @@ struct RoomCreateView: View {
 
     private var primaryControl: some View {
         VStack(spacing: 8) {
-            if mode == .create {
-                Text("作成すると参加コードが発行されます。同じ部屋の友達も遠隔の友達も、コード入力で入室できます。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
             Button {
                 switch mode {
                 case .editPreferences:
@@ -120,15 +98,13 @@ struct RoomCreateView: View {
                     dismiss()
                 case .editRoom:
                     Task { await saveRoomSettings() }
-                case .create:
-                    Task { await create() }
                 }
             } label: {
                 Group {
                     if isCreating {
                         ProgressView().tint(.white)
                     } else {
-                        Text(mode == .create ? "ルームを作成" : "この設定を使う")
+                        Text("この設定を使う")
                             .font(.headline.bold())
                     }
                 }
@@ -204,32 +180,11 @@ struct RoomCreateView: View {
         return updateTask
     }
 
-    private func create() async {
-        let availableQuestionCount = availableQuestions.count
-        guard availableQuestionCount > 0 else { return }
-
-        isCreating = true
-        defer { isCreating = false }
-        do {
-            configuration.save()
-            let uid = try await AuthService.shared.ensureAuthenticated()
-            let newSession = try OnlineBattleSession(myID: uid, nickname: nickname)
-            try await newSession.createRoom(
-                settings: configuration.roomSettings(
-                    availableQuestionCount: availableQuestionCount
-                )
-            )
-            session = newSession
-            showRoom = true
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
 }
 
 #Preview {
     NavigationStack {
-        RoomCreateView()
+        RoomCreateView(mode: .editPreferences)
     }
     .modelContainer(for: [Question.self, AnswerRecord.self, ReviewItem.self], inMemory: true)
 }

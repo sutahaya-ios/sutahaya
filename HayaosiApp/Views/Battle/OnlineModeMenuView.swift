@@ -1,7 +1,17 @@
 import SwiftUI
+import SwiftData
 
 /// フレンド対戦の入口。既存のルーム機能・招待・ローカルNPC対戦を集約する。
 struct OnlineModeMenuView: View {
+    @AppStorage("nickname") private var nickname = "ゲスト"
+    @Query private var allQuestions: [Question]
+    @State private var onlineSession: OnlineBattleSession?
+    @State private var cpuSession: CPUBattleSession?
+    @State private var showOnlineRoom = false
+    @State private var showCPURoom = false
+    @State private var isCreatingOnlineRoom = false
+    @State private var errorMessage: String?
+
     let invites: [RoomInvite]
     let isOnlineReady: Bool
     let joiningInviteID: String?
@@ -14,8 +24,8 @@ struct OnlineModeMenuView: View {
                     OnlinePreviewBanner()
                 }
 
-                NavigationLink {
-                    RoomCreateView()
+                Button {
+                    Task { await createOnlineRoom() }
                 } label: {
                     MenuCard(
                         title: "ルーム作成",
@@ -25,6 +35,7 @@ struct OnlineModeMenuView: View {
                     )
                 }
                 .buttonStyle(SoundButtonStyle())
+                .disabled(isCreatingOnlineRoom)
 
                 NavigationLink {
                     RoomJoinView()
@@ -42,12 +53,12 @@ struct OnlineModeMenuView: View {
                     inviteSection(at: timeline.date)
                 }
 
-                NavigationLink {
-                    CPUBattleSetupView()
+                Button {
+                    createCPURoom()
                 } label: {
                     MenuCard(
                         title: "NPCと対戦",
-                        subtitle: "強さを選んでローカル対戦",
+                        subtitle: "ルームでNPCを追加してローカル対戦",
                         systemImage: "desktopcomputer",
                         color: .accentColor
                     )
@@ -59,6 +70,35 @@ struct OnlineModeMenuView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("フレンド対戦")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showOnlineRoom) {
+            if let onlineSession {
+                BattleFlowView(session: onlineSession)
+            }
+        }
+        .navigationDestination(isPresented: $showCPURoom) {
+            if let cpuSession {
+                CPUBattleRoomView(session: cpuSession)
+            }
+        }
+        .onChange(of: showOnlineRoom) { _, isShowing in
+            if !isShowing {
+                onlineSession?.leave()
+                onlineSession = nil
+            }
+        }
+        .onChange(of: showCPURoom) { _, isShowing in
+            if !isShowing {
+                cpuSession?.leave()
+                cpuSession = nil
+            }
+        }
+        .alert("エラー", isPresented: .init(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private func activeInvites(at date: Date) -> [RoomInvite] {
@@ -137,6 +177,55 @@ struct OnlineModeMenuView: View {
             .buttonStyle(SoundButtonStyle())
             .disabled(joiningInviteID != nil)
         }
+    }
+
+    private func createOnlineRoom() async {
+        guard isOnlineReady else {
+            errorMessage = "Firebase設定後にルーム作成を利用できます(設定手順:FIREBASE_SETUP.md)"
+            return
+        }
+        guard let settings = savedRoomSettings() else { return }
+
+        isCreatingOnlineRoom = true
+        defer { isCreatingOnlineRoom = false }
+        do {
+            let uid = try await AuthService.shared.ensureAuthenticated()
+            let newSession = try OnlineBattleSession(myID: uid, nickname: nickname)
+            try await newSession.createRoom(settings: settings)
+            onlineSession = newSession
+            showOnlineRoom = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func createCPURoom() {
+        guard let settings = savedRoomSettings() else { return }
+        cpuSession = CPUBattleSession(
+            nickname: nickname,
+            settings: settings,
+            cpuProfiles: []
+        )
+        showCPURoom = true
+    }
+
+    /// 設定画面を経由せず、保存済み設定(未保存なら既存既定値)からルーム設定を作る。
+    private func savedRoomSettings() -> RoomState.Settings? {
+        let configuration = OnlineRoomConfiguration()
+        let availableQuestionCount = allQuestions
+            .filter { $0.genre == .englishWord }
+            .matching(
+                category: configuration.category,
+                difficulty: configuration.difficulty
+            )
+            .count
+        guard availableQuestionCount > 0 else {
+            errorMessage = "保存済みの条件に一致する問題がありません。対戦設定を変更してください。"
+            return nil
+        }
+        return configuration.roomSettings(
+            availableQuestionCount: availableQuestionCount
+        )
     }
 }
 

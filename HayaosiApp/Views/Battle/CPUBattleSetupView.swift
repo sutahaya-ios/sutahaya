@@ -87,7 +87,7 @@ struct CPUBattleSetupView: View {
 }
 
 /// ローカルルームにだけNPC管理を足し、共通の対戦フローはそのまま再利用する。
-private struct CPUBattleRoomView: View {
+struct CPUBattleRoomView: View {
     let session: CPUBattleSession
 
     @State private var showNPCManagement = false
