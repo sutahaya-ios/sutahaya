@@ -388,7 +388,7 @@ struct BattleHubView: View {
                         where rollbackError == .rollbackExpired {
                         // 期限後はpendingへ戻さず、logical expiredのまま扱う。
                     } catch {
-                        print("招待claimのrollbackに失敗: \(error)")
+                        OnlineService.debugLog("招待claimのrollbackに失敗: \(error)")
                     }
                     throw error
                 }

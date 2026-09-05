@@ -306,7 +306,7 @@ struct FriendsView: View {
             let uid = try await auth.ensureSignedIn()
             friendService.startListening(uid: uid)
         } catch {
-            print("サインインに失敗: \(error)")
+            OnlineService.debugLog("サインインに失敗: \(error)")
             signInFailed = true
         }
     }

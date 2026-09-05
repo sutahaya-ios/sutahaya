@@ -164,7 +164,7 @@ async function seedRoom({ status = "playing" } = {}) {
 function playerPayload(uid, slot, {
   roomInstanceID = "room-instance",
   score = 0,
-  joinedAt = slot + 1,
+  joinedAt = databaseServerTimestamp(),
   nickname = uid,
 } = {}) {
   return { nickname, score, joinedAt, roomInstanceID, slot };
@@ -689,7 +689,7 @@ describe("Realtime Database rules", () => {
       playerSlots: { 0: "host" },
       players: {
         host: {
-          nickname: "Host", score: 0, joinedAt: 1, roomInstanceID: "room-instance", slot: 0,
+          nickname: "Host", score: 0, joinedAt: databaseServerTimestamp(), roomInstanceID: "room-instance", slot: 0,
         },
       },
     };
@@ -718,7 +718,7 @@ describe("Realtime Database rules", () => {
       playerSlots: { 0: "host" },
       players: {
         host: {
-          nickname: "Host", score: 0, joinedAt: 1, roomInstanceID: "room-instance", slot: 0,
+          nickname: "Host", score: 0, joinedAt: databaseServerTimestamp(), roomInstanceID: "room-instance", slot: 0,
         },
       },
     };
@@ -760,6 +760,23 @@ describe("Realtime Database rules", () => {
     await assertSucceeds(remove(ref(slotOnlyDB, "rooms/1234/playerSlots/3")));
   });
 
+  it("requires trusted initial player fields", async () => {
+    await seedRoom({ status: "waiting" });
+    const guestDB = testEnv.authenticatedContext("newGuest").database();
+    const playerRef = ref(guestDB, "rooms/1234/players/newGuest");
+    await assertSucceeds(set(ref(guestDB, "rooms/1234/playerSlots/2"), "newGuest"));
+
+    await assertFails(set(playerRef, playerPayload("newGuest", 2, { score: 999 })));
+    await assertFails(set(playerRef, playerPayload("newGuest", 2, { joinedAt: 1 })));
+    await assertFails(set(playerRef, playerPayload("newGuest", 2, { nickname: "" })));
+    await assertFails(set(playerRef, playerPayload("newGuest", 2, {
+      nickname: "a".repeat(31),
+    })));
+    await assertSucceeds(set(playerRef, playerPayload("newGuest", 2, {
+      nickname: "New Guest",
+    })));
+  });
+
   it("rejects UID, slot, and roomInstanceID mismatches", async () => {
     await seedRoom({ status: "waiting" });
     const guestDB = testEnv.authenticatedContext("newGuest").database();
@@ -786,6 +803,9 @@ describe("Realtime Database rules", () => {
       "playerSlots/3": "newGuest",
       "players/newGuest": playerPayload("newGuest", 2),
     }));
+    await assertSucceeds(set(ref(newGuestDB, "rooms/1234/playerSlots/2"), "newGuest"));
+    await assertFails(set(ref(newGuestDB, "rooms/1234/playerSlots/3"), "newGuest"));
+    await assertSucceeds(remove(ref(newGuestDB, "rooms/1234/playerSlots/2")));
   });
 
   it("allows the eighth player and rejects the ninth", async () => {
@@ -909,9 +929,12 @@ describe("Realtime Database rules", () => {
     await assertSucceeds(set(ref(hostDB, "rooms/1234/game/answers/host"), {
       questionIndex: 0,
       choice: "answer",
-      ts: 100,
+      ts: databaseServerTimestamp(),
       visibleCount: 3,
     }));
+    const acceptedHostAnswer = (
+      await get(ref(hostDB, "rooms/1234/game/answers/host"))
+    ).val();
     await assertSucceeds(runTransaction(ref(hostDB, "rooms/1234/game"), (game) => ({
       ...game,
       phase: "reveal",
@@ -919,12 +942,7 @@ describe("Realtime Database rules", () => {
     await assertSucceeds(update(ref(hostDB, "rooms/1234"), {
       "players/host/score": 20,
       "game/answers": {
-        host: {
-          questionIndex: 0,
-          choice: "answer",
-          ts: 100,
-          visibleCount: 3,
-        },
+        host: acceptedHostAnswer,
       },
       "game/failed": null,
       "game/reveal": {
@@ -961,7 +979,7 @@ describe("Realtime Database rules", () => {
       playerSlots: { 0: "host" },
       players: {
         host: {
-          nickname: "Host", score: 0, joinedAt: 1,
+          nickname: "Host", score: 0, joinedAt: databaseServerTimestamp(),
           roomInstanceID: "room-instance-4321", slot: 0,
         },
       },
@@ -993,7 +1011,7 @@ describe("Realtime Database rules", () => {
     await assertSucceeds(set(ref(guestDB, "rooms/4321/game/answers/guest"), {
       questionIndex: 0,
       choice: "りんご",
-      ts: 11,
+      ts: databaseServerTimestamp(),
       visibleCount: 3,
     }));
     await assertSucceeds(update(roomRef, {
@@ -1016,7 +1034,7 @@ describe("Realtime Database rules", () => {
     const answer = {
       questionIndex: 0,
       choice: "answer",
-      ts: 100,
+      ts: databaseServerTimestamp(),
       visibleCount: 3,
     };
 
@@ -1033,7 +1051,7 @@ describe("Realtime Database rules", () => {
     const answer = {
       questionIndex: 0,
       choice: "answer",
-      ts: 100,
+      ts: databaseServerTimestamp(),
       visibleCount: 3,
     };
     const outsiderDB = testEnv.authenticatedContext("outsider").database();
@@ -1043,6 +1061,18 @@ describe("Realtime Database rules", () => {
     await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
       ...answer,
       visibleCount: -1,
+    }));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      ts: 1,
+    }));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      choice: "a".repeat(257),
+    }));
+    await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
+      ...answer,
+      visibleCount: 1001,
     }));
     await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
       ...answer,
@@ -1062,7 +1092,7 @@ describe("Realtime Database rules", () => {
     await assertFails(set(ref(guestDB, "rooms/1234/game/answers/guest"), {
       questionIndex: -1,
       choice: "late answer",
-      ts: 100,
+      ts: databaseServerTimestamp(),
       visibleCount: 3,
     }));
   });

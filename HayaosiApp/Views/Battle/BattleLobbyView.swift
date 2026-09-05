@@ -383,9 +383,9 @@ struct BattleLobbyView: View {
                         -RoomInvite.resendCooldown
                     )
                 }
-                print("招待の送信に失敗: \(error)")
+                OnlineService.debugLog("招待の送信に失敗: \(error)")
             } catch {
-                print("招待の送信に失敗: \(error)")
+                OnlineService.debugLog("招待の送信に失敗: \(error)")
             }
         }
     }

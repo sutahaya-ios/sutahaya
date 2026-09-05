@@ -153,7 +153,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
     init(myID: String, nickname: String) throws {
         guard OnlineService.isDatabaseAvailable else { throw SessionError.databaseUnavailable }
         self.myID = myID
-        self.nickname = nickname
+        self.nickname = ProfileInputPolicy.normalizedNickname(nickname)
         self.roomsRef = Database.database().reference().child("rooms")
         self.serverTimeOffsetRef = Database.database().reference(withPath: ".info/serverTimeOffset")
     }
@@ -462,7 +462,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
         } catch {
             isStartingMatch = false
             lastError = "対戦の開始に失敗しました"
-            print("対戦開始に失敗: \(error)")
+            OnlineService.debugLog("対戦開始に失敗: \(error)")
         }
     }
 
@@ -483,7 +483,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
             hasSavedResults = false
         } catch {
             lastError = "再戦の準備に失敗しました"
-            print("再戦の準備に失敗: \(error)")
+            OnlineService.debugLog("再戦の準備に失敗: \(error)")
         }
     }
 
@@ -539,7 +539,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
             }
         } catch {
             lastError = "NPCを追加できませんでした"
-            print("NPCの追加に失敗: \(error)")
+            OnlineService.debugLog("NPCの追加に失敗: \(error)")
         }
     }
 
@@ -561,7 +561,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
                 ])
             } catch {
                 lastError = "NPCを削除できませんでした"
-                print("NPCの削除に失敗: \(error)")
+                OnlineService.debugLog("NPCの削除に失敗: \(error)")
             }
         }
     }
@@ -615,7 +615,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
                 ])
             } catch {
                 lastError = "回答を送信できませんでした"
-                print("回答の送信に失敗: \(error)")
+                OnlineService.debugLog("回答の送信に失敗: \(error)")
                 completion(.rejected)
                 return
             }
@@ -645,7 +645,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
                 }
             } catch {
                 // 回答write成功後の確認read失敗は、hostのlistener結果を待てばよい。
-                print("回答の受理確認を待機: \(error)")
+                OnlineService.debugLog("回答の受理確認を待機: \(error)")
                 completion(.awaitingHostResult)
             }
         }
@@ -769,7 +769,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
                 try await statusRef.setValue(status.rawValue)
             } catch {
                 self.lastError = "ルームへの再接続に失敗しました"
-                print("ホストのルーム状態復元に失敗: \(error)")
+                OnlineService.debugLog("ホストのルーム状態復元に失敗: \(error)")
             }
         }
     }

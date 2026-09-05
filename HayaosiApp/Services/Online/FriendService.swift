@@ -58,7 +58,7 @@ final class FriendService {
             .addSnapshotListener { [weak self] snapshot, error in
                 MainActor.assumeIsolated {
                     if let error {
-                        print("フレンドリストの取得に失敗: \(error)")
+                        OnlineService.debugLog("フレンドリストの取得に失敗: \(error)")
                         return
                     }
                     self?.friends = snapshot?.documents.map { doc in
@@ -77,7 +77,7 @@ final class FriendService {
             .addSnapshotListener { [weak self] snapshot, error in
                 MainActor.assumeIsolated {
                     if let error {
-                        print("フレンド申請の取得に失敗: \(error)")
+                        OnlineService.debugLog("フレンド申請の取得に失敗: \(error)")
                         return
                     }
                     self?.friendRequests = snapshot?.documents.map { doc in
@@ -95,7 +95,7 @@ final class FriendService {
             .addSnapshotListener { [weak self] snapshot, error in
                 MainActor.assumeIsolated {
                     if let error {
-                        print("送信済みフレンド申請の取得に失敗: \(error)")
+                        OnlineService.debugLog("送信済みフレンド申請の取得に失敗: \(error)")
                         return
                     }
                     self?.sentFriendRequests = snapshot?.documents.map { doc in
@@ -113,7 +113,7 @@ final class FriendService {
                 MainActor.assumeIsolated {
                     guard self?.listeningUID == uid else { return }
                     if let error {
-                        print("招待の取得に失敗: \(error)")
+                        OnlineService.debugLog("招待の取得に失敗: \(error)")
                         return
                     }
                     self?.invites = snapshot?.documents.compactMap { doc in
@@ -159,7 +159,7 @@ final class FriendService {
                     bio: data["bio"] as? String
                 )
             } catch {
-                print("フレンドプロフィールの取得に失敗(\(friendID)): \(error)")
+                OnlineService.debugLog("フレンドプロフィールの取得に失敗(\(friendID)): \(error)")
             }
         }
 

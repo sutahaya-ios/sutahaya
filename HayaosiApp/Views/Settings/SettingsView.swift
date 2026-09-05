@@ -23,6 +23,7 @@ struct SettingsView: View {
     private static let profileSyncDelay: TimeInterval = 1.0
     /// 自己紹介の最大文字数(将来Firestoreへ同期する際の上限とも一致させる)
     private static let bioMaxLength = 140
+    private static let nicknameMaxLength = ProfileInputPolicy.nicknameMaxLength
 
     @AppStorage("nickname") private var nickname = "ゲスト"
     @AppStorage("profileIcon") private var profileIcon = ProfileIcon.none
@@ -49,7 +50,11 @@ struct SettingsView: View {
             }
         }
         .navigationTitle(content.title)
-        .onChange(of: nickname) { _, _ in
+        .onChange(of: nickname) { _, newNickname in
+            if newNickname.count > Self.nicknameMaxLength {
+                nickname = String(newNickname.prefix(Self.nicknameMaxLength))
+                return
+            }
             scheduleProfileSync()
         }
         .onChange(of: profileIcon) { _, _ in
@@ -70,6 +75,9 @@ struct SettingsView: View {
             Button("削除する", role: .destructive) {
                 deleteLearningData()
             }
+        }
+        .onDisappear {
+            nickname = ProfileInputPolicy.normalizedNickname(nickname)
         }
     }
 

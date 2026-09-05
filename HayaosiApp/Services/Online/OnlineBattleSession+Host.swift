@@ -137,7 +137,7 @@ extension OnlineBattleSession {
             ])
         } catch {
             lastError = "NPCの回答を送信できませんでした"
-            print("NPC回答の送信に失敗: \(error)")
+            OnlineService.debugLog("NPC回答の送信に失敗: \(error)")
         }
     }
 
@@ -244,7 +244,7 @@ extension OnlineBattleSession {
                 self.questionFinalizationTask = nil
             } catch {
                 self.lastError = "問題の進行に失敗しました"
-                print("問題の最終採点に失敗: \(error)")
+                OnlineService.debugLog("問題の最終採点に失敗: \(error)")
                 self.scoredQuestionIndex = nil
                 try? await Task.sleep(for: .milliseconds(500))
                 guard !Task.isCancelled else { return }
@@ -401,7 +401,7 @@ extension OnlineBattleSession {
                 try await roomRef.updateChildValues(updates)
             } catch {
                 lastError = failureMessage
-                print("\(failureMessage): \(error)")
+                OnlineService.debugLog("\(failureMessage): \(error)")
             }
             completion?()
         }

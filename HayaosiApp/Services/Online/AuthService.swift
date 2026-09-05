@@ -3,6 +3,17 @@ import Observation
 import FirebaseAuth
 import FirebaseFirestore
 
+enum ProfileInputPolicy {
+    static let defaultNickname = "ゲスト"
+    static let nicknameMaxLength = 30
+
+    static func normalizedNickname(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return defaultNickname }
+        return String(trimmed.prefix(nicknameMaxLength))
+    }
+}
+
 /// 匿名認証とユーザープロフィール(users/{uid})の管理(要件 §7.1)
 @MainActor
 @Observable
@@ -24,7 +35,9 @@ final class AuthService {
     private init() {}
 
     var nickname: String {
-        UserDefaults.standard.string(forKey: "nickname") ?? "ゲスト"
+        ProfileInputPolicy.normalizedNickname(
+            UserDefaults.standard.string(forKey: "nickname") ?? ProfileInputPolicy.defaultNickname
+        )
     }
 
     private var profileIcon: String {
@@ -87,7 +100,7 @@ final class AuthService {
         do {
             try await Firestore.firestore().collection("users").document(uid)
                 .setData([
-                    "nickname": nickname,
+                    "nickname": ProfileInputPolicy.normalizedNickname(nickname),
                     "icon": icon,
                     "bio": String(bio.prefix(Self.bioMaxLength))
                 ], merge: true)
@@ -296,7 +309,7 @@ final class AuthService {
         }
         details.append("message=\(nsError.localizedDescription)")
 
-        print("[AuthService] \(context): \(details.joined(separator: ", "))")
+        OnlineService.debugLog("[AuthService] \(context): \(details.joined(separator: ", "))")
     }
 
     private func firestoreErrorName(for error: NSError) -> String? {

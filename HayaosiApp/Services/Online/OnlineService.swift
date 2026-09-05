@@ -6,6 +6,13 @@ import FirebaseCore
 enum OnlineService {
     private(set) static var isConfigured = false
 
+    /// Firebaseの詳細エラーは開発時だけ記録し、Release版の端末ログへ残さない。
+    static func debugLog(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        print(message())
+        #endif
+    }
+
     /// Realtime Database(通信対戦)が使えるか。plistにDATABASE_URLが必要
     static var isDatabaseAvailable: Bool {
         isConfigured && !(FirebaseApp.app()?.options.databaseURL ?? "").isEmpty
@@ -18,7 +25,7 @@ enum OnlineService {
         }
         guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
               let options = FirebaseOptions(contentsOfFile: path) else {
-            print("GoogleService-Info.plist が見つからないため、オンライン機能は無効(セットアップ手順は FIREBASE_SETUP.md)")
+            debugLog("GoogleService-Info.plist が見つからないため、オンライン機能は無効(セットアップ手順は FIREBASE_SETUP.md)")
             return
         }
         FirebaseApp.configure(options: options)
