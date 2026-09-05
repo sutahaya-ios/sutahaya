@@ -21,7 +21,7 @@ final class CPUBattleSession: BattleSession {
 
     private let nickname: String
     private let settings: RoomState.Settings
-    private let cpus: [CPUProfile]
+    private(set) var cpuProfiles: [CPUProfile]
     private let strategy: CPUAnswerStrategy
     private let makeTimer: TimerScheduler
 
@@ -55,14 +55,34 @@ final class CPUBattleSession: BattleSession {
     }
 
     /// `strategy`・`timerScheduler` はテスト用の注入口。本番は既定値のまま使う
+    convenience init(nickname: String,
+                     settings: RoomState.Settings,
+                     cpuCount: Int,
+                     strategy: CPUAnswerStrategy = CPUAnswerStrategy(),
+                     timerScheduler: TimerScheduler? = nil) {
+        let maximumCPUCount = BattleRules.maxPlayers - 1
+        let count = min(max(1, cpuCount), maximumCPUCount)
+        self.init(
+            nickname: nickname,
+            settings: settings,
+            cpuProfiles: Array(CPUProfile.roster.prefix(count)),
+            strategy: strategy,
+            timerScheduler: timerScheduler
+        )
+    }
+
+    /// 強さを選んだNPCでローカルルームを作る。オンラインルームには使用しない。
     init(nickname: String,
          settings: RoomState.Settings,
-         cpuCount: Int,
+         cpuProfiles: [CPUProfile],
          strategy: CPUAnswerStrategy = CPUAnswerStrategy(),
          timerScheduler: TimerScheduler? = nil) {
+        var profileIDs: Set<String> = []
         self.nickname = nickname
         self.settings = settings
-        self.cpus = Array(CPUProfile.roster.prefix(max(1, cpuCount)))
+        self.cpuProfiles = Array(cpuProfiles.filter {
+            profileIDs.insert($0.id).inserted
+        }.prefix(BattleRules.maxPlayers - 1))
         self.strategy = strategy
         self.makeTimer = timerScheduler ?? { seconds, action in
             Task {
@@ -71,6 +91,22 @@ final class CPUBattleSession: BattleSession {
                 action()
             }
         }
+        publish()
+    }
+
+    /// 待機中のローカルルームへ、まだ参加していないNPCを追加する。
+    func addCPU(_ profile: CPUProfile) {
+        guard status == .waiting,
+              cpuProfiles.count < BattleRules.maxPlayers - 1,
+              !cpuProfiles.contains(where: { $0.id == profile.id }) else { return }
+        cpuProfiles.append(profile)
+        publish()
+    }
+
+    /// 待機中のローカルルームからNPCを外す。
+    func removeCPU(id: String) {
+        guard status == .waiting, id.hasPrefix("cpu-") else { return }
+        cpuProfiles.removeAll { $0.id == id }
         publish()
     }
 
@@ -144,7 +180,7 @@ final class CPUBattleSession: BattleSession {
     private func openAnswering() {
         let currentRound = answerRound
         let startDelay = startDelayMS / 1_000
-        let participatingCPUs = cpus.filter { strategy.participates($0) }
+        let participatingCPUs = cpuProfiles.filter { strategy.participates($0) }
         // 参加を見送ったCPUは最後まで答えないので、待たずに発表へ進めるよう対象から外す
         activeIDs = Set([myID] + participatingCPUs.map(\.id))
         for cpu in participatingCPUs {
@@ -219,7 +255,7 @@ final class CPUBattleSession: BattleSession {
         return !answers.contains { $0.uid == uid }
     }
 
-    private var participantIDs: [String] { [myID] + cpus.map(\.id) }
+    private var participantIDs: [String] { [myID] + cpuProfiles.map(\.id) }
 
     /// 回答しうる参加者が全員1回ずつ回答を終えたか(正誤は問わない)
     private var hasEveryoneAnswered: Bool {
@@ -264,7 +300,7 @@ final class CPUBattleSession: BattleSession {
     // MARK: - 状態の公開・タスク管理
 
     private func publish() {
-        let players = ([(myID, nickname)] + cpus.map { ($0.id, $0.nickname) })
+        let players = ([(myID, nickname)] + cpuProfiles.map { ($0.id, $0.nickname) })
             .enumerated()
             .map { index, entry in
                 RoomState.Player(id: entry.0, nickname: entry.1, score: scores[entry.0] ?? 0, joinedAtMS: Double(index))

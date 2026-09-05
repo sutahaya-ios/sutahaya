@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// CPU対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる
+/// NPC対戦の設定画面。Firebase不要でロビー→対戦→リザルトの流れを試せる。
 struct CPUBattleSetupView: View {
     private static let botCountRange = 1...(BattleRules.maxPlayers - 1)
 
@@ -30,7 +30,7 @@ struct CPUBattleSetupView: View {
                         Text("\(Int(seconds))秒 / 問").tag(seconds)
                     }
                 }
-                Stepper("CPU \(cpuCount)体", value: $cpuCount, in: Self.botCountRange)
+                Stepper("NPC \(cpuCount)体", value: $cpuCount, in: Self.botCountRange)
             }
 
             if availableQuestions.isEmpty {
@@ -48,10 +48,10 @@ struct CPUBattleSetupView: View {
                 }
             }
         }
-        .navigationTitle("ひとりで(CPU対戦)")
+        .navigationTitle("NPCと対戦")
         .navigationDestination(isPresented: $showRoom) {
             if let session {
-                BattleFlowView(session: session)
+                CPUBattleRoomView(session: session)
             }
         }
         .onChange(of: showRoom) { _, isShowing in
@@ -80,9 +80,135 @@ struct CPUBattleSetupView: View {
                 wordCategory: category,
                 wordDifficulty: difficulty
             ),
-            cpuCount: cpuCount
+            cpuProfiles: Array(CPUProfile.roster.prefix(cpuCount))
         )
         showRoom = true
+    }
+}
+
+/// ローカルルームにだけNPC管理を足し、共通の対戦フローはそのまま再利用する。
+private struct CPUBattleRoomView: View {
+    let session: CPUBattleSession
+
+    @State private var showNPCManagement = false
+
+    var body: some View {
+        BattleFlowView(session: session)
+            .toolbar {
+                if session.isHost, session.state?.status == .waiting {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showNPCManagement = true
+                        } label: {
+                            Label("NPC管理", systemImage: "person.badge.plus")
+                        }
+                        .buttonStyle(SoundButtonStyle())
+                    }
+                }
+            }
+            .sheet(isPresented: $showNPCManagement) {
+                NavigationStack {
+                    NPCManagementView(session: session)
+                }
+                .presentationDetents([.medium, .large])
+            }
+    }
+}
+
+/// ホストが待機中のローカルルームに、既存プロファイルのNPCを追加・削除する。
+private struct NPCManagementView: View {
+    let session: CPUBattleSession
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var availableProfiles: [CPUProfile] {
+        let joinedIDs = Set(session.cpuProfiles.map(\.id))
+        return CPUProfile.roster.filter { !joinedIDs.contains($0.id) }
+    }
+
+    private var memberCount: Int {
+        session.state?.players.count ?? 1
+    }
+
+    var body: some View {
+        List {
+            Section("参加中 \(memberCount)/\(BattleRules.maxPlayers)") {
+                if session.cpuProfiles.isEmpty {
+                    Text("NPCはいません")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(session.cpuProfiles) { profile in
+                        HStack(spacing: 12) {
+                            AvatarCircle(
+                                name: profile.nickname,
+                                icon: "",
+                                size: 42,
+                                color: .accentColor
+                            )
+                            profileDescription(profile)
+                            Spacer()
+                            if session.isHost {
+                                Button(role: .destructive) {
+                                    session.removeCPU(id: profile.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .frame(width: 36, height: 36)
+                                }
+                                .buttonStyle(SoundButtonStyle())
+                                .accessibilityLabel("\(profile.nickname)を削除")
+                            }
+                        }
+                    }
+                }
+            }
+
+            if session.isHost {
+                Section("NPCを追加") {
+                    if memberCount >= BattleRules.maxPlayers {
+                        Label("\(BattleRules.maxPlayers)人まで参加できます", systemImage: "person.3.fill")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(availableProfiles) { profile in
+                            Button {
+                                session.addCPU(profile)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "desktopcomputer")
+                                        .foregroundStyle(Color.accentColor)
+                                        .frame(width: 42, height: 42)
+                                    profileDescription(profile)
+                                    Spacer()
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(SoundButtonStyle())
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("NPC管理")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("完了") {
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func profileDescription(_ profile: CPUProfile) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(profile.nickname)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Text(profile.strengthDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

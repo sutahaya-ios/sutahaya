@@ -1,7 +1,7 @@
 import Foundation
 
 /// CPUの強さプロファイル。値はここが唯一の出典
-struct CPUProfile {
+struct CPUProfile: Identifiable {
     let id: String
     let nickname: String
     /// 問題ごとに回答に参加する確率
@@ -12,6 +12,10 @@ struct CPUProfile {
     let answerRevealFraction: ClosedRange<Double>
     /// 選択肢を読んで選ぶまでの間。これが無いと人間が4択を読む前に決着してしまう
     let thinkingDelay: ClosedRange<Double>
+
+    var strengthDescription: String {
+        "正答率の目安 \(Int((correctProbability * 100).rounded()))%"
+    }
 
     /// 先頭から参加人数ぶんを使う(1体なら「中」だけ)
     static let roster = [

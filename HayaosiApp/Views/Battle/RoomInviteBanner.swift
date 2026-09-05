@@ -1,90 +1,94 @@
 import SwiftUI
 
-/// フレンドから届いたルーム招待を、見逃さないよう対戦タブ上部に表示する
-struct RoomInviteBanner: View {
+/// 対戦ホームの通常レイアウトを動かさず、一時的に重ねる招待通知。
+struct InviteToastBanner: View {
+    private static let displayDuration = Duration.seconds(10)
+    private static let dismissThreshold: CGFloat = -24
+
     let invite: RoomInvite
-    let memberCount: Int
     let isJoining: Bool
     let onAccept: () -> Void
     let onDismiss: () -> Void
 
+    @GestureState private var dragOffset: CGFloat = 0
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("対戦招待")
-                    .font(.title3.bold())
-                Spacer()
-                Text("たった今")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+        HStack(spacing: 12) {
+            AvatarCircle(
+                name: invite.fromNickname,
+                icon: "",
+                size: 46,
+                color: .accentColor
+            )
 
-            HStack(spacing: 14) {
-                AvatarCircle(
-                    name: invite.fromNickname,
-                    icon: "",
-                    size: 58,
-                    color: .blue
-                )
+            Text("\(invite.fromNickname)から対戦招待")
+                .font(.subheadline.bold())
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("\(invite.fromNickname)さん")
-                        .font(.headline)
-                        .lineLimit(1)
-                    Text("一緒にバトルしよう！")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 6)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("ルームメンバー")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("\(memberCount)/\(BattleRules.maxPlayers)")
-                        .font(.headline)
-                }
-            }
-
-            HStack(spacing: 12) {
-                Button(action: onAccept) {
-                    Group {
-                        if isJoining {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("参加する")
-                                .font(.headline)
-                        }
+            Button(action: onAccept) {
+                Group {
+                    if isJoining {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("参加")
+                            .font(.subheadline.bold())
                     }
-                    .frame(maxWidth: .infinity, minHeight: 50)
                 }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.roundedRectangle(radius: 15))
-                .disabled(isJoining)
+                .frame(minWidth: 58, minHeight: 40)
+                .foregroundStyle(.white)
+                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(SoundButtonStyle())
+            .disabled(isJoining)
 
-                Button("あとで", action: onDismiss)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.roundedRectangle(radius: 15))
-                    .disabled(isJoining)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 40)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(SoundButtonStyle())
+            .disabled(isJoining)
+            .accessibilityLabel("招待通知を閉じる")
+        }
+        .padding(14)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 16, y: 7)
+        .offset(y: min(0, dragOffset))
+        .gesture(
+            DragGesture(minimumDistance: 12)
+                .updating($dragOffset) { value, state, _ in
+                    state = min(0, value.translation.height)
+                }
+                .onEnded { value in
+                    if value.translation.height < Self.dismissThreshold {
+                        onDismiss()
+                    }
+                }
+        )
+        .task(id: invite.notificationID) {
+            do {
+                try await Task.sleep(for: Self.displayDuration)
+                onDismiss()
+            } catch is CancellationError {
+                // 表示対象が変わったときは、古い通知の自動Dismissを止める。
+            } catch {
+                print("招待通知の自動Dismiss待機に失敗: \(error)")
             }
         }
-        .padding(18)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.08), radius: 16, y: 7)
     }
 }
 
 #Preview {
-    RoomInviteBanner(
+    InviteToastBanner(
         invite: RoomInvite(id: "sample", roomCode: "4821", fromNickname: "ときや"),
-        memberCount: 1,
         isJoining: false,
         onAccept: {},
         onDismiss: {}
     )
-    .padding()
+    .padding(8)
+    .background(Color(.systemGroupedBackground))
 }

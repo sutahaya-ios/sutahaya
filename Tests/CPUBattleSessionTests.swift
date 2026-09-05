@@ -114,6 +114,37 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertEqual(session.state?.players.map(\.score), [0, 0, 0])
     }
 
+    func test_選んだ強さのNPCでローカルルームを作れる() {
+        let selectedProfiles = [CPUProfile.roster[2], CPUProfile.roster[1]]
+        let session = CPUBattleSession(
+            nickname: "テスト",
+            settings: .init(questionCount: 10, timeLimit: 20, genre: .englishWord),
+            cpuProfiles: selectedProfiles
+        )
+
+        XCTAssertEqual(session.cpuProfiles.map(\.id), selectedProfiles.map(\.id))
+        XCTAssertEqual(session.state?.players.map(\.id), ["me", "cpu-weak", "cpu-strong"])
+    }
+
+    func test_待機中はNPCを追加削除でき合計8人を超えない() {
+        let session = CPUBattleSession(
+            nickname: "テスト",
+            settings: .init(questionCount: 10, timeLimit: 20, genre: .englishWord),
+            cpuProfiles: []
+        )
+
+        CPUProfile.roster.forEach(session.addCPU)
+        session.addCPU(CPUProfile.roster[0])
+
+        XCTAssertEqual(session.state?.players.count, BattleRules.maxPlayers)
+        XCTAssertEqual(Set(session.cpuProfiles.map(\.id)).count, BattleRules.maxPlayers - 1)
+
+        session.removeCPU(id: CPUProfile.roster[0].id)
+
+        XCTAssertEqual(session.state?.players.count, BattleRules.maxPlayers - 1)
+        XCTAssertFalse(session.cpuProfiles.contains { $0.id == CPUProfile.roster[0].id })
+    }
+
     // MARK: - 対戦開始
 
     func test_開始すると第1問の出題中になる() async {
