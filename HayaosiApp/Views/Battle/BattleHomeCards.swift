@@ -1,90 +1,49 @@
 import SwiftUI
 
-/// 対戦ホーム上部の世界観を作る装飾。操作要素にはしない。
-struct BattleHomeHero: View {
-    private static let heroHeight: CGFloat = 224
-    private static let emblemSize: CGFloat = 108
+/// 対戦範囲と、その範囲のカテゴリの習得率。数字は学習記録と同じ集計を使う
+struct BattleScopeCard: View {
+    let categoryName: String
+    let difficulty: Int
+    let proficiency: CategoryProficiencySummary
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color.accentColor.opacity(0.14),
-                    Color.accentColor.opacity(0.06),
-                    .clear
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(categoryName)
+                    .font(.title3.bold())
 
-            cloud(width: 104, opacity: 0.72)
-                .offset(x: -108, y: -56)
-            cloud(width: 76, opacity: 0.5)
-                .offset(x: 122, y: -16)
-            cloud(width: 126, opacity: 0.8)
-                .offset(x: -88, y: 62)
+                Text("★\(difficulty)")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.orange)
+            }
 
-            VStack(spacing: 12) {
-                emblem
-                    .frame(width: Self.emblemSize, height: Self.emblemSize)
+            ProgressView(value: proficiency.progress)
+                .tint(Color.accentColor)
 
-                Text("バトル開始")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .tracking(6)
-                    .foregroundStyle(.primary.opacity(0.7))
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("習得率")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text(proficiency.rateText)
+                    .font(.headline.bold())
+                    .monospacedDigit()
+
+                Spacer(minLength: 0)
+
+                Text(proficiency.masteredOverTotalText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: Self.heroHeight)
-        .clipped()
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    private var emblem: some View {
-        ZStack {
-            sword
-                .rotationEffect(.degrees(-45))
-            sword
-                .rotationEffect(.degrees(45))
-
-            Image(systemName: "shield.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 74, height: 84)
-                .overlay {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-
-            Image(systemName: "crown.fill")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(Color.orange.opacity(0.9))
-                .offset(y: -54)
-        }
-    }
-
-    private var sword: some View {
-        VStack(spacing: -1) {
-            Capsule()
-                .fill(Color.accentColor.opacity(0.35))
-                .frame(width: 10, height: 66)
-            Capsule()
-                .fill(Color.accentColor.opacity(0.35))
-                .frame(width: 34, height: 7)
-            Capsule()
-                .fill(Color.accentColor.opacity(0.35))
-                .frame(width: 8, height: 21)
-        }
-    }
-
-    private func cloud(width: CGFloat, opacity: Double) -> some View {
-        Capsule()
-            .fill(Color(.systemBackground).opacity(opacity))
-            .frame(width: width, height: 30)
-            .blur(radius: 0.5)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Color(.secondarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -124,7 +83,15 @@ struct BattleModeButton: View {
 #Preview {
     ScrollView {
         VStack(spacing: 18) {
-            BattleHomeHero()
+            BattleScopeCard(
+                categoryName: "高校英単語",
+                difficulty: 3,
+                proficiency: CategoryProficiencySummary.calculate(
+                    records: [],
+                    questions: [],
+                    category: .highSchool
+                )
+            )
             HStack(spacing: 12) {
                 BattleModeButton(
                     title: "オンライン対戦",
