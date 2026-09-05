@@ -51,7 +51,20 @@ struct BattleScopeCard: View {
 struct BattleModeButton: View {
     let title: String
     let systemImage: String
+    let isEnabled: Bool
     let action: () -> Void
+
+    init(
+        title: String,
+        systemImage: String,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.isEnabled = isEnabled
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
@@ -63,14 +76,35 @@ struct BattleModeButton: View {
                     .font(.headline.bold())
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
+
+                if !isEnabled {
+                    Text("乞うご期待")
+                        .font(.caption.weight(.semibold))
+                }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(isEnabled ? Color.white : Color.secondary)
             .frame(maxWidth: .infinity, minHeight: 116)
-            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(
+                isEnabled ? Color.accentColor : Color(.secondarySystemGroupedBackground),
+                in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+            )
             .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+            .shadow(color: .black.opacity(isEnabled ? 0.12 : 0.04), radius: 8, y: 4)
+            .overlay(alignment: .topTrailing) {
+                if !isEnabled {
+                    Text("近日")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(Color(.tertiarySystemFill), in: Capsule())
+                        .padding(12)
+                }
+            }
         }
         .buttonStyle(SoundButtonStyle())
+        .disabled(!isEnabled)
+        .accessibilityHint(isEnabled ? "" : "近日公開、乞うご期待")
     }
 }
 
@@ -90,6 +124,7 @@ struct BattleModeButton: View {
                 BattleModeButton(
                     title: "オンライン対戦",
                     systemImage: "globe",
+                    isEnabled: false,
                     action: {}
                 )
                 BattleModeButton(

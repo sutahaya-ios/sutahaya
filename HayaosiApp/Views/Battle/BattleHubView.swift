@@ -28,7 +28,6 @@ struct BattleHubView: View {
 
     @State private var onlineSession: OnlineBattleSession?
     @State private var showOnlineRoom = false
-    @State private var showOnlineMatch = false
     @State private var showFriendMenu = false
     @State private var showSettings = false
     @State private var showTutorial = false
@@ -101,15 +100,6 @@ struct BattleHubView: View {
             if isOnlineReady {
                 await signIn()
             }
-        }
-        .navigationDestination(isPresented: $showOnlineMatch) {
-            ContentUnavailableView {
-                Label("オンライン対戦", systemImage: "globe")
-            } description: {
-                Text("全国のプレイヤーとの対戦は準備中です")
-            }
-            .navigationTitle("オンライン対戦")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationDestination(isPresented: $showSettings) {
             RoomCreateView(mode: .editPreferences)
@@ -309,7 +299,8 @@ struct BattleHubView: View {
             BattleModeButton(
                 title: "オンライン対戦",
                 systemImage: "globe",
-                action: { showOnlineMatch = true }
+                isEnabled: false,
+                action: {}
             )
 
             BattleModeButton(
