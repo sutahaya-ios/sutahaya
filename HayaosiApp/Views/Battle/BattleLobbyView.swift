@@ -11,7 +11,7 @@ struct BattleLobbyView: View {
     private static let inviteLineSeparator = "\n"
 
     let session: any BattleSession
-    let onLeave: () -> Void
+    let onChangeSettings: () -> Void
 
     @Query private var allQuestions: [Question]
     @State private var inviteSentAtByFriendID: [String: Date] = [:]
@@ -146,7 +146,7 @@ struct BattleLobbyView: View {
                     .font(.title3.bold())
                 Spacer()
                 if session.isHost {
-                    Button(action: onLeave) {
+                    Button(action: onChangeSettings) {
                         HStack(spacing: 5) {
                             Text("変更")
                             Image(systemName: "chevron.right")
@@ -156,7 +156,7 @@ struct BattleLobbyView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint("ルームを退出して設定画面へ戻ります")
+                    .accessibilityHint("このルームの対戦設定を変更します")
                 }
             }
 

@@ -59,6 +59,21 @@ final class OnlineRoomConfigurationTests: XCTestCase {
         XCTAssertEqual(settings.wordCategory, .toeic)
         XCTAssertEqual(settings.wordDifficulty, .five)
     }
+
+    func testExistingRoomSettingsBecomeEditorInitialValues() {
+        let configuration = OnlineRoomConfiguration(settings: .init(
+            questionCount: 7,
+            timeLimit: 5,
+            genre: .englishWord,
+            wordCategory: .highSchool,
+            wordDifficulty: .four
+        ))
+
+        XCTAssertEqual(configuration.category, .highSchool)
+        XCTAssertEqual(configuration.difficulty, .four)
+        XCTAssertEqual(configuration.questionCount, 7)
+        XCTAssertEqual(configuration.timeLimit, 5)
+    }
 }
 
 final class RoomInviteLifecycleTests: XCTestCase {

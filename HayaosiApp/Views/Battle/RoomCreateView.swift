@@ -6,6 +6,7 @@ struct RoomCreateView: View {
     enum Mode: Equatable {
         case create
         case editPreferences
+        case editRoom
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -16,12 +17,22 @@ struct RoomCreateView: View {
     @State private var isCreating = false
     @State private var showRoom = false
     @State private var errorMessage: String?
+    @State private var settingsUpdateTask: Task<Void, Error>?
 
     private let mode: Mode
+    private let synchronizesChangesImmediately: Bool
+    private let onSaveSettings: (@MainActor (RoomState.Settings) async throws -> Void)?
 
-    init(mode: Mode = .create) {
+    init(
+        mode: Mode = .create,
+        initialConfiguration: OnlineRoomConfiguration? = nil,
+        synchronizesChangesImmediately: Bool = false,
+        onSaveSettings: (@MainActor (RoomState.Settings) async throws -> Void)? = nil
+    ) {
         self.mode = mode
-        _configuration = State(initialValue: OnlineRoomConfiguration())
+        self.synchronizesChangesImmediately = synchronizesChangesImmediately
+        self.onSaveSettings = onSaveSettings
+        _configuration = State(initialValue: initialConfiguration ?? OnlineRoomConfiguration())
     }
 
     var body: some View {
@@ -50,7 +61,7 @@ struct RoomCreateView: View {
                 primaryControl
             }
         }
-        .navigationTitle(mode == .editPreferences ? "対戦設定" : "ルーム作成")
+        .navigationTitle(mode == .create ? "ルーム作成" : "対戦設定")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $showRoom) {
             if let session {
@@ -62,6 +73,10 @@ struct RoomCreateView: View {
                 session?.leave()
                 session = nil
             }
+        }
+        .onChange(of: configuration) { _, newConfiguration in
+            guard mode == .editRoom, synchronizesChangesImmediately else { return }
+            synchronizeRoomSettings(newConfiguration)
         }
         .alert("エラー", isPresented: .init(
             get: { errorMessage != nil },
@@ -99,10 +114,13 @@ struct RoomCreateView: View {
             }
 
             Button {
-                if mode == .editPreferences {
+                switch mode {
+                case .editPreferences:
                     configuration.save()
                     dismiss()
-                } else {
+                case .editRoom:
+                    Task { await saveRoomSettings() }
+                case .create:
                     Task { await create() }
                 }
             } label: {
@@ -110,7 +128,7 @@ struct RoomCreateView: View {
                     if isCreating {
                         ProgressView().tint(.white)
                     } else {
-                        Text(mode == .editPreferences ? "この設定を使う" : "ルームを作成")
+                        Text(mode == .create ? "ルームを作成" : "この設定を使う")
                             .font(.headline.bold())
                     }
                 }
@@ -135,6 +153,55 @@ struct RoomCreateView: View {
                 category: configuration.category,
                 difficulty: configuration.difficulty
             )
+    }
+
+    private func saveRoomSettings() async {
+        guard let updateTask = enqueueRoomSettingsUpdate(configuration) else { return }
+
+        isCreating = true
+        defer { isCreating = false }
+        do {
+            try await updateTask.value
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func synchronizeRoomSettings(_ configuration: OnlineRoomConfiguration) {
+        guard let updateTask = enqueueRoomSettingsUpdate(configuration) else { return }
+        Task { @MainActor in
+            do {
+                try await updateTask.value
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    /// Pickerを続けて変更しても、古い設定のwriteが新しい設定を追い越さないよう直列化する。
+    private func enqueueRoomSettingsUpdate(
+        _ configuration: OnlineRoomConfiguration
+    ) -> Task<Void, Error>? {
+        let availableQuestionCount = allQuestions
+            .filter { $0.genre == .englishWord }
+            .matching(
+                category: configuration.category,
+                difficulty: configuration.difficulty
+            )
+            .count
+        guard availableQuestionCount > 0, let onSaveSettings else { return nil }
+
+        let previousTask = settingsUpdateTask
+        let settings = configuration.roomSettings(
+            availableQuestionCount: availableQuestionCount
+        )
+        let updateTask = Task { @MainActor in
+            _ = try? await previousTask?.value
+            try await onSaveSettings(settings)
+        }
+        settingsUpdateTask = updateTask
+        return updateTask
     }
 
     private func create() async {

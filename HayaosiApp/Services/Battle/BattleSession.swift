@@ -30,6 +30,8 @@ protocol BattleSession: AnyObject, Observable {
 
     func startGame(questions: [Question]) async
     func rematch() async
+    /// 待機中の同じルームを維持したまま、対戦設定だけを更新する。
+    func updateSettings(_ settings: RoomState.Settings) async throws
     /// 回答する。選択肢を押した瞬間が回答にあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
     func submitAnswer(_ choice: String, visibleCount: Int)

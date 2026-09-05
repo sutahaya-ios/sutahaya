@@ -145,6 +145,31 @@ final class CPUBattleSessionTests: XCTestCase {
         XCTAssertFalse(session.cpuProfiles.contains { $0.id == CPUProfile.roster[0].id })
     }
 
+    func test_設定変更後も同じCPUルームと参加者を維持する() async throws {
+        let timer = ManualTimer()
+        let session = makeSession(cpuCount: 2, timer: timer)
+        let originalState = try XCTUnwrap(session.state)
+        let changedSettings = RoomState.Settings(
+            questionCount: 5,
+            timeLimit: 10,
+            genre: .englishWord,
+            wordCategory: .toeic,
+            wordDifficulty: .three
+        )
+
+        try await session.updateSettings(changedSettings)
+
+        let updatedState = try XCTUnwrap(session.state)
+        XCTAssertEqual(updatedState.code, originalState.code)
+        XCTAssertEqual(updatedState.hostID, originalState.hostID)
+        XCTAssertEqual(updatedState.status, .waiting)
+        XCTAssertEqual(updatedState.players, originalState.players)
+        XCTAssertEqual(updatedState.settings.questionCount, 5)
+        XCTAssertEqual(updatedState.settings.timeLimit, 10)
+        XCTAssertEqual(updatedState.settings.wordCategory, .toeic)
+        XCTAssertEqual(updatedState.settings.wordDifficulty, .three)
+    }
+
     // MARK: - 対戦開始
 
     func test_開始すると第1問の出題中になる() async {

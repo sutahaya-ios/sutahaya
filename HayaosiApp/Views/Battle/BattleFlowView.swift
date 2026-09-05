@@ -10,6 +10,7 @@ struct BattleFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var showLeaveDialog = false
+    @State private var showSettings = false
     @State private var matchStartObservedAt: Date?
 
     var body: some View {
@@ -21,7 +22,10 @@ struct BattleFlowView: View {
                     // Firebase往復がロビー画面のフリーズに見えないようにする。
                     BattleStartView(progress: nil)
                 } else {
-                    BattleLobbyView(session: session, onLeave: leaveAndDismiss)
+                    BattleLobbyView(
+                        session: session,
+                        onChangeSettings: { showSettings = true }
+                    )
                 }
             case .playing:
                 playingView
@@ -34,6 +38,17 @@ struct BattleFlowView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $showSettings) {
+            if let settings = session.state?.settings {
+                RoomCreateView(
+                    mode: .editRoom,
+                    initialConfiguration: OnlineRoomConfiguration(settings: settings),
+                    synchronizesChangesImmediately: session.isOnline
+                ) { settings in
+                    try await session.updateSettings(settings)
+                }
+            }
+        }
         // ロビーからリザルトまでタブバーを隠す。対戦中に他タブへ抜けられると
         // ルームに残ったまま迷子になるため、退出はツールバーの「退出」に一本化する
         .toolbar(.hidden, for: .tabBar)

@@ -173,6 +173,7 @@ private final class StubBattleSession: BattleSession {
 
     func startGame(questions: [Question]) async {}
     func rematch() async {}
+    func updateSettings(_ settings: RoomState.Settings) async throws {}
     func submitAnswer(_ choice: String, visibleCount: Int) {}
     func leave() {}
     func saveResultsIfNeeded(context: ModelContext) {}

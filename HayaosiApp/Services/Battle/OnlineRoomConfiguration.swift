@@ -51,6 +51,15 @@ struct OnlineRoomConfiguration: Equatable {
             : fallback.timeLimit
     }
 
+    /// 既に存在するルームの設定画面を、現在値のまま開くための初期化。
+    init(settings: RoomState.Settings) {
+        let fallback = Self.default
+        category = settings.wordCategory ?? fallback.category
+        difficulty = settings.wordDifficulty ?? fallback.difficulty
+        questionCount = settings.questionCount
+        timeLimit = settings.timeLimit
+    }
+
     func save(to defaults: UserDefaults = .standard) {
         defaults.set(category.rawValue, forKey: Self.categoryKey)
         defaults.set(difficulty.rawValue, forKey: Self.difficultyKey)

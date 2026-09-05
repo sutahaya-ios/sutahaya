@@ -20,7 +20,7 @@ final class CPUBattleSession: BattleSession {
     private(set) var state: RoomState?
 
     private let nickname: String
-    private let settings: RoomState.Settings
+    private var settings: RoomState.Settings
     private(set) var cpuProfiles: [CPUProfile]
     private let strategy: CPUAnswerStrategy
     private let makeTimer: TimerScheduler
@@ -137,6 +137,12 @@ final class CPUBattleSession: BattleSession {
         activeIDs = []
         scoresAtQuestionStart = [:]
         status = .waiting
+        publish()
+    }
+
+    func updateSettings(_ settings: RoomState.Settings) async throws {
+        guard status == .waiting else { return }
+        self.settings = settings
         publish()
     }
 

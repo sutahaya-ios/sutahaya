@@ -66,6 +66,7 @@ final class OnlineBattleSession: BattleSession {
         case roomInstanceChanged
         case databaseConnectionTimedOut
         case codeGenerationFailed
+        case settingsUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -83,6 +84,8 @@ final class OnlineBattleSession: BattleSession {
                 return "通信の準備に時間がかかっています。もう一度お試しください"
             case .codeGenerationFailed:
                 return "ルームコードの発行に失敗しました。もう一度お試しください"
+            case .settingsUnavailable:
+                return "待機中のホストだけが対戦設定を変更できます"
             }
         }
     }
@@ -470,6 +473,13 @@ final class OnlineBattleSession: BattleSession {
             lastError = "再戦の準備に失敗しました"
             print("再戦の準備に失敗: \(error)")
         }
+    }
+
+    func updateSettings(_ settings: RoomState.Settings) async throws {
+        guard isHost, state?.status == .waiting else {
+            throw SessionError.settingsUnavailable
+        }
+        try await roomRef.child("settings").setValue(settings.databaseValue)
     }
 
     // MARK: - プレイヤー操作
