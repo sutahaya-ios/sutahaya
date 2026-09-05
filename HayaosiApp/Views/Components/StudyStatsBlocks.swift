@@ -51,19 +51,9 @@ struct ProficiencyRingBlock: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var progress: Double {
-        min(max(summary.proficiencyRate ?? 0, 0), 1)
-    }
-
-    private var rateText: String {
-        guard let rate = summary.proficiencyRate else { return "－" }
-        return "\(Int(rate * 100))%"
-    }
-
-    private var detailText: String {
-        guard summary.totalWordCount > 0 else { return "－" }
-        return "\(summary.totalWordCount)語中\(summary.masteredWordCount)語"
-    }
+    private var progress: Double { summary.progress }
+    private var rateText: String { summary.rateText }
+    private var detailText: String { summary.detailText }
 }
 
 /// 直近12週の学習時間ヒートマップ
