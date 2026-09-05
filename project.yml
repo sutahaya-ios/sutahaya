@@ -41,7 +41,7 @@ targets:
       base:
         # 共有の既定値は本番Bundle ID。共同開発者はgit管理外のlocal.xcconfigだけで上書きする
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_IDENTIFIER)
-        MARKETING_VERSION: "0.9.0"
+        MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
