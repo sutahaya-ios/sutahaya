@@ -213,7 +213,6 @@ struct OnlineModeMenuView: View {
     private func savedRoomSettings() -> RoomState.Settings? {
         let configuration = OnlineRoomConfiguration()
         let availableQuestionCount = allQuestions
-            .filter { $0.genre == .englishWord }
             .matching(
                 category: configuration.category,
                 difficulty: configuration.difficulty

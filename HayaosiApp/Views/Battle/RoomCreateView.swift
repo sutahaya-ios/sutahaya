@@ -127,7 +127,6 @@ struct RoomCreateView: View {
 
     private var availableQuestions: [Question] {
         allQuestions
-            .filter { $0.genre == .englishWord }
             .matching(
                 category: configuration.category,
                 difficulty: configuration.difficulty
@@ -163,7 +162,6 @@ struct RoomCreateView: View {
         _ configuration: OnlineRoomConfiguration
     ) -> Task<Void, Error>? {
         let availableQuestionCount = allQuestions
-            .filter { $0.genre == .englishWord }
             .matching(
                 category: configuration.category,
                 difficulty: configuration.difficulty

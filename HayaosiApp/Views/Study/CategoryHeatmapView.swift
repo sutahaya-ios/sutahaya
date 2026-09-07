@@ -129,7 +129,6 @@ struct CategoryHeatmapView: View {
 
     private func practiceQuestions(for difficulty: StudyDifficulty) -> [Question] {
         questions
-            .filter { $0.genre == .englishWord }
             .matching(category: category, difficulty: difficulty)
     }
 }
