@@ -254,11 +254,17 @@ final class BattleScoringTests: XCTestCase {
         ))
     }
 
-    func test_制限時間の初期値は5秒で選択肢の先頭にある() {
+    func test_制限時間の選択肢にカテゴリごとの既定値が含まれる() {
         XCTAssertEqual(QuizDefaults.timeLimit, 5)
-        XCTAssertEqual(QuizDefaults.timeLimitOptions, [5, 10, 20, 30])
-        XCTAssertTrue(QuizDefaults.timeLimitOptions.contains(QuizDefaults.timeLimit),
-                      "既定値が選択肢に無いとPickerで選択状態が表示されない")
+        XCTAssertEqual(QuizDefaults.timeLimitOptions(for: .juniorHigh), [5, 10, 20, 30])
+        XCTAssertEqual(QuizDefaults.timeLimitOptions(for: .spiNonVerbal), [30, 60, 120, 180])
+
+        for category in StudyCategory.allCases {
+            XCTAssertTrue(
+                QuizDefaults.timeLimitOptions(for: category).contains(category.defaultTimeLimit),
+                "\(category.displayName)の既定値が選択肢に無いとPickerで選択状態が表示されない"
+            )
+        }
     }
 
     func test_RoomStateが複数の正解者を順位順に復元する() {

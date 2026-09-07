@@ -24,6 +24,7 @@ final class OnlineRoomConfigurationTests: XCTestCase {
 
     func testSavedConfigurationCanBeRestored() {
         let expected = OnlineRoomConfiguration(
+            genre: .englishWord,
             category: .highSchool,
             difficulty: .three,
             questionCount: 15,
@@ -46,6 +47,7 @@ final class OnlineRoomConfigurationTests: XCTestCase {
 
     func testRoomSettingsCapQuestionCountAtAvailableQuestions() {
         let configuration = OnlineRoomConfiguration(
+            genre: .englishWord,
             category: .toeic,
             difficulty: .five,
             questionCount: 20,

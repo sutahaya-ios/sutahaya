@@ -270,15 +270,17 @@ struct BattleHubView: View {
     }
 
     private var configuration: OnlineRoomConfiguration {
-        OnlineRoomConfiguration(
-            category: StudyCategory(rawValue: savedCategoryRaw) ?? .juniorHigh,
+        let category = StudyCategory(rawValue: savedCategoryRaw) ?? .juniorHigh
+        return OnlineRoomConfiguration(
+            genre: category.genre,
+            category: category,
             difficulty: StudyDifficulty(rawValue: savedDifficultyValue) ?? .one,
             questionCount: QuizDefaults.questionCountOptions.contains(savedQuestionCount)
                 ? savedQuestionCount
                 : QuizDefaults.questionCount,
-            timeLimit: QuizDefaults.timeLimitOptions.contains(savedTimeLimit)
+            timeLimit: QuizDefaults.timeLimitOptions(for: category).contains(savedTimeLimit)
                 ? savedTimeLimit
-                : QuizDefaults.timeLimit
+                : category.defaultTimeLimit
         )
     }
 

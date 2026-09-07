@@ -5,6 +5,8 @@ enum StudyCategory: String, Codable, CaseIterable, Identifiable {
     case juniorHigh = "junior_high"
     case highSchool = "high_school"
     case toeic = "toeic"
+    case spiVerbal = "spi_verbal"
+    case spiNonVerbal = "spi_nonverbal"
 
     var id: String { rawValue }
 
@@ -13,6 +15,33 @@ enum StudyCategory: String, Codable, CaseIterable, Identifiable {
         case .juniorHigh: return "中学英単語"
         case .highSchool: return "高校英単語"
         case .toeic: return "TOEIC単語"
+        case .spiVerbal: return "SPI 言語"
+        case .spiNonVerbal: return "SPI 非言語"
+        }
+    }
+
+    /// 属するジャンル。ジャンル側で持つと追加のたびに両方直すことになるため、カテゴリが親を指す
+    var genre: Genre {
+        switch self {
+        case .juniorHigh, .highSchool, .toeic: return .englishWord
+        case .spiVerbal, .spiNonVerbal: return .spi
+        }
+    }
+
+    /// 出題数の単位。SPIは「語」ではなく「問」
+    var questionUnit: String {
+        switch genre {
+        case .englishWord: return "語"
+        case .spi: return "問"
+        }
+    }
+
+    /// 既定の制限時間(秒)
+    var defaultTimeLimit: TimeInterval {
+        switch self {
+        case .juniorHigh, .highSchool, .toeic: return QuizDefaults.timeLimit
+        case .spiVerbal: return 60
+        case .spiNonVerbal: return 120
         }
     }
 }

@@ -72,14 +72,17 @@ struct RoomCreateView: View {
         }
     }
 
-    /// 出題の種類。いまは英単語だけだが、増えたときにここが伸びる
+    /// 出題の種類。切り替えるとカテゴリと制限時間もそのジャンルの既定へ揃う
     private var modeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("モード")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
 
-            Picker("モード", selection: .constant(Genre.englishWord)) {
+            Picker("モード", selection: Binding(
+                get: { configuration.genre },
+                set: { configuration.changeGenre(to: $0) }
+            )) {
                 ForEach(Genre.allCases) { genre in
                     Text(genre.displayName).tag(genre)
                 }

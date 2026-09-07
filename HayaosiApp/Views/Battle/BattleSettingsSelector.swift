@@ -120,7 +120,7 @@ struct BattleSettingsSelector: View {
     private var options: some View {
         switch selectedAxis {
         case .category:
-            chips(StudyCategory.allCases, current: configuration.category) {
+            chips(configuration.genre.categories, current: configuration.category) {
                 $0.displayName
             } select: {
                 configuration.category = $0
@@ -138,7 +138,10 @@ struct BattleSettingsSelector: View {
                 configuration.questionCount = $0
             }
         case .timeLimit:
-            chips(QuizDefaults.timeLimitOptions, current: configuration.timeLimit) {
+            chips(
+                QuizDefaults.timeLimitOptions(for: configuration.category),
+                current: configuration.timeLimit
+            ) {
                 "\(Int($0))秒"
             } select: {
                 configuration.timeLimit = $0
@@ -192,7 +195,7 @@ struct BattleSettingsSelector: View {
 
             Spacer(minLength: 0)
 
-            Text("\(availableWordCount)語")
+            Text("\(availableWordCount)\(configuration.category.questionUnit)")
                 .font(.subheadline.bold())
                 .monospacedDigit()
                 .foregroundStyle(isShortOfQuestions ? Color.orange : Color.primary)

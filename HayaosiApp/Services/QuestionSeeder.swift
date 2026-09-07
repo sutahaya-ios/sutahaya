@@ -89,12 +89,13 @@ enum QuestionSeeder {
         let difficulty: StudyDifficulty
     }
 
-    /// 全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する
+    /// 英単語の全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する。
+    /// SPIは問題文と誤答をそのままJSONへ持つ別形式なので、ここでは扱わない
     static func loadEntries() throws -> [WordEntry] {
         var allEntries: [WordEntry] = []
         var allIDs: Set<String> = []
 
-        for category in StudyCategory.allCases {
+        for category in Genre.englishWord.categories {
             guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
                 throw QuestionDataError.missingResource(name: category.rawValue)
             }
