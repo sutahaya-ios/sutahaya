@@ -1,6 +1,6 @@
 import SwiftUI
 
-extension WordCategory {
+extension StudyCategory {
     var studyDescription: String {
         switch self {
         case .juniorHigh: return "基礎から積み上げる"

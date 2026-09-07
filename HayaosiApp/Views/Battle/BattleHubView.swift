@@ -11,9 +11,9 @@ struct BattleHubView: View {
     @AppStorage("profileBio") private var profileBio = ""
     @AppStorage("hasSeenBattleTutorial") private var hasSeenTutorial = false
     @AppStorage(OnlineRoomConfiguration.categoryKey)
-    private var savedCategoryRaw = WordCategory.juniorHigh.rawValue
+    private var savedCategoryRaw = StudyCategory.juniorHigh.rawValue
     @AppStorage(OnlineRoomConfiguration.difficultyKey)
-    private var savedDifficultyValue = WordDifficulty.one.rawValue
+    private var savedDifficultyValue = StudyDifficulty.one.rawValue
     @AppStorage(OnlineRoomConfiguration.questionCountKey)
     private var savedQuestionCount = QuizDefaults.questionCount
     @AppStorage(OnlineRoomConfiguration.timeLimitKey)
@@ -271,8 +271,8 @@ struct BattleHubView: View {
 
     private var configuration: OnlineRoomConfiguration {
         OnlineRoomConfiguration(
-            category: WordCategory(rawValue: savedCategoryRaw) ?? .juniorHigh,
-            difficulty: WordDifficulty(rawValue: savedDifficultyValue) ?? .one,
+            category: StudyCategory(rawValue: savedCategoryRaw) ?? .juniorHigh,
+            difficulty: StudyDifficulty(rawValue: savedDifficultyValue) ?? .one,
             questionCount: QuizDefaults.questionCountOptions.contains(savedQuestionCount)
                 ? savedQuestionCount
                 : QuizDefaults.questionCount,

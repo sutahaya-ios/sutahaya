@@ -5,10 +5,10 @@ import SwiftData
 struct CategoryHeatmapView: View {
     private static let difficultyColumns = Array(
         repeating: GridItem(.flexible(), spacing: 6),
-        count: WordDifficulty.allCases.count
+        count: StudyDifficulty.allCases.count
     )
 
-    let category: WordCategory
+    let category: StudyCategory
 
     @Query private var records: [AnswerRecord]
     @Query private var questions: [Question]
@@ -25,7 +25,7 @@ struct CategoryHeatmapView: View {
             questions: questions,
             category: category
         ).count
-        let unavailableDifficulties = WordDifficulty.allCases.filter {
+        let unavailableDifficulties = StudyDifficulty.allCases.filter {
             practiceQuestions(for: $0).isEmpty
         }
 
@@ -36,7 +36,7 @@ struct CategoryHeatmapView: View {
                     .foregroundStyle(.secondary)
 
                 LazyVGrid(columns: Self.difficultyColumns, spacing: 6) {
-                    ForEach(WordDifficulty.allCases) { difficulty in
+                    ForEach(StudyDifficulty.allCases) { difficulty in
                         let matchingQuestions = practiceQuestions(for: difficulty)
 
                         if matchingQuestions.isEmpty {
@@ -127,7 +127,7 @@ struct CategoryHeatmapView: View {
         .navigationTitle(category.displayName)
     }
 
-    private func practiceQuestions(for difficulty: WordDifficulty) -> [Question] {
+    private func practiceQuestions(for difficulty: StudyDifficulty) -> [Question] {
         questions
             .filter { $0.genre == .englishWord }
             .matching(category: category, difficulty: difficulty)
@@ -144,7 +144,7 @@ private struct DifficultyAccuracyCell: View {
         let foregroundColor: Color
     }
 
-    let difficulty: WordDifficulty
+    let difficulty: StudyDifficulty
     let accuracy: Double?
     let isEnabled: Bool
 

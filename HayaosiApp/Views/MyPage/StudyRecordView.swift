@@ -9,7 +9,7 @@ struct StudyRecordView: View {
     @Query private var dailyStudyTimes: [DailyStudyTime]
 
     /// 開いているカテゴリ。同時に開けるのは1つ
-    @State private var expandedCategory: WordCategory?
+    @State private var expandedCategory: StudyCategory?
 
     var body: some View {
         ScrollView {
@@ -17,7 +17,7 @@ struct StudyRecordView: View {
                 totalCard
 
                 VStack(spacing: 10) {
-                    ForEach(WordCategory.allCases) { category in
+                    ForEach(StudyCategory.allCases) { category in
                         categoryCard(for: category)
                     }
                 }
@@ -57,7 +57,7 @@ struct StudyRecordView: View {
         )
     }
 
-    private func categoryCard(for category: WordCategory) -> some View {
+    private func categoryCard(for category: StudyCategory) -> some View {
         let isExpanded = expandedCategory == category
 
         return VStack(spacing: 0) {
@@ -117,11 +117,11 @@ struct StudyRecordView: View {
         StudyTimeHeatmap.calculate(records: dailyStudyTimes, category: nil)
     }
 
-    private func studyTime(for category: WordCategory) -> StudyTimeHeatmap.Summary {
+    private func studyTime(for category: StudyCategory) -> StudyTimeHeatmap.Summary {
         StudyTimeHeatmap.calculate(records: dailyStudyTimes, category: category)
     }
 
-    private func proficiency(for category: WordCategory) -> CategoryProficiencySummary {
+    private func proficiency(for category: StudyCategory) -> CategoryProficiencySummary {
         CategoryProficiencySummary.calculate(
             records: records,
             questions: questions,

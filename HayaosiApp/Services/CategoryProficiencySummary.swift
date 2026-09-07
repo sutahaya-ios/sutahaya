@@ -8,7 +8,7 @@ struct CategoryProficiencySummary: Equatable {
 
     private let accuracyByDifficultyValue: [Int: Double]
 
-    func accuracy(for difficulty: WordDifficulty) -> Double? {
+    func accuracy(for difficulty: StudyDifficulty) -> Double? {
         accuracyByDifficultyValue[difficulty.rawValue]
     }
 
@@ -38,8 +38,8 @@ struct CategoryProficiencySummary: Equatable {
     static func calculate(
         records: [AnswerRecord],
         questions: [Question],
-        category: WordCategory,
-        difficulty: WordDifficulty? = nil
+        category: StudyCategory,
+        difficulty: StudyDifficulty? = nil
     ) -> CategoryProficiencySummary {
         let categoryQuestionsByID = questions.reduce(into: [String: Question]()) { result, question in
             guard question.category == category else { return }

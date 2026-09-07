@@ -4,7 +4,7 @@ import SwiftUI
 struct AvailableStudyMaterialCard: View {
     private static let minimumHeight: CGFloat = 194
 
-    let category: WordCategory
+    let category: StudyCategory
     let isPinned: Bool
     let onPin: () -> Void
 

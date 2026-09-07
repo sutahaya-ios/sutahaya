@@ -5,7 +5,7 @@ struct ReviewListFilter {
     static func filter(
         reviewItems: [ReviewItem],
         questions: [Question],
-        category: WordCategory?,
+        category: StudyCategory?,
         questionIDs: Set<String>? = nil
     ) -> [ReviewItem] {
         let questionsByID = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })

@@ -2,15 +2,15 @@ import SwiftUI
 
 /// 選択した範囲に問題がないことと、選び直す方法を伝える共通表示
 struct QuestionAvailabilityNotice: View {
-    let category: WordCategory
-    let difficulties: [WordDifficulty]
+    let category: StudyCategory
+    let difficulties: [StudyDifficulty]
 
-    init(category: WordCategory, difficulty: WordDifficulty) {
+    init(category: StudyCategory, difficulty: StudyDifficulty) {
         self.category = category
         difficulties = [difficulty]
     }
 
-    init(category: WordCategory, difficulties: [WordDifficulty]) {
+    init(category: StudyCategory, difficulties: [StudyDifficulty]) {
         self.category = category
         self.difficulties = difficulties
     }

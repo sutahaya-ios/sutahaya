@@ -5,7 +5,7 @@ import SwiftData
 struct ReviewListView: View {
     private static let timeLimit: TimeInterval = 20
 
-    let category: WordCategory?
+    let category: StudyCategory?
     let questionIDs: Set<String>?
 
     @Query(sort: \ReviewItem.wrongCount, order: .reverse) private var reviewItems: [ReviewItem]
@@ -13,7 +13,7 @@ struct ReviewListView: View {
     @State private var quizQuestions: [Question] = []
     @State private var isPlaying = false
 
-    init(category: WordCategory? = nil, questionIDs: Set<String>? = nil) {
+    init(category: StudyCategory? = nil, questionIDs: Set<String>? = nil) {
         self.category = category
         self.questionIDs = questionIDs
     }

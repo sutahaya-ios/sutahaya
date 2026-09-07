@@ -69,7 +69,7 @@ final class ReviewListFilterTests: XCTestCase {
         XCTAssertEqual(result.map(\.questionID), ["jh_0002", "hs_0001"])
     }
 
-    private func makeQuestion(id: String, category: WordCategory) -> Question {
+    private func makeQuestion(id: String, category: StudyCategory) -> Question {
         Question(
             id: id,
             genre: .englishWord,

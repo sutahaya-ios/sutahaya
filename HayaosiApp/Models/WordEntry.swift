@@ -7,8 +7,8 @@ struct WordEntry: Identifiable, Equatable {
     let meaning: String
     let pos: PartOfSpeech
     /// JSONには持たせない。どのファイルから読み込んだかで決まるため、投入時に与える
-    let category: WordCategory
-    let difficulty: WordDifficulty
+    let category: StudyCategory
+    let difficulty: StudyDifficulty
 
     /// 同じカテゴリ内の重複検査に使う。大文字小文字と前後空白は区別しない
     var normalizedWordKey: String {

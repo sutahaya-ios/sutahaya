@@ -14,14 +14,14 @@ struct OnlineRoomConfiguration: Equatable {
         timeLimit: QuizDefaults.timeLimit
     )
 
-    var category: WordCategory
-    var difficulty: WordDifficulty
+    var category: StudyCategory
+    var difficulty: StudyDifficulty
     var questionCount: Int
     var timeLimit: TimeInterval
 
     init(
-        category: WordCategory,
-        difficulty: WordDifficulty,
+        category: StudyCategory,
+        difficulty: StudyDifficulty,
         questionCount: Int,
         timeLimit: TimeInterval
     ) {
@@ -33,10 +33,10 @@ struct OnlineRoomConfiguration: Equatable {
 
     init(defaults: UserDefaults = .standard) {
         let fallback = Self.default
-        category = WordCategory(
+        category = StudyCategory(
             rawValue: defaults.string(forKey: Self.categoryKey) ?? ""
         ) ?? fallback.category
-        difficulty = WordDifficulty(
+        difficulty = StudyDifficulty(
             rawValue: defaults.integer(forKey: Self.difficultyKey)
         ) ?? fallback.difficulty
 

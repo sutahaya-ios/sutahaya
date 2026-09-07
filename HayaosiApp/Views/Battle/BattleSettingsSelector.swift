@@ -120,13 +120,13 @@ struct BattleSettingsSelector: View {
     private var options: some View {
         switch selectedAxis {
         case .category:
-            chips(WordCategory.allCases, current: configuration.category) {
+            chips(StudyCategory.allCases, current: configuration.category) {
                 $0.displayName
             } select: {
                 configuration.category = $0
             }
         case .difficulty:
-            chips(WordDifficulty.allCases, current: configuration.difficulty) {
+            chips(StudyDifficulty.allCases, current: configuration.difficulty) {
                 "★\($0.rawValue)"
             } select: {
                 configuration.difficulty = $0

@@ -4,7 +4,7 @@ import SwiftData
 enum QuestionDataError: LocalizedError {
     case missingResource(name: String)
     case duplicateID(String)
-    case duplicateWord(word: String, category: WordCategory)
+    case duplicateWord(word: String, category: StudyCategory)
 
     var errorDescription: String? {
         switch self {
@@ -86,7 +86,7 @@ enum QuestionSeeder {
         let word: String
         let meaning: String
         let pos: PartOfSpeech
-        let difficulty: WordDifficulty
+        let difficulty: StudyDifficulty
     }
 
     /// 全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する
@@ -94,7 +94,7 @@ enum QuestionSeeder {
         var allEntries: [WordEntry] = []
         var allIDs: Set<String> = []
 
-        for category in WordCategory.allCases {
+        for category in StudyCategory.allCases {
             guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
                 throw QuestionDataError.missingResource(name: category.rawValue)
             }

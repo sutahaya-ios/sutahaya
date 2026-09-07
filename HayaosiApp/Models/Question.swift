@@ -12,15 +12,15 @@ final class Question {
     /// 正答を含む選択肢。表示時にシャッフルする
     var choices: [String]
     var answer: String
-    /// 英単語の学習カテゴリ。既存インストールを壊さないためデフォルト値付き
-    var categoryRaw: String = WordCategory.highSchool.rawValue
+    /// 学習カテゴリ。既存インストールを壊さないためデフォルト値付き
+    var categoryRaw: String = StudyCategory.highSchool.rawValue
     /// カテゴリ内の難易度(1〜5)。既存インストールを壊さないためデフォルト値付き
-    var difficultyValue: Int = WordDifficulty.one.rawValue
+    var difficultyValue: Int = StudyDifficulty.one.rawValue
 
     init(id: String, genre: Genre, type: QuestionType,
          text: String, choices: [String], answer: String,
-         category: WordCategory = .highSchool,
-         difficulty: WordDifficulty = .one) {
+         category: StudyCategory = .highSchool,
+         difficulty: StudyDifficulty = .one) {
         self.id = id
         self.genreRaw = genre.rawValue
         self.typeRaw = type.rawValue
@@ -33,6 +33,6 @@ final class Question {
 
     var genre: Genre { Genre(rawValue: genreRaw) ?? .englishWord }
     var type: QuestionType { QuestionType(rawValue: typeRaw) ?? .multipleChoice }
-    var category: WordCategory { WordCategory(rawValue: categoryRaw) ?? .highSchool }
-    var difficulty: WordDifficulty { WordDifficulty(rawValue: difficultyValue) ?? .one }
+    var category: StudyCategory { StudyCategory(rawValue: categoryRaw) ?? .highSchool }
+    var difficulty: StudyDifficulty { StudyDifficulty(rawValue: difficultyValue) ?? .one }
 }

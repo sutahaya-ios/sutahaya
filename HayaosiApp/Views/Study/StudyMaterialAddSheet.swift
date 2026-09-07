@@ -9,13 +9,13 @@ struct StudyMaterialAddSheet: View {
     ]
 
     @Environment(\.dismiss) private var dismiss
-    @Binding var pinnedCategories: [WordCategory]
+    @Binding var pinnedCategories: [StudyCategory]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: Self.columns, spacing: Self.gridSpacing) {
-                    ForEach(WordCategory.allCases) { category in
+                    ForEach(StudyCategory.allCases) { category in
                         AvailableStudyMaterialCard(
                             category: category,
                             isPinned: pinnedCategories.contains(category),
@@ -41,7 +41,7 @@ struct StudyMaterialAddSheet: View {
         }
     }
 
-    private func pin(_ category: WordCategory) {
+    private func pin(_ category: StudyCategory) {
         guard !pinnedCategories.contains(category) else {
             return
         }

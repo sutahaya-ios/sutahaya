@@ -81,7 +81,7 @@ enum ResultRecorder {
         let categoryCounts = Dictionary(grouping: entries, by: { $0.question.category })
             .mapValues(\.count)
         // 復習ではカテゴリが混在するため、按分せず出題数が最も多いカテゴリへ全時間を加算する。
-        guard let category = WordCategory.allCases.max(by: {
+        guard let category = StudyCategory.allCases.max(by: {
             categoryCounts[$0, default: 0] < categoryCounts[$1, default: 0]
         }) else {
             return
