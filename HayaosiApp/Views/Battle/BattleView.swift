@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// 対戦画面:問題表示・早押しボタン・回答UI・スコア表示(要件 §9-5)
 struct BattleView: View {
@@ -7,6 +8,9 @@ struct BattleView: View {
     private static let wrongFeedbackDuration: TimeInterval = 1.2
 
     let session: any BattleSession
+
+    /// 表と解説は配信payloadに載っていないので、問題IDを手がかりに端末内から引く
+    @Query private var allQuestions: [Question]
 
     @State private var pendingAnswer: PendingAnswer?
     @State private var isAwaitingHostResult = false
@@ -25,10 +29,17 @@ struct BattleView: View {
 
                 Spacer()
 
-                BattleQuestionText(
-                    text: question.text,
-                    mode: revealMode(game: game)
-                )
+                VStack(spacing: 12) {
+                    BattleQuestionText(
+                        text: question.text,
+                        mode: revealMode(game: game),
+                        isSingleWord: genre.usesProgressiveReveal
+                    )
+
+                    if let table = table(for: question) {
+                        QuestionTableView(table: table)
+                    }
+                }
                 // 問題が変わったことを分かるように入れ替える
                 .id(game.questionIndex)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -99,9 +110,21 @@ struct BattleView: View {
         }
     }
 
-    /// 出題中は文字送りを進め、発表に入ったら全文を出す
+    /// このルームの出題ジャンル。設定を持たない旧ルームは英単語として扱う
+    private var genre: Genre {
+        session.state?.settings.genre ?? .englishWord
+    }
+
+    /// 配信payloadは問題文と選択肢しか持たないため、IDで端末内の問題を引いて表を出す。
+    /// アプリの版が違って見つからない場合は、表なしで出題する
+    private func table(for question: RoomState.QuestionPayload) -> QuestionTable? {
+        allQuestions.first { $0.id == question.id }?.table
+    }
+
+    /// 出題中は文字送りを進め、発表に入ったら全文を出す。
+    /// SPIは読解と計算に時間が要るため、出題中から全文を見せる
     private func revealMode(game: RoomState.Game) -> BattleQuestionText.Mode {
-        guard game.phase == .question else { return .full }
+        guard game.phase == .question, genre.usesProgressiveReveal else { return .full }
         return .progressing(
             startedAtMS: session.localTimeMS(forBattleTimeMS: game.effectiveStartedAtMS)
         )
@@ -238,7 +261,13 @@ struct BattleView: View {
                     .font(.subheadline.bold())
                     .foregroundStyle(.red)
             } else if let mine = myAnswer(in: game) {
-                Label("回答しました(\(mine.visibleCount)文字目)", systemImage: "checkmark.circle")
+                // 文字送りしないジャンルでは「何文字目で押したか」に意味がない
+                Label(
+                    genre.usesProgressiveReveal
+                        ? "回答しました(\(mine.visibleCount)文字目)"
+                        : "回答しました",
+                    systemImage: "checkmark.circle"
+                )
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
             } else if pendingAnswer?.questionIndex == game.questionIndex {

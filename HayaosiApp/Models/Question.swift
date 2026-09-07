@@ -40,6 +40,11 @@ final class Question {
     }
 
     var genre: Genre { Genre(rawValue: genreRaw) ?? .englishWord }
+
+    /// 出題時に見せる選択肢。SPIは作問時の並び(数値なら昇順)を崩さない
+    var presentedChoices: [String] {
+        genre.shufflesChoices ? choices.shuffled() : choices
+    }
     var type: QuestionType { QuestionType(rawValue: typeRaw) ?? .multipleChoice }
     var category: StudyCategory { StudyCategory(rawValue: categoryRaw) ?? .highSchool }
     var difficulty: StudyDifficulty { StudyDifficulty(rawValue: difficultyValue) ?? .one }
