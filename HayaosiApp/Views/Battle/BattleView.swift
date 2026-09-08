@@ -30,7 +30,7 @@ struct BattleView: View {
                 Spacer()
 
                 VStack(spacing: 12) {
-                    BattleQuestionText(
+                    QuestionTextView(
                         text: question.text,
                         mode: revealMode(game: game),
                         isSingleWord: genre.usesProgressiveReveal
@@ -123,7 +123,7 @@ struct BattleView: View {
 
     /// 出題中は文字送りを進め、発表に入ったら全文を出す。
     /// SPIは読解と計算に時間が要るため、出題中から全文を見せる
-    private func revealMode(game: RoomState.Game) -> BattleQuestionText.Mode {
+    private func revealMode(game: RoomState.Game) -> QuestionTextView.Mode {
         guard game.phase == .question, genre.usesProgressiveReveal else { return .full }
         return .progressing(
             startedAtMS: session.localTimeMS(forBattleTimeMS: game.effectiveStartedAtMS)

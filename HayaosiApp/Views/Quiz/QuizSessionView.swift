@@ -111,9 +111,15 @@ struct QuizSessionView: View {
 
             Spacer()
 
-            Text(entry.question.text)
-                .font(.system(size: 40, weight: .bold))
-                .multilineTextAlignment(.center)
+            QuestionTextView(
+                text: entry.question.text,
+                mode: .full,
+                isSingleWord: entry.question.genre.usesProgressiveReveal
+            )
+
+            if let table = entry.question.table {
+                QuestionTableView(table: table)
+            }
 
             Spacer()
 
@@ -135,25 +141,39 @@ struct QuizSessionView: View {
 
     @ViewBuilder
     private func feedbackFooter(entry: QuizSession.Entry) -> some View {
-        if entry.didTimeout {
-            Label("時間切れ", systemImage: "clock.badge.xmark")
-                .foregroundStyle(.red)
-                .font(.headline)
-        } else if entry.isCorrect {
-            Label("正解!", systemImage: "circle")
-                .foregroundStyle(.green)
-                .font(.headline)
-        } else {
-            Label("不正解", systemImage: "xmark")
-                .foregroundStyle(.red)
-                .font(.headline)
+        VStack(spacing: 14) {
+            if entry.didTimeout {
+                Label("時間切れ", systemImage: "clock.badge.xmark")
+                    .foregroundStyle(.red)
+                    .font(.headline)
+            } else if entry.isCorrect {
+                Label("正解!", systemImage: "circle")
+                    .foregroundStyle(.green)
+                    .font(.headline)
+            } else {
+                Label("不正解", systemImage: "xmark")
+                    .foregroundStyle(.red)
+                    .font(.headline)
+            }
+
+            if !entry.question.explanation.isEmpty {
+                QuestionExplanationView(explanation: entry.question.explanation)
+
+                Button("次へ") {
+                    session.advance()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
         }
     }
 
     /// 正誤表示中だけ待って次の問題へ進む。
+    /// 解説がある問題は読む時間が人によって違うので、自動で進めず「次へ」に任せる。
     /// 画面を離れたときと次のフェーズへ移ったときは .task(id:) がキャンセルする
     private func advanceAfterFeedback() async {
         guard session.phase == .feedback else { return }
+        guard session.currentEntry?.question.explanation.isEmpty ?? true else { return }
         let duration = session.currentEntry?.isCorrect == true
             ? Self.correctFeedbackDuration
             : Self.wrongFeedbackDuration
