@@ -10,7 +10,7 @@
 | 進捗・作業中宣言・実装詳細の決定 | `STATUS.md`(完了分は `STATUS_ARCHIVE.md`) |
 | 機能から関連ファイルを探す | `docs/MODULE_MAP.md` |
 | Swiftの規約・命名・テスト方針・ビルド/テストコマンド・ディレクトリ構成 | `docs/CODING.md` |
-| clone後のセットアップ・署名・push認証 | `README.md` |
+| clone後のセットアップ・署名・push認証 | `docs/DEVELOPMENT.md` |
 | Firebaseの設定・データ構造・セキュリティルール | `FIREBASE_SETUP.md` |
 
 このファイルはリポジトリを初めて扱うとき、または更新されたときに確認する。通常タスクごとに運用文書一式を読み直さない。
@@ -67,7 +67,7 @@
 
 ## 変えてはいけないもの
 
-- **リポジトリ名・ターゲット名・共有設定の本番Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる)。共同開発者の実機検証に限り、git管理外の `Config/local.xcconfig` で開発用Bundle IDへ上書きしてよい。開発用の値を `project.yml` や共有ファイルへcommitしない
+- **ターゲット名・共有設定の本番Bundle ID `com.n.HayaosiApp`**(App Store上で別アプリ扱いになる。リポジトリ名 `sutahaya` とは一致しないが、これは意図的)。共同開発者の実機検証に限り、git管理外の `Config/local.xcconfig` で開発用Bundle IDへ上書きしてよい。開発用の値を `project.yml` や共有ファイルへcommitしない
 - **`.xcodeproj`**:XcodeGenの生成物で **git管理外**(コンフリクトしない)。手編集しない。ファイル・リソースを増減したら `xcodegen generate`。**`git pull` の後も必要**(忘れるとビルドが落ちる)
 - **`GoogleService-Info.plist` / `Config/local.xcconfig`**:git管理外。`git add` しても無言で無視される。各自の実効Bundle IDに対応するFirebase plistと署名設定を置き、相手の値を共有ファイルへ転記しない(`FIREBASE_SETUP.md` §3)
 
@@ -79,6 +79,7 @@
 - **`main` へ直接コミットする。ブランチは使わない**(担当が分かれていて衝突が起きにくいため。App Store申請と並行開発が始まったら見直す)
 - コミットは `feat:` / `fix:` / `docs:` / `refactor:` / `test:` + 日本語要約。1コミット=1つの意味のある変更
 - **コミット・pushの判断は人間が持つ。Claudeは勝手にコミットしない**
+- **このリポジトリは公開されている。** 秘密情報、Team ID、他人の個人情報を新たに書き込まない
 - コンフリクトしたら相手の変更を消さない。特に単語データJSONは**両者の追加語を残して**マージする(消えても気付きにくい)
 
 ## 2人開発ルール(必須)

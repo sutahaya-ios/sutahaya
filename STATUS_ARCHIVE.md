@@ -68,7 +68,7 @@
 - TOKIYA-YAMAMOTO(Codex): **マイページ上部プロフィールカードのDark Modeコントラストを改善**。カード内パネル・アイコン縁・境界線・フレンドコード背景をLight/Darkで自然に切り替わるシステムカラーへ変更し、戦績数値とフレンドコードへ明示的な主文字色を適用。レイアウト・機能・Firebase・戦績ロジック・フレンド欄・設定・広告・下部タブは変更していない。Simulator向けビルド成功。iPhone 17 Pro SimulatorでLight/Darkを各1回確認し、両表示でプロフィールカード内の文字が明確に読めることを確認。全テストと実機表示は未検証
 - Codex(たける側): **難易度別正答率セルを56pt・線幅6ptの円環プログレスリングへ変更**。12時位置から時計回りに進捗を描き、中央へ正答率、下へ★1〜★5を表示。既存の緑80%以上/黄55〜79%/赤54%以下/データ無しグレー、5列の等間隔、タップ挙動、問題0件時のopacity 0.4と遷移無効化は維持。xcodegen実行、Simulator向けビルド成功、全70テスト成功。検証専用iPhone 17 Proへ100%/66%/33%/0%/未回答の一時履歴を入れ、ライト/ダーク双方で緑・黄・赤・背景グレー・未回答を識別できることを確認後、一時履歴を削除。スクリーンショットは`docs/screenshots/difficulty-rings-light.png`と`difficulty-rings-dark.png`。本作業ではFirebase関連ファイル・本番環境を変更していない
 - TOKIYA-YAMAMOTO(Codex): **本番設定を維持した開発者別Bundle ID・Signing・Firebase構成へ更新**。共有既定値は本番Bundle ID `com.n.HayaosiApp`、共同開発者はgit管理外の`Config/local.xcconfig`だけでPersonal Teamと開発用Bundle IDを上書きする。2つのiOSアプリは同じFirebaseプロジェクトを共有し、各自が実効Bundle IDに一致するgit管理外のplistを使用する。Firebaseプロジェクト`hayaosiapp`へ開発用iOSアプリ`com.n.HayaosiApp.dev.tokiya`を登録し、対応plistとPersonal Teamをローカルへ設定。XcodeGen生成、実効Bundle ID・Teamの確認、Simulatorビルド、Personal Teamでの実機署名・iPhoneへのインストール・起動に成功。**実機上のFirebase疎通と実機2台通信は未検証**。本番Bundle ID・本番Firebaseルール・既存データは変更していない
-- Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team(atokiya@icloud.com)側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(LL98RL72H4)での実機ビルドは引き続き不可。**これは当時の記録であり、現在は上記の開発者別Bundle ID方式へ移行**
+- Claude(たける側): **bundle ID変更は見送り、Apple Developer Supportへ削除依頼を送付**(たけるの判断)。`com.n.HayaosiApp`は変更しない。無料Personal Team側の一時保持がApple公式サポートで早期解放されるかの返信待ち。返信が来るまで有償チーム(<本番Team ID>)での実機ビルドは引き続き不可。**これは当時の記録であり、現在は上記の開発者別Bundle ID方式へ移行**
 - Claude(たける側): **効果音の実音源への差し替え**。正解・不正解・時間切れ・出題の4種を配布素材へ差し替え、決定ボタン音を新規追加(`se_button.wav`)。詳細は下記Codexの実装記録と合わせて参照
   - `se_correct.wav`/`se_wrong.wav`:「Quiz-Ding_Dong02」「Quiz-Buzzer02」シリーズより選定
   - `se_timeup.wav`:「Countdown06」よりカウントダウン末尾のブザー部分のみ切り出し(頭のカウント部分は発表タイミングと合わないため不使用)
@@ -350,7 +350,7 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
   - ルームタブ:フレンドからの招待をオレンジのバナーとして最上部に表示(参加/却下ボタン付き)。作成・参加カードは従来どおり
   - 新規ファイル:`Views/Components/AvatarCircle.swift` / `Views/Friend/FriendProfileCard.swift` / `Views/Friend/AddFriendSheet.swift`。Simulatorビルド成功。※Firebase未設定のため実表示確認はXcodeプレビュー(`#Preview`)または設定後に実施
 - Claude: **GitHub化**。`saikyo-app-team` 組織にPrivateリポジトリ [HayaosiApp](https://github.com/saikyo-app-team/HayaosiApp) を作成しinitial commitをpush。`.xcodeproj`は引き続きgit管理外(XcodeGenで生成)のため、clone後の手順を`README.md`に追記。もう一人の開発者もこのリポジトリをcloneして参加できる状態
-- Claude: **実機ビルドエラーを修正**。原因は署名チーム未設定(「Signing for "HayaosiApp" requires a development team」)。`project.yml` に `DEVELOPMENT_TEAM: LL98RL72H4`(Buffitoと同じチーム)を追加して再生成し、実機向けビルド(自動署名)成功を確認
+- Claude: **実機ビルドエラーを修正**。原因は署名チーム未設定(「Signing for "HayaosiApp" requires a development team」)。`project.yml` に `DEVELOPMENT_TEAM: <本番Team ID>`(Buffitoと同じチーム)を追加して再生成し、実機向けビルド(自動署名)成功を確認
 - Claude: **タブバー化・フレンド機能・通信対戦を実装**。
   - **タブ構成**:`RootTabView` を新設し、ホーム(一人練習+成績サマリ)/ルーム/フレンド/復習/設定 の5タブに再編。旧スタブ(`LobbyView`・モック`BattleView`)は削除
   - **Firebase導入**:SPMで firebase-ios-sdk 12+(Auth / Database / Firestore)を追加。`GoogleService-Info.plist` が無くてもビルド・オフライン機能は動作し、オンライン系タブにはセットアップ案内を表示(`OnlineService.configureIfPossible`)。**人間作業の手順は `FIREBASE_SETUP.md`**
