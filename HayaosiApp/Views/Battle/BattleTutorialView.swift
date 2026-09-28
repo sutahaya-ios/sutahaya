@@ -25,7 +25,7 @@ struct BattleTutorialView: View {
                     Text("文字が少しずつ表示されます")
                         .font(.headline)
 
-                    BattleQuestionText(
+                    QuestionTextView(
                         text: Self.question,
                         mode: .progressing(startedAtMS: startedAtMS)
                     )

@@ -4,7 +4,7 @@ import SwiftUI
 struct StudyBoardCard: View {
     private static let minimumHeight: CGFloat = 188
 
-    let category: WordCategory
+    let category: StudyCategory
     let proficiencyRate: Double?
 
     var body: some View {

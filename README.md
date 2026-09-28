@@ -1,136 +1,98 @@
-# スタはや(リポジトリ名:HayaosiApp)
+# スタはや
 
-勉強系早押し対戦iOSアプリ。App Storeでの表示名は「スタはや」、リポジトリ名・ターゲット名は `HayaosiApp`、本番Bundle IDは `com.n.HayaosiApp` のままです。共同開発者の実機検証だけ、git管理外のローカル設定で別Bundle IDを使用できます。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) / [CLAUDE.md](CLAUDE.md) / [STATUS.md](STATUS.md) を参照。
+**勉強を、友達との早押し対戦にする iOSアプリ。**
 
-## 前提
+英単語・TOEIC・SPIなどの学習コンテンツを、文字送り型の早押しクイズで出題する。友達とのオンライン対戦、CPU対戦、一人練習のいずれでも、解いた問題は同じ学習履歴・復習リストに積み上がる。
 
-- macOS + Xcode 16以降(iOS 17以降がターゲット)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) 2.38以降
-- **`xcode-select` がXcode本体を指していること**。`xcode-select -p` が `/Library/Developer/CommandLineTools` を返す場合は切り替える(Simulatorの起動・操作ができない)
+App Store公開に向けて2人で開発中(iOS 17以上 / SwiftUI / Firebase)。
 
-  ```bash
-  sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-  ```
-
-## セットアップ(clone後に最初にやること)
-
-`.xcodeproj` はgit管理外(XcodeGenで生成するため)。clone後は以下を実行:
-
-```bash
-cd HayaosiApp   # リポジトリのルート(project.yml がある階層。中の同名フォルダではない)
-brew install xcodegen   # 未インストールの場合
-xcodegen generate
-open HayaosiApp.xcodeproj
-```
-
-**実機ビルドをする場合**は署名の設定が必要(Simulatorだけなら不要):
-
-```bash
-cp Config/local.xcconfig.sample Config/local.xcconfig
-```
-
-コピーした `Config/local.xcconfig` はgit管理外なので、次のように開発者ごとに別の値を持てる。
-
-- **代表者(本番・リリース担当):** `DEVELOPMENT_TEAM = LL98RL72H4` だけを設定する。Bundle IDは共有の既定値 `com.n.HayaosiApp` のまま
-- **共同開発者(Personal Teamで実機検証):** 自分の `DEVELOPMENT_TEAM` に加え、Firebaseへ登録した開発用Bundle IDを `APP_BUNDLE_IDENTIFIER = com.n.HayaosiApp.dev.tokiya` のように設定する
-
-チームIDは Xcode → Settings → Accounts → チーム名の右側(10桁)で確認する。開発用Bundle IDは本番用と別のアプリとして署名されるが、同じFirebaseプロジェクトへ登録すれば2台の通信対戦に同じAuth・Firestore・Realtime Databaseを使用できる。
-
-通信対戦・フレンド機能を使う場合は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) の手順で `GoogleService-Info.plist` を配置する(無くても一人練習・復習・CPU対戦はオフラインで動作する)。
-
-**このファイルはgit管理外なので `git pull` では降りてきません。** 各自が実効Bundle IDに一致するplistを配置してください。代表者用と共同開発者用を取り違えるとFirebase初期化に失敗します(理由と手順は [FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3)。
-
-## GitHubの認証(初回のみ・pushできない場合)
-
-このリポジトリは **非公開のOrganizationリポジトリ**(`sutahaya-ios/HayaosiApp`)。プライベートリポジトリでは**認証が通っていないと403ではなく404 `Repository not found` が返る**ため、「リポジトリが無い」と表示されて権限問題に見えるが、実際は認証の問題であることが多い。
-
-GitHub CLI で認証するのが最短:
-
-```bash
-brew install gh
-```
-
-```bash
-gh auth login
-```
-
-GitHub.com → **HTTPS** → ブラウザで認証(**このリポジトリに招待されている自分のアカウント**で)。続けて git 側の認証ヘルパーを設定する:
-
-```bash
-gh auth setup-git
-```
-
-権限があるかを、コミットせずに確認できる:
-
-```bash
-git push --dry-run
-```
-
-### それでも失敗する場合(エラー文で切り分け)
-
-| エラー | 原因 | 対処 |
+| | | |
 |---|---|---|
-| `denied to <別のアカウント名>` | 別アカウントの資格情報が残っている | 下のコマンドで消してから再認証 |
-| `Repository not found` | 未認証、またはURL違い | `git remote -v` を確認 → 再認証 |
-| `Support for password authentication was removed` | パスワードで認証しようとしている | `gh auth login`、またはPAT(classic・`repo`スコープ) |
-| `Permission denied (publickey)` | SSHだが鍵が未登録 | 下のSSH手順 |
-| `! [rejected] main -> main (fetch first)` | 相手が先にpushしていて自分のローカルが遅れている(正常な挙動) | `git pull --rebase` してから push |
-| **赤いエラーが出ず「変更なし」で終わる** | ファイルが `.gitignore` で除外されている | `git status --ignored` で確認。`GoogleService-Info.plist` は**意図的に管理外**([FIREBASE_SETUP.md](FIREBASE_SETUP.md) §3) |
+| ![学習タブ](docs/screenshots/toeic-study-tab.png) | ![難易度別の到達度](docs/screenshots/difficulty-rings-light.png) | ![カテゴリ別の学習量](docs/screenshots/category-summary-heatmap.png) |
+| 学習タブ | 難易度別の到達度 | カテゴリ別の学習量 |
 
-古い資格情報を消す(macOS):
+---
 
-```bash
-printf 'protocol=https\nhost=github.com\n\n' | git credential-osxkeychain erase
+## なぜ作ったか
+
+資格試験・受験・SPIの勉強は一人では続かない。一方で「みんなで早押しクイズ」のような対戦アプリは高い継続性を実現しているが、コンテンツは雑学中心で学習には使えず、復習も学習履歴も残らない。
+
+**対戦の楽しさと学習の積み上げは、まだ両立されていない。** そこを埋めるアプリとして設計した。詳細は [要件定義書](要件定義書_勉強系早押し対戦アプリ.md)。
+
+## 主な機能
+
+| 機能 | 内容 |
+|---|---|
+| **オンライン対戦** | ルームコードで友達と対戦。問題文が時間経過で徐々に表示され、選択肢のタップが早押しと回答を兼ねる |
+| **CPU対戦** | Firebase不要・完全オフラインで動作。オンラインと同じルール・同じ画面 |
+| **一人練習** | 中学英単語 / 高校英単語 / TOEIC / SPI |
+| **復習リスト** | 間違えた問題が自動で蓄積される。対戦・練習のどちらで解いても同じリストへ |
+| **学習履歴** | 難易度別の到達度、カテゴリ別の学習量、学習時間のヒートマップ |
+| **フレンド** | プロフィール、フレンド登録、対戦への招待 |
+| **作問** | 自分で問題を作って出題できる |
+
+## 技術構成
+
+| 領域 | 選定 |
+|---|---|
+| UI | SwiftUI / Observation |
+| ローカル永続化 | SwiftData |
+| リアルタイム対戦 | Firebase Realtime Database |
+| プロフィール・フレンド | Cloud Firestore |
+| 認証 | Firebase Anonymous Auth |
+| プロジェクト生成 | XcodeGen(`project.yml` が正) |
+| 収益化 | Google Mobile Ads / StoreKit サブスクリプション |
+| テスト | XCTest(ロジック) / Firebase Emulator(Security Rules) |
+
+```text
+SwiftUI Views
+    ↓
+Battle / Quiz / Study などの Service 層
+    ├─ SwiftData ……… 問題・回答履歴・復習リスト・学習時間
+    └─ Online 層 ……… Firebase Auth / Firestore / Realtime Database
 ```
 
-SSHに切り替える(トークンの期限切れがなく長期的に安定):
+アプリ本体は Swift 約12,000行 / 104ファイル。これに対しロジックのユニットテスト122ケースと、Firebase Security Rules・Cloud FunctionsのEmulatorテストを持つ。
 
-```bash
-ssh-keygen -t ed25519 -C "github" && gh ssh-key add ~/.ssh/id_ed25519.pub && git remote set-url origin git@github.com:sutahaya-ios/HayaosiApp.git && ssh -T git@github.com
-```
+## 設計上の判断
 
-**Xcodeから push する場合は別管理**。Xcode → Settings → Accounts に自分のGitHubアカウントを追加する(パスワードではなく `repo` スコープ付きのPATを使う)。ターミナルで通っていてもXcode側は通らないので、ここで詰まる人が多い。
+### 対戦ロジックをFirebaseから切り離した
 
-## 日々の作業(相手の変更を取り込む)
+`Services/Battle/` はFirebaseに一切依存させず、`Services/Online/` にFirebase固有の処理を閉じ込めている。CPU対戦とオンライン対戦は共通の `BattleSession` 抽象と同じ対戦画面を使うため、**CPU対戦は通信なしで完結し、対戦ルールの実装は1箇所で済む**。得点・ランキング・文字送りといったルールの定数も共通ロジックを唯一の出典とし、ViewやFirebase層へ数値を重複させない。
 
-**自動では降りてこない。** 作業を始める前に自分で取り込む:
+### 早押しの公平性は「サーバー到達順」で決める
 
-```bash
-git pull --rebase && xcodegen generate
-```
+端末側のタップ時刻は信用できないため、回答順はFirebaseのサーバータイムスタンプを基準に判定する。各端末の残り時間表示も、サーバー時刻とのoffsetで補正する。Realtime Databaseのトランザクションで「最初に押した1人に回答権を与える」処理を原子的に書けることが、バックエンドにFirebaseを選んだ主な理由。
 
-`.xcodeproj` はgit管理外なので、相手が `.swift` やリソースを追加・削除していた場合は `xcodegen generate` まで必要(忘れると「追加されたファイルがXcodeに出てこない」「ビルドが落ちる」)。
+> 不採用にした案:Supabase(早押しの原子的な判定を自作する必要がある)、Game Center(P2P型で判定の権威を持てず、切断・チートに弱い)。
 
-相手が何を変えたかは次のコマンドで見る:
+### 問題データはサーバーに置かず、ホスト端末が配信する
 
-```bash
-git fetch && git log --oneline --stat HEAD..origin/main
-```
+問題マスタをサーバーへ置くと、オフラインの一人練習と対戦でデータの持ち方が二重になり、Firestoreの読み取り回数も増える。v1.0ではホスト端末が端末内の問題から出題を選んでルームへ配信する方式にした。ジャンル追加でデータ量が増えた段階で、マスタ配信方式への移行を検討する。
 
-pushの通知が欲しい場合は、GitHubのリポジトリページ右上 Watch → **All Activity** にしておく。変更の意図・次のタスクは [STATUS.md](STATUS.md) に書く運用。
+### 遅延・切断を前提に状態を設計する
 
-なお `git pull` を常にrebaseにしておくと、無駄なマージコミットが増えない(1回だけ設定):
+回答と「誤答で回答権を失った状態」は問題番号に紐付け、遅延して届いた前問のデータが次問へ混ざらないようにしている。次問へ移る際は回答・失格・正解発表の状態を明示的にクリアする。FirestoreとRealtime Databaseをまたぐ操作では、片方だけ成功した部分成功の状態を洗い出し、rollbackか再実行で回復できることを条件にしている。
 
-```bash
-git config pull.rebase true
-```
+### `.xcodeproj` をgit管理外にした
 
-## ビルド・テスト(Simulator)
+2人開発で最もコンフリクトしやすいのが `.xcodeproj` なので、XcodeGenで生成物として扱い、`project.yml` を共有設定の正とした。またApple Developer ProgramのIndividual Teamは共同開発者をチームメンバーに招待できないため、署名とBundle IDはgit管理外の `Config/local.xcconfig` で開発者ごとに上書きする構成にしている。
 
-```bash
-env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
-  -project HayaosiApp.xcodeproj -scheme HayaosiApp \
-  -destination 'generic/platform=iOS Simulator' build
-```
+## ドキュメント
 
-機種名は自分の環境にあるものに置き換える(一覧:`xcrun simctl list devices available`)。
+このリポジトリは、2人で並行開発するために役割ごとに文書を分けている。
 
-```bash
-env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
-  -project HayaosiApp.xcodeproj -scheme HayaosiApp \
-  -destination 'platform=iOS Simulator,name=iPhone 17' test
-```
+| 文書 | 内容 |
+|---|---|
+| [要件定義書](要件定義書_勉強系早押し対戦アプリ.md) | 何を作るか、なぜそう決めたか、スコープの内外 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | レイヤ構成、対戦の内部設計 |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | 設計判断とその理由、廃止した案 |
+| [docs/MODULE_MAP.md](docs/MODULE_MAP.md) | 機能から関連ファイルを引く索引 |
+| [docs/CODING.md](docs/CODING.md) | Swiftの規約・命名・テスト方針 |
+| [FIREBASE_SETUP.md](FIREBASE_SETUP.md) | Firebaseの設定、データ構造、セキュリティルール |
+| [STATUS.md](STATUS.md) | 進行中の作業と作業中宣言(完了分は `STATUS_ARCHIVE.md`) |
+| [CLAUDE.md](CLAUDE.md) | 開発ルール(AIコーディングエージェント向けの指示も兼ねる) |
 
-## 開発ルール
+## セットアップ
 
-2人開発のため [CLAUDE.md](CLAUDE.md) の「2人開発ルール」を必ず守ること(作業前に [STATUS.md](STATUS.md) へ宣言してpush、同一ファイル同時編集禁止)。
+開発環境の構築、ビルド・テストの実行方法は [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) を参照。

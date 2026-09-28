@@ -66,15 +66,15 @@ struct RoomState {
         let timeLimit: TimeInterval
         let genre: Genre
         /// 英単語のカテゴリと難易度。nilは分類設定のない旧ルームとの互換用
-        let wordCategory: WordCategory?
-        let wordDifficulty: WordDifficulty?
+        let wordCategory: StudyCategory?
+        let wordDifficulty: StudyDifficulty?
 
         init(
             questionCount: Int,
             timeLimit: TimeInterval,
             genre: Genre,
-            wordCategory: WordCategory? = nil,
-            wordDifficulty: WordDifficulty? = nil
+            wordCategory: StudyCategory? = nil,
+            wordDifficulty: StudyDifficulty? = nil
         ) {
             self.questionCount = questionCount
             self.timeLimit = timeLimit
@@ -102,9 +102,9 @@ struct RoomState {
             timeLimit = RoomState.double(databaseValue["timeLimit"]) ?? QuizDefaults.timeLimit
             genre = Genre(rawValue: databaseValue["genre"] as? String ?? "") ?? .englishWord
 
-            let category = WordCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
+            let category = StudyCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
             let difficultyValue = RoomState.int(databaseValue["wordDifficulty"])
-            let difficulty = difficultyValue.flatMap(WordDifficulty.init(rawValue:))
+            let difficulty = difficultyValue.flatMap(StudyDifficulty.init(rawValue:))
             if let category, let difficulty {
                 wordCategory = category
                 wordDifficulty = difficulty

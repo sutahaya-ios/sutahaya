@@ -41,7 +41,7 @@ final class CategoryProficiencySummaryTests: XCTestCase {
         XCTAssertEqual(summary.totalWordCount, 1)
         XCTAssertEqual(summary.masteredWordCount, 0)
         XCTAssertEqual(try XCTUnwrap(summary.proficiencyRate), 0, accuracy: 0.001)
-        XCTAssertTrue(WordDifficulty.allCases.allSatisfy { summary.accuracy(for: $0) == nil })
+        XCTAssertTrue(StudyDifficulty.allCases.allSatisfy { summary.accuracy(for: $0) == nil })
     }
 
     func test_存在しない問題IDの履歴を無視する() throws {
@@ -62,8 +62,8 @@ final class CategoryProficiencySummaryTests: XCTestCase {
 
     private func makeQuestion(
         id: String,
-        category: WordCategory,
-        difficulty: WordDifficulty
+        category: StudyCategory,
+        difficulty: StudyDifficulty
     ) -> Question {
         Question(
             id: id,

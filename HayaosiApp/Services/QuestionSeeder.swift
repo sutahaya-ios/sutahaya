@@ -4,7 +4,7 @@ import SwiftData
 enum QuestionDataError: LocalizedError {
     case missingResource(name: String)
     case duplicateID(String)
-    case duplicateWord(word: String, category: WordCategory)
+    case duplicateWord(word: String, category: StudyCategory)
 
     var errorDescription: String? {
         switch self {
@@ -21,7 +21,7 @@ enum QuestionDataError: LocalizedError {
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 11
+    static let dataVersion = 12
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -34,7 +34,7 @@ enum QuestionSeeder {
             try migrateQuestionReferences(to: entries, context: context)
             // QuestionはJSONから再生成できる配布データなので、全件を新構造で入れ替える
             try context.delete(model: Question.self)
-            for question in makeQuestions(from: entries) {
+            for question in makeQuestions(from: entries) + loadSPIQuestions() {
                 context.insert(question)
             }
             try context.save()
@@ -86,15 +86,16 @@ enum QuestionSeeder {
         let word: String
         let meaning: String
         let pos: PartOfSpeech
-        let difficulty: WordDifficulty
+        let difficulty: StudyDifficulty
     }
 
-    /// 全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する
+    /// 英単語の全カテゴリのファイルを読み、カテゴリ内の重複とIDの一意性を検証する。
+    /// SPIは問題文と誤答をそのままJSONへ持つ別形式なので、ここでは扱わない
     static func loadEntries() throws -> [WordEntry] {
         var allEntries: [WordEntry] = []
         var allIDs: Set<String> = []
 
-        for category in WordCategory.allCases {
+        for category in Genre.englishWord.categories {
             guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
                 throw QuestionDataError.missingResource(name: category.rawValue)
             }
@@ -120,6 +121,47 @@ enum QuestionSeeder {
             }
         }
         return allEntries
+    }
+
+    /// SPIの1問ぶん。英単語と違い、誤答も含む選択肢と解説がJSONに入っている
+    private struct SPIQuestionFile: Decodable {
+        let id: String
+        let difficulty: Int
+        let text: String
+        let choices: [String]
+        let answer: String
+        let explanation: String
+        let table: QuestionTable?
+    }
+
+    /// SPIの各カテゴリのファイルを読む。まだ用意していないカテゴリは読み飛ばす
+    static func loadSPIQuestions() -> [Question] {
+        Genre.spi.categories.flatMap { category -> [Question] in
+            guard let url = Bundle.main.url(forResource: category.rawValue, withExtension: "json") else {
+                print("SPIの問題ファイルが無い: \(category.rawValue).json")
+                return []
+            }
+            do {
+                let decoded = try JSONDecoder().decode([SPIQuestionFile].self, from: Data(contentsOf: url))
+                return decoded.map { file in
+                    Question(
+                        id: file.id,
+                        genre: .spi,
+                        type: .multipleChoice,
+                        text: file.text,
+                        choices: file.choices,
+                        answer: file.answer,
+                        category: category,
+                        difficulty: StudyDifficulty(rawValue: file.difficulty) ?? .one,
+                        explanation: file.explanation,
+                        table: file.table
+                    )
+                }
+            } catch {
+                print("SPIの問題ファイルを読めない(\(category.rawValue)): \(error)")
+                return []
+            }
+        }
     }
 
     /// 「単語 → 意味を4択」の問題を作る。誤答は同じ品詞グループから決定的に選ぶ

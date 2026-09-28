@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// 対戦画面の問題文(英単語)。文字送り型では1文字ずつ表示する(要件 §5.1.2)
-struct BattleQuestionText: View {
-    /// 見せ方。発表中は全文を出す
+/// 出題中の問題文。英単語は1文字ずつ出し(要件 §5.1.2)、SPIは最初から全文を見せる。
+/// 対戦と練習で共通に使う
+struct QuestionTextView: View {
+    /// 見せ方。発表中と、文字送りしないジャンルでは全文を出す
     enum Mode: Equatable {
         case progressing(startedAtMS: Double)
         case full
@@ -13,6 +14,8 @@ struct BattleQuestionText: View {
 
     let text: String
     let mode: Mode
+    /// 単語は大きく等幅で、SPIの問題文は読みやすい本文サイズで出す
+    var isSingleWord = true
 
     var body: some View {
         Group {
@@ -32,15 +35,18 @@ struct BattleQuestionText: View {
     /// 表示中はまだ続きがあることをカーソルで示す
     private func questionText(_ visible: String, isComplete: Bool) -> some View {
         (Text(visible) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
-            .font(.system(size: 40, weight: .bold, design: .rounded))
-            .monospaced()
-            .multilineTextAlignment(.center)
+            .font(isSingleWord
+                  ? .system(size: 40, weight: .bold, design: .rounded)
+                  : .system(.title3, weight: .semibold))
+            .monospaced(isSingleWord)
+            .multilineTextAlignment(isSingleWord ? .center : .leading)
+            .frame(maxWidth: .infinity, alignment: isSingleWord ? .center : .leading)
             .contentTransition(.identity)
     }
 }
 
 #Preview("文字送り中") {
-    BattleQuestionText(
+    QuestionTextView(
         text: "abandon",
         mode: .progressing(startedAtMS: Date().timeIntervalSince1970 * 1000)
     )
@@ -48,6 +54,15 @@ struct BattleQuestionText: View {
 }
 
 #Preview("正解発表") {
-    BattleQuestionText(text: "abandon", mode: .full)
+    QuestionTextView(text: "abandon", mode: .full)
         .padding()
+}
+
+#Preview("SPI") {
+    QuestionTextView(
+        text: "ある商品を1個800円で仕入れ、定価の2割引きで売ったところ、1個あたり160円の利益が出た。この商品の定価はいくらか。",
+        mode: .full,
+        isSingleWord: false
+    )
+    .padding()
 }

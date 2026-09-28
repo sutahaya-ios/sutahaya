@@ -5,10 +5,12 @@ struct CategoryProficiencySummary: Equatable {
     let totalWordCount: Int
     let masteredWordCount: Int
     let proficiencyRate: Double?
+    /// 出題数の単位。英単語は「語」、SPIは「問」
+    let unit: String
 
     private let accuracyByDifficultyValue: [Int: Double]
 
-    func accuracy(for difficulty: WordDifficulty) -> Double? {
+    func accuracy(for difficulty: StudyDifficulty) -> Double? {
         accuracyByDifficultyValue[difficulty.rawValue]
     }
 
@@ -21,12 +23,12 @@ struct CategoryProficiencySummary: Equatable {
     /// 「1語 / 400語」形式。対戦ホームのように分母を強調したい場所で使う
     var masteredOverTotalText: String {
         guard totalWordCount > 0 else { return "－" }
-        return "\(masteredWordCount)語 / \(totalWordCount)語"
+        return "\(masteredWordCount)\(unit) / \(totalWordCount)\(unit)"
     }
 
     var detailText: String {
         guard totalWordCount > 0 else { return "－" }
-        return "\(totalWordCount)語中\(masteredWordCount)語"
+        return "\(totalWordCount)\(unit)中\(masteredWordCount)\(unit)"
     }
 
     /// 0...1 に収めた進捗。バー・円環のどちらでもそのまま使える
@@ -38,8 +40,8 @@ struct CategoryProficiencySummary: Equatable {
     static func calculate(
         records: [AnswerRecord],
         questions: [Question],
-        category: WordCategory,
-        difficulty: WordDifficulty? = nil
+        category: StudyCategory,
+        difficulty: StudyDifficulty? = nil
     ) -> CategoryProficiencySummary {
         let categoryQuestionsByID = questions.reduce(into: [String: Question]()) { result, question in
             guard question.category == category else { return }
@@ -70,6 +72,7 @@ struct CategoryProficiencySummary: Equatable {
             totalWordCount: totalWordCount,
             masteredWordCount: masteredQuestionIDs.count,
             proficiencyRate: proficiencyRate,
+            unit: category.questionUnit,
             accuracyByDifficultyValue: accuracyByDifficultyValue
         )
     }

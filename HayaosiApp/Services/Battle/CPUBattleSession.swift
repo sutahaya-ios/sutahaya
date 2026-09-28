@@ -115,7 +115,7 @@ final class CPUBattleSession: NPCManageableBattleSession {
     func startGame(questions: [Question]) async {
         guard status == .waiting, !questions.isEmpty else { return }
         questionPayloads = questions.map {
-            RoomState.QuestionPayload(id: $0.id, text: $0.text, choices: $0.choices.shuffled(), answer: $0.answer)
+            RoomState.QuestionPayload(id: $0.id, text: $0.text, choices: $0.presentedChoices, answer: $0.answer)
         }
         status = .playing
         beginQuestion(0)

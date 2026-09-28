@@ -12,7 +12,7 @@ final class DailyStudyTime {
 
     init(
         dayStart: Date,
-        category: WordCategory,
+        category: StudyCategory,
         totalSeconds: Double = 0,
         calendar: Calendar = .current
     ) {
@@ -29,7 +29,7 @@ final class DailyStudyTime {
 
     static func makeDayCategoryKey(
         dayStart: Date,
-        category: WordCategory,
+        category: StudyCategory,
         calendar: Calendar = .current
     ) -> String {
         let normalizedDayStart = calendar.startOfDay(for: dayStart)

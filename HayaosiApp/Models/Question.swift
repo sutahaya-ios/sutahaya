@@ -12,15 +12,21 @@ final class Question {
     /// 正答を含む選択肢。表示時にシャッフルする
     var choices: [String]
     var answer: String
-    /// 英単語の学習カテゴリ。既存インストールを壊さないためデフォルト値付き
-    var categoryRaw: String = WordCategory.highSchool.rawValue
+    /// 学習カテゴリ。既存インストールを壊さないためデフォルト値付き
+    var categoryRaw: String = StudyCategory.highSchool.rawValue
     /// カテゴリ内の難易度(1〜5)。既存インストールを壊さないためデフォルト値付き
-    var difficultyValue: Int = WordDifficulty.one.rawValue
+    var difficultyValue: Int = StudyDifficulty.one.rawValue
+    /// 解答後に見せる解説。英単語は持たないので既定は空
+    var explanation: String = ""
+    /// 資料解釈の表。持たない問題はnil
+    var table: QuestionTable?
 
     init(id: String, genre: Genre, type: QuestionType,
          text: String, choices: [String], answer: String,
-         category: WordCategory = .highSchool,
-         difficulty: WordDifficulty = .one) {
+         category: StudyCategory = .highSchool,
+         difficulty: StudyDifficulty = .one,
+         explanation: String = "",
+         table: QuestionTable? = nil) {
         self.id = id
         self.genreRaw = genre.rawValue
         self.typeRaw = type.rawValue
@@ -29,10 +35,17 @@ final class Question {
         self.answer = answer
         self.categoryRaw = category.rawValue
         self.difficultyValue = difficulty.rawValue
+        self.explanation = explanation
+        self.table = table
     }
 
     var genre: Genre { Genre(rawValue: genreRaw) ?? .englishWord }
+
+    /// 出題時に見せる選択肢。SPIは作問時の並び(数値なら昇順)を崩さない
+    var presentedChoices: [String] {
+        genre.shufflesChoices ? choices.shuffled() : choices
+    }
     var type: QuestionType { QuestionType(rawValue: typeRaw) ?? .multipleChoice }
-    var category: WordCategory { WordCategory(rawValue: categoryRaw) ?? .highSchool }
-    var difficulty: WordDifficulty { WordDifficulty(rawValue: difficultyValue) ?? .one }
+    var category: StudyCategory { StudyCategory(rawValue: categoryRaw) ?? .highSchool }
+    var difficulty: StudyDifficulty { StudyDifficulty(rawValue: difficultyValue) ?? .one }
 }

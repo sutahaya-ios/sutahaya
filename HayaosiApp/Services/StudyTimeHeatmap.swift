@@ -33,7 +33,7 @@ struct StudyTimeHeatmap {
     /// `category` に nil を渡すと全カテゴリを合算する
     static func calculate(
         records: [DailyStudyTime],
-        category: WordCategory?,
+        category: StudyCategory?,
         referenceDate: Date = .now,
         calendar: Calendar = .current
     ) -> Summary {

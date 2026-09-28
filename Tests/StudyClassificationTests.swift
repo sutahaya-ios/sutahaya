@@ -3,7 +3,7 @@ import SwiftData
 @testable import HayaosiApp
 
 /// カテゴリ・難易度の絞り込みと、収録データの整合性を検証する
-final class WordClassificationTests: XCTestCase {
+final class StudyClassificationTests: XCTestCase {
     private var container: ModelContainer!
 
     override func setUpWithError() throws {
@@ -21,8 +21,8 @@ final class WordClassificationTests: XCTestCase {
     private func makeQuestion(
         id: String,
         word: String,
-        category: WordCategory,
-        difficulty: WordDifficulty
+        category: StudyCategory,
+        difficulty: StudyDifficulty
     ) -> Question {
         let question = Question(
             id: id,
@@ -115,11 +115,11 @@ final class WordClassificationTests: XCTestCase {
     }
 
     func test_難易度を5段階の星で表示する() {
-        XCTAssertEqual(WordDifficulty.one.starDisplay, "★☆☆☆☆")
-        XCTAssertEqual(WordDifficulty.two.starDisplay, "★★☆☆☆")
-        XCTAssertEqual(WordDifficulty.three.starDisplay, "★★★☆☆")
-        XCTAssertEqual(WordDifficulty.four.starDisplay, "★★★★☆")
-        XCTAssertEqual(WordDifficulty.five.starDisplay, "★★★★★")
+        XCTAssertEqual(StudyDifficulty.one.starDisplay, "★☆☆☆☆")
+        XCTAssertEqual(StudyDifficulty.two.starDisplay, "★★☆☆☆")
+        XCTAssertEqual(StudyDifficulty.three.starDisplay, "★★★☆☆")
+        XCTAssertEqual(StudyDifficulty.four.starDisplay, "★★★★☆")
+        XCTAssertEqual(StudyDifficulty.five.starDisplay, "★★★★★")
     }
 
     func test_代名詞接続詞前置詞を同じ誤答グループで4択にする() throws {
@@ -153,12 +153,12 @@ final class WordClassificationTests: XCTestCase {
         XCTAssertEqual(PartOfSpeech.auxiliary.distractorGroup, .minorFunctionWords)
     }
 
-    func test_収録データは各カテゴリを含みIDと単語が重複しない() throws {
+    func test_収録データは英単語の各カテゴリを含みIDと単語が重複しない() throws {
         let entries = try QuestionSeeder.loadEntries()
         XCTAssertFalse(entries.isEmpty)
         XCTAssertEqual(Set(entries.map(\.id)).count, entries.count, "問題IDが重複している")
 
-        for category in WordCategory.allCases {
+        for category in Genre.englishWord.categories {
             let categoryEntries = entries.filter { $0.category == category }
             XCTAssertFalse(categoryEntries.isEmpty, "\(category.displayName)が空")
             XCTAssertEqual(

@@ -407,7 +407,7 @@ struct BattleLobbyView: View {
         return String(characters.prefix(2)).uppercased()
     }
 
-    private func compactDifficulty(_ difficulty: WordDifficulty?) -> String {
+    private func compactDifficulty(_ difficulty: StudyDifficulty?) -> String {
         difficulty.map { "★\($0.rawValue)" } ?? "—"
     }
 }

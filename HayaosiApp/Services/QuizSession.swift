@@ -30,7 +30,7 @@ final class QuizSession {
         self.timeLimit = timeLimit
         self.remainingTime = timeLimit
         self.entries = questions.map {
-            Entry(question: $0, shuffledChoices: $0.choices.shuffled())
+            Entry(question: $0, shuffledChoices: $0.presentedChoices)
         }
         if entries.isEmpty {
             phase = .finished

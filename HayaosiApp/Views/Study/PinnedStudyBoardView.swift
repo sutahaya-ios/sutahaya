@@ -8,11 +8,11 @@ struct PinnedStudyBoardView: View {
         GridItem(.flexible(), spacing: gridSpacing)
     ]
 
-    let categories: [WordCategory]
+    let categories: [StudyCategory]
     let records: [AnswerRecord]
     let questions: [Question]
     let isEditing: Bool
-    let onUnpin: (WordCategory) -> Void
+    let onUnpin: (StudyCategory) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -32,7 +32,7 @@ struct PinnedStudyBoardView: View {
     }
 
     @ViewBuilder
-    private func boardCell(for category: WordCategory) -> some View {
+    private func boardCell(for category: StudyCategory) -> some View {
         let summary = CategoryProficiencySummary.calculate(
             records: records,
             questions: questions,

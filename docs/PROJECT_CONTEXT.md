@@ -25,7 +25,7 @@
 ## Apple DeveloperとBundle ID
 
 - 本番Bundle IDは `com.n.HayaosiApp`
-- 本番Team IDは `LL98RL72H4`
+- 本番Team IDは `<本番Team ID>`
 - 本番Archive、TestFlight、App Store公開は、たける側の有料Individual Teamから行う
 - トキヤ側はPersonal Teamと開発用Bundle IDを使用する
 - 開発者固有のBundle IDとTeamは、git管理外の `Config/local.xcconfig` で上書きする

@@ -20,7 +20,7 @@
 
 ### D-003: 本番と個人開発でBundle IDを分離する
 
-- 決定: 本番は`com.n.HayaosiApp`＋Team `LL98RL72H4`、トキヤ側は開発用Bundle ID＋Personal Team
+- 決定: 本番は`com.n.HayaosiApp`＋Team `<本番Team ID>`、トキヤ側は開発用Bundle ID＋Personal Team
 - 理由: Individual Teamは共同開発者を招待できず、同じBundle IDをPersonal Teamで使うとApple側で衝突するため
 - 影響: 開発者固有値は`Config/local.xcconfig`へ置き、Gitで共有しない
 

@@ -43,7 +43,7 @@ final class ResultRecorderTests: XCTestCase {
         let record = try XCTUnwrap(records.first)
         XCTAssertEqual(records.count, 1)
         XCTAssertEqual(record.dayStart, dayStart)
-        XCTAssertEqual(record.categoryRaw, WordCategory.juniorHigh.rawValue)
+        XCTAssertEqual(record.categoryRaw, StudyCategory.juniorHigh.rawValue)
         XCTAssertEqual(record.totalSeconds, 150, accuracy: 0.001)
     }
 

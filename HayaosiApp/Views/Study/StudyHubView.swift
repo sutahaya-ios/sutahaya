@@ -62,7 +62,7 @@ struct StudyHubView: View {
         .foregroundStyle(Color.accentColor)
     }
 
-    private var pinnedCategories: [WordCategory] {
+    private var pinnedCategories: [StudyCategory] {
         guard let data = pinnedCategoriesJSON.data(using: .utf8) else {
             return []
         }
@@ -74,7 +74,7 @@ struct StudyHubView: View {
                 guard includedRawValues.insert(rawValue).inserted else {
                     return nil
                 }
-                return WordCategory(rawValue: rawValue)
+                return StudyCategory(rawValue: rawValue)
             }
         } catch {
             print("ピン留め教材の読み込みに失敗: \(error)")
@@ -82,18 +82,18 @@ struct StudyHubView: View {
         }
     }
 
-    private var pinnedCategoriesBinding: Binding<[WordCategory]> {
+    private var pinnedCategoriesBinding: Binding<[StudyCategory]> {
         Binding(
             get: { pinnedCategories },
             set: storePinnedCategories
         )
     }
 
-    private func unpin(_ category: WordCategory) {
+    private func unpin(_ category: StudyCategory) {
         storePinnedCategories(pinnedCategories.filter { $0 != category })
     }
 
-    private func storePinnedCategories(_ categories: [WordCategory]) {
+    private func storePinnedCategories(_ categories: [StudyCategory]) {
         do {
             let data = try JSONEncoder().encode(categories.map(\.rawValue))
             guard let json = String(data: data, encoding: .utf8) else {

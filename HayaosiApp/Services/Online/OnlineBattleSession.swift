@@ -444,7 +444,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
             [
                 "id": question.id,
                 "text": question.text,
-                "choices": question.choices.shuffled(),
+                "choices": question.presentedChoices,
                 "answer": question.answer
             ]
         }
