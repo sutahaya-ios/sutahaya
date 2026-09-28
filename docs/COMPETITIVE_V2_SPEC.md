@@ -85,7 +85,7 @@ Competitive Modeでは、iOSアプリ、Simulator、改造client、通信内容�
 - Intent種別
 - client生成の一意な `intentId`
 - serverから払い出された `sessionId`、`sessionEpoch`、`matchId`、ticket
-- 操作対象を示すopaque ID（例: `questionInstanceId`、`answerId`）
+- 操作対象を示すopaque ID（例: `questionId`、`answerId`）
 - clientの対応 `protocolVersion` とapp build情報
 - 再接続時の最後に観測した `serverSequence`
 
@@ -120,7 +120,7 @@ IntentEnvelope
   sessionId: OpaqueID?
   sessionEpoch: Int?
   matchId: OpaqueID?
-  questionInstanceId: OpaqueID?
+  questionId: OpaqueID?
   lastSeenServerSequence: Int?
   payload: TypeSpecificPayload
 ```
@@ -139,8 +139,8 @@ IntentEnvelope
 | `cancelQueue` | sessionId、epoch | QUEUED本人、match未確定 | IDLEへ戻す |
 | `joinMatch` | assignment ticket、sessionId、epoch | ticket署名/期限、roster、WAITING_PLAYERS | slotを接続済みにする |
 | `ready` | matchId、sessionId、epoch | roster本人、WAITING_PLAYERS | readyを記録する |
-| `buzz` | matchId、questionInstanceId | QUESTION_OPEN、回答資格、deadline前、未buzz | Ordering Authorityが採用/拒否 |
-| `submitAnswer` | matchId、questionInstanceId、answerId | ANSWERING、active responder本人、deadline前、answerId有効 | Serverが正誤と得点を確定 |
+| `buzz` | matchId、questionId | QUESTION_OPEN、回答資格、deadline前、未buzz | Ordering Authorityが採用/拒否 |
+| `submitAnswer` | matchId、questionId、answerId | ANSWERING、active responder本人、deadline前、answerId有効 | Serverが正誤と得点を確定 |
 | `leave` | sessionId、epoch、matchId? | session所有者、現在state | 開始前cancelまたは開始後forfeit |
 | `reconnect` | sessionId、epoch、matchId、lastSeenSequence | lease/grace、roster、fence | snapshotと欠落後の状態を返す |
 | `heartbeat` | sessionId、epoch、matchId? | session所有者、rate limit | Serverがleaseを延長する |
@@ -197,6 +197,7 @@ Serverは少なくとも以下を所有する。
 - 問題のcanonical ID、correct answer、選択肢対応
 - buzz採用者、buzz順、server受信時刻
 - active responder、回答受付可否
+- 問題内の回答attempt履歴、各attemptで失効した回答権
 - correctness、score delta、total score
 - question result、最終rank、winner
 - disconnect、grace、forfeit状態
@@ -215,10 +216,11 @@ clientが読む状態は、Server内部状態から生成したsanitized project
 
 最終結果は、match内のcanonical resultとsettlement resultを分ける。
 
-- `MatchResult`: matchId、roster snapshot、final scores、ranks、winner、forfeit、finishedAt、configVersion。
+- `MatchResult`: matchId、roster snapshot、outcome（COMPLETED / ABORTED）、final scores、ranks、winner、forfeit/abort reason、finishedAt、configVersion。ABORTEDではrank/winnerを確定しない。
 - `SettlementResult`: settlementId、settlementVersion、MMR before/delta/after、season、history/leaderboard反映状態。
 - MatchResultは一度確定したら変更しない。
 - SettlementResultの適用処理は再実行可能だが、同じsettlementを二重加算しない。
+- Server faultによるABORTED matchはMMR、敗北数、leaderboardへ競技結果として適用しない。
 
 ---
 
@@ -233,7 +235,8 @@ CREATED
   -> QUESTION_OPEN
   -> BUZZ_LOCKED
   -> ANSWERING
-  -> QUESTION_RESULT
+       -> QUESTION_OPEN      (不正解、残り回答権あり、deadline前)
+       -> QUESTION_RESULT    (正解、全回答権消滅、またはdeadline到達)
   -> NEXT_QUESTION
        -> QUESTION_OPEN ...
        -> MATCH_FINISHED
@@ -241,7 +244,7 @@ CREATED
   -> SETTLED
 ```
 
-異常終了は自由なstate上書きではなく、Server eventとして同じOrdering Authorityを通し、forfeitまたはabort理由をMatchResultに残す。
+異常終了は自由なstate上書きではなく、Server eventとして同じOrdering Authorityを通し、forfeitまたはabort理由をMatchResultに残す。Server側障害によるabortはPlayerの敗北やMMR penaltyとして扱わない。
 
 ### 5.2 CREATED
 
@@ -259,7 +262,7 @@ CREATED
 - **許可Intent**: `joinMatch`、`ready`、`reconnect`、`leave`、`heartbeat`。
 - **拒否**: `buzz`、`submitAnswer`、roster外のjoin、期限切れticket。
 - **Timeout**: 未参加・未ready playerをno-show扱いにする。開始前のためMMR penaltyは付けず、matchをabortして残りhumanを再queueすることを初期方針とする。
-- **遷移**: 4枠が確定し、必要なhumanが参加・readyしたら `COUNTDOWN`。このcommitを競技上の参加確定境界とする。
+- **遷移**: Queue/WAITING中はキャンセル可能とする。4枠が確定し、必要なhumanが参加・readyして `COUNTDOWN` を開始するcommitを、Competitive Matchへのcommitment boundaryとする。
 
 ### 5.4 COUNTDOWN
 
@@ -268,39 +271,39 @@ CREATED
 - **許可Intent**: `reconnect`、`leave`、`heartbeat`。
 - **拒否**: `buzz`、`submitAnswer`、roster変更、ready取消。
 - **Timeout**: startAt到達をServer timer eventとして処理する。clientのanimation完了を待たない。
-- **遷移**: 最初の問題をsanitized projectionへcommitして `QUESTION_OPEN`。COUNTDOWN以後のleaveまたはgrace超過は原則forfeit。
+- **遷移**: 最初の問題をsanitized projectionへcommitして `QUESTION_OPEN`。COUNTDOWN以後の明示的leaveは原則forfeit。通信断・app終了は即時forfeitにせず `RECONNECTING` とし、grace超過時だけforfeitにする。Server側障害はPlayerのforfeitにしない。
 
 ### 5.5 QUESTION_OPEN
 
-- **Server保持**: canonical question、correct answer、eligible players、openAt、buzzDeadline、採点設定。
-- **公開**: opaque `questionInstanceId`、prompt、opaque `answerId`付きchoices、deadline基準、score。
+- **Server保持**: canonical question、correct answer、eligible players、回答権を失ったplayers、最初の `questionOpenedAt`、問題全体の `questionDeadline`、採点設定。
+- **公開**: match固有でopaqueな `questionId`、prompt、opaque `answerId`付きchoices、deadline基準、score。
 - **許可Intent**: eligible humanの `buzz`、`reconnect`、`leave`、`heartbeat`。
 - **拒否**: `submitAnswer`、重複buzz、資格のないplayer、問題不一致、deadline後buzz。
-- **Timeout**: buzzなし結果をServer timer eventとして確定する。
-- **遷移**: 最初にOrdering Authorityへcommitされた有効buzzで `BUZZ_LOCKED`。buzzなしは `QUESTION_RESULT`。
+- **Timeout**: 最初の `questionOpenedAt` を基準とする `questionDeadline` 到達をServer timer eventとして確定する。不正解後の再openでdeadlineを延長・再設定しない。
+- **遷移**: `QUESTION_OPEN` 中、Ordering Authorityへ最初にcommitされた有効buzzだけを採用して `BUZZ_LOCKED`。全回答可能Playerの権利消滅またはdeadline到達で `QUESTION_RESULT`。
 
 ### 5.6 BUZZ_LOCKED
 
-- **Server保持**: accepted buzz、responder、buzzSequence、answerDeadline、残りeligible players。
+- **Server保持**: accepted buzz、responder、buzzSequence、answerDeadline、問題全体のquestionDeadline、残りeligible players。
 - **公開**: buzz採用playerと入力開始に必要な状態。内部処理が短い場合もversionを持つ。
 - **許可Intent**: `reconnect`、`leave`、`heartbeat`。
 - **拒否**: 追加 `buzz`、まだ開始されていない `submitAnswer`。
 - **Timeout**: 通常は即時遷移のため独立timeoutを持たない。遷移失敗は同一eventのretryで回復する。
-- **遷移**: responderとanswerDeadlineを同一commitで固定し `ANSWERING`。
+- **遷移**: responderとanswerDeadlineを同一commitで固定し `ANSWERING`。answerDeadlineは問題全体のquestionDeadlineを越えない。
 
 ### 5.7 ANSWERING
 
-- **Server保持**: active responder、valid answerIds、correct answer、answerDeadline、採点規則。
+- **Server保持**: active responder、valid answerIds、correct answer、answerDeadline、questionDeadline、eligible/excluded players、採点規則。
 - **公開**: responder、回答中表示、残り時間。correct answerは非公開。
 - **許可Intent**: active responderの `submitAnswer(answerId)`、全playerの `reconnect`、`leave`、`heartbeat`。
 - **拒否**: responder以外の回答、自由入力、未知answerId、問題不一致、deadline後回答、二重回答。
-- **Timeout**: 未回答を不正解/失敗としてServer eventで確定する。
-- **遷移**: 正解は `QUESTION_RESULT`。不正解後に同じ問題を再openするか直ちに結果へ進むかは未決定で、`wrongAnswerPolicy` をconfigに固定して分岐する。
+- **Timeout**: 回答時間切れはそのPlayerの回答権を失効させるServer eventとして確定する。問題全体のdeadline前かつ残りeligible playerがいれば `QUESTION_OPEN`、それ以外は `QUESTION_RESULT`。
+- **遷移**: 正解なら `QUESTION_RESULT`。不正解ならそのPlayerをeligible setから除外し、問題全体のdeadline前かつ残りPlayerに回答権があれば、同じquestionIdと元の `questionOpenedAt` / `questionDeadline` を維持して `QUESTION_OPEN` へ戻す。全回答権消滅またはdeadline到達なら `QUESTION_RESULT`。
 
 ### 5.8 QUESTION_RESULT
 
-- **Server保持**: accepted answer、correctness、correct answer、score delta、total scores、question result sequence。
-- **公開**: 正解、回答者、正誤、score delta、total scores、結果表示期限。
+- **Server保持**: question内のanswer attempts、各attemptのcorrectness、correct answer、score delta、total scores、question result sequence。
+- **公開**: 回答者ごとのattempt結果、正解、score delta、total scores、結果表示期限。
 - **許可Intent**: `reconnect`、`leave`、`heartbeat`。
 - **拒否**: `buzz`、`submitAnswer`、結果変更要求。
 - **Timeout**: result表示期限をServer timer eventで処理する。
@@ -318,7 +321,7 @@ CREATED
 ### 5.10 MATCH_FINISHED
 
 - **Server保持**: immutable MatchResult、最終score/rank/winner/forfeit、settlement作成状態。
-- **公開**: 最終score、rank、winner、settlement待ち表示。
+- **公開**: COMPLETEDなら最終score、rank、winner、settlement待ち表示。ABORTEDなら中止理由の安全な表示と、敗北・MMR penaltyが発生しないこと。
 - **許可Intent**: `reconnect`、結果read。新しいgameplay Intentは不可。
 - **拒否**: `buzz`、`submitAnswer`、score/rank変更、同一matchへの再参加。
 - **Timeout**: settlement作成のretryを起動する。
@@ -344,11 +347,12 @@ CREATED
 
 ### 5.13 State Machine不変条件
 
-- stateはServerだけが進め、巻き戻さない。
+- stateはServerだけが進める。1問内で `ANSWERING` から `QUESTION_OPEN` を再訪しても、`serverSequence` とstate versionは単調増加し、過去versionへ巻き戻さない。
 - state遷移、`serverSequence` 増分、canonical event/outboxは同じ原子的境界で確定する。
 - questionIndex変更時は前問題のbuzz/answer/failed相当のactive stateを同時に閉じる。
 - clientが古いstateを見て送ったIntentは、処理時のServer stateで再検証する。
 - timer、NPC、disconnectもclient Intentと同じOrdering Authorityを通る。
+- buzz lock、回答権、eligible/excluded playerはServer Stateだけを正とし、client側の表示やlocal lockだけで確定しない。
 
 ---
 
@@ -392,10 +396,12 @@ CREATED
 - transaction/CAS retry時は最新stateを再評価し、すでに `BUZZ_LOCKED` なら後続を拒否する。
 - clientの端末時計や表示上の早さで勝者を決めない。
 - 採用結果、responder、sequence、Server timestampを同じcommitで固定する。
+- 不正解後の再openでは、そのPlayerをeligible setから除外してから `QUESTION_OPEN` をcommitする。除外済みPlayerの再buzzはServerが拒否する。
+- latency compensationまたはtie thresholdを将来採用する場合も、versioned Server policyとしてOrdering Authority内で適用し、同時に複数Playerへ回答権を与えない。方式と上限はOpen Questionとする。
 
 ### 6.5 Timer / NPC / Disconnect event
 
-- timer eventは `timer:{matchId}:{questionInstanceId}:{kind}` のようなdeterministic IDを持ち、重複起動しても1回だけ状態を進める。
+- timer eventはdeterministic IDを持ち、重複起動しても1回だけ状態を進める。問題全体のdeadlineは `timer:{matchId}:{questionId}:question`、各回答attemptのdeadlineは `timer:{matchId}:{questionId}:answer:{attemptSequence}` のように区別する。
 - NPC eventもdeterministic IDを持ち、人間Intentと同じstate/deadline検証を受ける。
 - disconnect expiryもleaseを再確認してからcommitする。直前にreconnect済みなら拒否する。
 - server instanceの停止後、別instanceが同じeventをretryできる。
@@ -425,17 +431,19 @@ Phase 0では、次の4層を確定し、Firebase/Google Cloud製品の最終選
 | --- | --- | --- | --- | --- |
 | A. Functions 2nd gen + RTDB transaction | Callable/HTTPで受付、match rootのRTDB transactionで採番、RTDB listenerへ公開 | 現行Firebase資産とiOS SDKを活用しやすい。4人へのfan-outが単純 | cold start、transaction retry、match root肥大化、Functions完了とprojection反映差 | warm/cold p50/p95、4同時buzz、transaction retry、listener収束 |
 | B. Cloud Run HTTP + RTDB transaction | Cloud Runで受付、Aと同じRTDB authority | instance/concurrency/実行環境の制御幅が大きい | Auth/App Check検証を明示実装、運用面増加、RTDBがbottleneckならAとの差が小さい | 認証込みlatency、instance跨ぎ、min instance有無、コスト |
-| C. Cloud Run WebSocket actor + durable CAS | persistent connection、per-match actor、外部storeでfencing/復旧 | 低遅延な双方向制御とpushを設計しやすい | 接続再確立、instance移動、actor ownership、外部状態同期、運用コストが最も複雑 | reconnect、instance終了、ownership移譲、同時接続、障害復旧 |
+| C. Server-owned per-match sequencer prototype | 単一の論理sequencerがmatch eventを直列処理し、durable fence/CASでownershipを保護する | ordering処理そのものの最小latencyと複雑性を測れる | actor ownership、instance移動、復旧、永続化をProduction水準にすると複雑 | 同時buzzの一意性、Server受付→ordering確定p50/p95、prototype実装量、障害時の限界 |
 | D. Functions/Cloud Run + Firestore transaction | HTTP受付、match aggregateをFirestore transactionで更新、projectionをlisten | settlement/auditとのデータモデルを揃えやすい。commit時刻で直列化できる | 高競合docのcontention、listener遅延、event蓄積方法 | 4同時buzz contention、p50/p95、retry/error率、projection遅延 |
-| E. Queue / Pub/Sub ordering key | matchIdをordering keyにしてconsumerで直列処理 | workload平準化、retry、非同期処理に強い | 追加hop、at-least-once重複、interactive pathの遅延 | end-to-end latency、重複、redelivery、backlog時挙動 |
+| E. Queue / Pub/Sub ordering key | audit / settlement等の非同期処理をordering keyで処理 | workload平準化、retry、非同期処理に強い | 追加hop、at-least-once重複、backlog | 非同期処理の重複、redelivery、backlog時挙動。buzz orderingのhot pathでは比較しない |
 
 ### 7.3 Phase Aの推奨検証順
 
-1. Candidate Aを最小baselineとして測る。
-2. 同じauthority contractでCandidate Dを比較する。
-3. ingress制御が必要な場合にCandidate Bを比較する。
-4. A/B/Dが決定したp95予算を満たせない場合のみCandidate Cを試す。
-5. Candidate Eは初期のbuzz/answer経路の第一候補にせず、settlement、audit、再試行pipelineの候補として評価する。
+Phase A前半では、少なくとも次の3方式を同じIntentと計測条件で比較する。
+
+1. Candidate A: Functions 2nd gen + RTDB transaction。
+2. Candidate D: Functions/Cloud Run + Firestore transaction。
+3. Candidate C: Server-owned per-match sequencerの小規模prototype。
+
+Candidate CではProduction WebSocket基盤を完成させない。単一の論理Ordering Authorityで同時buzzを処理した場合のlatency、ordering一意性、実装・復旧の複雑性を測る。Candidate BはIngressや実行環境差を分離して測る必要がある場合に追加する。Candidate Eはbuzz/answerのhot pathから外し、settlement、audit、再試行pipelineの候補としてのみ評価する。
 
 これは採用決定ではない。BackendはPhase Aの実測、運用複雑性、費用、障害復旧を合わせて決定する。
 
@@ -461,6 +469,14 @@ UIと本番schemaを作る前に、非本番環境で4client harnessを用意し
 - warm / cold、min instance有無、4人同時、duplicate、retry、instance分散を分ける
 - error率、transaction retry回数、client間の最大反映差も記録する
 
+暫定Engineering target:
+
+- Server intent受付 → ordering確定: **p95 150ms以内を理想値**として測る。
+- Client送信 → 確定結果がclientへ反映されるRound Trip: **p95 300ms程度以内**を暫定目標として測る。
+- 両区間ともp50とp95を記録し、warm/coldや競合条件を分けて比較する。
+- これらは最終SLA・保証値ではなく、Backend比較とbottleneck特定の基準である。
+- 実測値、ordering一意性、実装複雑性、費用、障害復旧を合わせて最終Architectureを判断する。
+
 機能的な合格条件:
 
 - 同時buzzでacceptedが必ず1件
@@ -470,7 +486,7 @@ UIと本番schemaを作る前に、非本番環境で4client harnessを用意し
 - reconnect後に全clientが同じsnapshotへ収束する
 - private correct answerがclient payloadへ混入しない
 
-数値のp95合格値と、min instance等に許容する月額費用は未決定であり、Phase A開始前に決める。
+Productionで保証する最終latency、latency compensation方式・上限、tie threshold、min instance等に許容するServer費用上限は未決定とする。
 
 ### 7.5 Region
 
@@ -484,21 +500,23 @@ UIと本番schemaを作る前に、非本番環境で4client harnessを用意し
 
 ### 8.1 Server-only Question Bank
 
-- Competitive用question bank、canonical question ID、correct answer、選択肢対応はserver-onlyとする。
+- Competitiveは専用のServer-side Question Bankを使用する。端末同梱データを試合判定の権威sourceとして読まない。
+- 既存の英単語・SPIコンテンツ自体は、権利と品質を確認したうえで可能な限り変換・再利用する。ただし、Competitive用のcanonical ID、version、選択肢対応、correct answerはServer-side Question Bankへ取り込む。
 - Rulesでclient readを拒否し、server credentialだけが読む。
 - 問題中のclientへcanonical ID、正解index、正解文字列、seedを送らない。
-- serverは出題時にmatch固有のopaque `questionInstanceId` とopaque `answerId` を生成する。
+- serverは出題時にmatch固有のopaque `questionId`（内部ではquestion instanceを表す）とopaque `answerId` を生成する。
 
 ### 8.2 Clientへ公開する内容
 
-`QUESTION_OPEN` では次だけを公開する。
+`QUESTION_OPEN` では、現在問題のcontentとして次だけを公開する。
 
-- `questionInstanceId`
+- match固有でopaqueな `questionId`
 - prompt
-- 表示順が確定したchoices
-- 各choiceのopaque `answerId`
-- buzz/answer deadlineのServer基準
-- 表示に必要なcategory等の非秘密情報
+- 表示順が確定したchoices（各choiceはopaque `answerId` と表示文字列を持つ）
+
+進行に必要なdeadline、公開score、非秘密category等は別metadataとして配信できるが、回答受付中に `correctAnswer`、正解index、canonical question IDを配信しない。
+
+Server基準のbuzz/answer deadlineと表示に必要な非秘密metadataを除き、question contentを追加配信しない。
 
 `submitAnswer` は `answerId` だけを送り、serverが内部mappingで正誤を判定する。
 
@@ -510,7 +528,9 @@ UIと本番schemaを作る前に、非本番環境で4client harnessを用意し
 
 ### 8.4 端末同梱word bankのreverse lookupリスク
 
-現行アプリに同梱したword bankとCompetitive問題が同一なら、promptからlocal dataを逆引きされる可能性がある。opaque IDだけではこの攻撃を防げない。
+現行アプリには英単語データに加えてSPI問題JSONも同梱され、問題文、選択肢、正解、解説を端末内で読める。これらとCompetitive問題が同一なら、promptからlocal dataを逆引きされる可能性がある。opaque IDだけではこの攻撃を防げない。
+
+また、現行フレンドバトルの `RoomState.QuestionPayload` は進行上必要な `answer` を全参加clientへ配る契約である。このpayloadは現行モード専用として維持し、Competitiveのquestion payloadやserver判定には再利用しない。
 
 初期方針:
 
@@ -523,8 +543,8 @@ UIと本番schemaを作る前に、非本番環境で4client harnessを用意し
 
 ### 8.5 未決定事項
 
-- Competitive corpusの供給元、権利、更新方法
-- 現行学習データとの問題共有範囲
+- 既存英単語/SPIからCompetitive bankへ変換・再利用する具体範囲と権利確認
+- Server-side Question Bankの更新・review・rollback方法
 - 問題の重複回避期間
 - content version更新中のactive match取り扱い
 
@@ -659,7 +679,7 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 
 ### 12.2 Grace
 
-- transport切断またはheartbeat欠落後、sessionを `RECONNECTING` としてgrace期間を与える。
+- transport切断、heartbeat欠落、またはapp終了を検出しても即時敗北にせず、sessionを `RECONNECTING` としてgrace期間を与える。
 - grace中もmatchのServer clockと他playerの進行を止めない。
 - 再接続時はsessionId、epoch、matchIdを検証し、最新snapshotとsequenceを返す。
 - grace内に戻れば同じslotへ復帰する。
@@ -667,12 +687,18 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 
 ### 12.3 Explicit leave
 
-- WAITING_PLAYERSまでのleaveはqueue/match cancelとして扱い、原則MMR penaltyなし。
-- COUNTDOWN commit以後のleaveは原則forfeit。
+- Queue中およびcommitment boundary前のleaveはqueue/match cancelとして扱い、原則MMR penaltyなし。
+- 4枠確定後にCOUNTDOWNを開始するcommitment boundary以後の明示的leaveは原則forfeit。
 - client UIは開始後の退出結果を明示するが、clientが「penaltyなし」を指定できない。
-- app kill、network loss、explicit leaveで同じ結果にするか、意図的leaveを即時forfeitにするかはserver policyで固定する。
+- app終了・network lossは明示的leaveと同一扱いにせず、`RECONNECTING` とgraceを経由する。
 
-### 12.4 未決定値
+### 12.4 Server側障害
+
+- Ordering Authority、database、projection等のServer側障害はPlayerのleaveやforfeitとして記録しない。
+- 継続不能ならmatchをServer faultとしてabortし、Playerへ敗北・MMR penaltyを適用しない。
+- 部分的に進んだstateはcanonical event/outboxから復旧し、復旧不能時もclient申告値で結果を補完しない。
+
+### 12.5 未決定値
 
 - heartbeat間隔
 - lease長
@@ -699,6 +725,8 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 
 ### 13.3 適用対象
 
+COMPLETED matchでは次を適用する。
+
 - 各human playerのMMR
 - 表示Tier / Rating Zone projection
 - season stats
@@ -707,6 +735,8 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 - audit / anomaly data
 
 NPCにはMMR、history、leaderboardを適用しない。
+
+Server faultによるABORTED matchは、監査と障害記録だけを残し、MMR、敗北数、通常の対戦history、leaderboardへ適用しない。
 
 ### 13.4 冪等適用
 
@@ -754,7 +784,7 @@ SettlementStatus
 - `sessionId` と `sessionEpoch`
 - `playerId` またはNPC ID
 - `stateBefore` / `stateAfter`
-- `questionInstanceId`
+- `questionId`
 - `accepted` / `rejectionCode`
 - `serverReceivedAt`
 - `authorityCommittedAt`
@@ -853,30 +883,32 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 
 ## 17. Open Questions
 
-### 17.1 Phase A開始前にユーザー判断が必要
+### 17.1 Phase Aの実測後にArchitecture判断が必要
 
-1. **不正解後の進行**: 同じ問題を残playerへ再openするか、1buzzで問題を終了するか。
-2. **Latency目標**: client sendから全client反映までの許容p95。目標達成のためのmin instance等の月額費用上限。
-3. **Competitive question corpus**: 現行client同梱データと分けるか、供給元・権利・更新責任をどうするか。
-4. **退出の競技ルール**: COUNTDOWN以後の即時forfeit、切断grace後forfeit、回答中切断の扱い。
+1. Backend最終構成。Functions 2nd gen + RTDB transaction、Functions/Cloud Run + Firestore transaction、Server-owned per-match sequencer prototypeの実測から選ぶ。
+2. latency compensation方式と上限。client自己申告時刻を権威にせず、Serverで検証可能な情報だけから補正する。
+3. tie thresholdの有無と具体値。導入しても回答権は同時に1Playerだけとする。
+4. min instance、Cloud Run、database等に許容するServer費用上限。
 
 ### 17.2 Phase A/Bで技術検証して決める
 
-1. Ordering AuthorityをRTDB transaction、Firestore transaction、Cloud Run actorのどれで実現するか。
-2. Intent ingressをFunctions 2nd gen callable/HTTPとCloud Runのどちらにするか。
-3. public projectionをRTDB listenerとFirestore listenerのどちらにするか。
-4. region、min instances、concurrency、retry/backoff。
-5. heartbeat、lease、reconnect graceの具体値。
+1. Intent ingressをFunctions 2nd gen callable/HTTPとCloud Runのどちらにするか。
+2. public projectionをRTDB listenerとFirestore listenerのどちらにするか。
+3. region、min instances、concurrency、retry/backoff。
+4. heartbeat間隔、lease長、reconnect graceの具体秒数。
+5. 回答権を持つPlayerが切断した場合のanswer timeoutとの関係。
 6. authority eventとprojectionの保存・compaction方法。
 7. App Check replay protectionをどのIntentに要求するか。
 
 ### 17.3 Phase C前にプロダクト判断が必要
 
-1. 初期MMR、provisional期間、Tier/Rating Zone境界、delta式。
-2. Tier別queue wait、search range拡大、NPC投入条件、最大NPC数。
-3. NPC数別のMMR減衰式。
-4. Season長、reset/carry-over、Top 20 tie-breaker。
-5. last 5以外のhistory保持件数。
+1. Hidden MMR計算式、初期MMR、provisional期間。
+2. Tier境界とRating Zone境界。
+3. Bronze/SilverそれぞれのNPC投入待機時間、search range拡大、最大NPC数。
+4. NPC数別のMMR減衰式。
+5. Season期間とSoft reset方式/carry-over。
+6. Top 20 leaderboardの同率順位規則。
+7. last 5以外のhistory保持件数。
 
 ### 17.4 Phase D前に運用判断が必要
 
@@ -884,7 +916,7 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 2. 不正疑いのmanual reviewとappeal手順。
 3. alert閾値、on-call/障害時のCompetitive停止方法。
 4. minimum protocol versionを上げるrollout手順。
-5. 本番費用上限と自動scale上限。
+5. 自動scale上限、budget alert、費用超過時の停止方法。
 
 ---
 
@@ -897,16 +929,19 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 - Intent envelope、ack、error code、public projectionのschema draft
 - MatchAggregateと `serverSequence` の最小contract
 - Auth/App Check検証を含む非本番Ingress skeleton
-- Candidate A/Dを中心とした4client latency spike。必要に応じB/Cを追加
+- Functions 2nd gen + RTDB transactionの4client latency spike
+- Functions/Cloud Run + Firestore transactionの4client latency spike
+- Server-owned per-match sequencerの小規模prototype。Production WebSocket基盤は作らない
 - 同時buzz、duplicate、stale epoch、reconnect、instance分散の検証
 - private answer非公開のpayload inspection
-- p50/p95、retry率、コスト、運用複雑性の比較記録
+- p50/p95、retry率、コスト、運用複雑性を同条件で比較
+- Server受付 → ordering確定p95 150ms以内、client Round Trip p95 300ms程度以内という暫定Engineering targetとの差を記録
 - Backend decision recordの作成
 
 Phase A完了条件:
 
 - Ordering Authorityの採用方式が決まっている。
-- Intent → authority commit → public projectionのp50/p95が記録されている。
+- Intent → authority commit → public projectionのp50/p95が記録され、暫定Engineering targetとの差が説明されている。
 - 同時buzzでacceptedが1件、全clientが同じsequenceへ収束する。
 - 採用方式がSecurity Invariantsを満たす見込みを示せる。
 - Phase Bで使うprotocol/config versioningが確定している。
