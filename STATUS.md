@@ -5,10 +5,11 @@
 > - **このファイルの上限は150行**(超えるとフックが警告する)。超えたら「最新更新」の古い日付の項目から `STATUS_ARCHIVE.md` へ移す。現在フェーズ・作業中宣言・次のタスク・決定事項メモは移動対象外
 > - 過去の経緯を調べるときだけ `STATUS_ARCHIVE.md` を読む
 
-現在フェーズ:**v1.0.0を審査へ提出済み(2026年9月6日)。結果待ち**
-- ビルド1.0.0(1)とサブスクリプション「広告非表示(月額)」をまとめて提出。App Store Connectの申請素材はすべて入力済み
+現在フェーズ:**v1.0.0(3)を再提出済み(2026年10月5日)。審査結果待ち**
+- 9月26日にガイドライン3.1.2で却下。理由は自動更新サブスク「広告非表示(月額)」のみで、アプリ本体への指摘はなし(9月25日にiPad Airで審査済み)
+- 広告非表示を買い切り(非消耗型`com.n.HayaosiApp.removeads`・500円)へ変更して対応。旧サブスクと却下された提出物はApp Store Connectから削除済み
+- 提出物はアプリ本体と買い切り課金の2件。**今回のリリース方法は自動リリース**(前回までの手動リリースから変更)
 - 実機2台での通信対戦検証はトキヤが実施済み(2026年9月6日・たける報告)。**同時押しでの進行停止・切断・再入室の個別結果はここに未記入。トキヤが追記すること**
-- 審査が通った後の公開タイミングは手動リリースを選択
 
 ---
 ## リリース計画
@@ -44,7 +45,8 @@
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
-## 最新更新(2026年8月25日〜9月6日)
+## 最新更新(2026年8月25日〜9月29日)
+- Claude(たける側): **広告非表示を自動更新サブスクから買い切り(非消耗型)へ変更**(ガイドライン3.1.2の却下対応)。`productID`を`com.n.HayaosiApp.removeads`へ差し替え、`Config/Subscription.storekit`の`subscriptionGroups`を空にして非消耗型商品へ置き換えた。権利判定は`Transaction.currentEntitlements`のまま、サブスク専用の`isUpgraded`条件を外し、`isSubscribed`を`hasRemovedAds`へ改名(`AdsService`・`SubscriptionView`が追従)。購入画面から自動更新の説明とサブスク文言を消し、価格の「／月」表記を外した。**利用規約・プライバシーポリシーの導線と「購入を復元」は残している**(非消耗型でも復元は必須)。iPhone 17 Simulatorで全123テスト成功(StoreKit設定のテストを買い切り用に書き換え、自動更新サブスクを含まないことの検証を1件追加)。**購入フロー自体のSimulator確認は未検証**。StoreKit設定ファイルはXcodeのRun経由でないと効かないため、マイページ→プレミアムで価格表示・購入・復元・広告消失を人間が確認する必要がある。価格は500円(たけるが決定)。`Config/Subscription.storekit`へ反映済みで、App Store Connect側にも同額を設定する
 - Claude(たける側): **v1.0.0をApp Storeへ提出**(2026年9月6日)。対戦ホームの2つのモードボタンから説明文を、学習ホームから見出し「学習メニュー」を削除し、学習タブのスクロールをマイページと同じinlineタイトル+ツールバーの形へ揃えた(41a0772・104ec4b)。App Store Connectの入力一式とスクリーンショット5枚を用意し、Archive作成からアップロードまで実施。**「オンライン対戦」ボタンが押しても「準備中」画面しか出さずガイドライン2.1(App Completeness)に触れる懸念があったため、たけるが「近日」バッジ付きの押せない表示へ変更(0d11a35)**
 - Codex統合担当: **SwiftData旧ストアの上書き移行とRelease Smoke Testを完了**。`BattleRecord`追加直前の旧版を専用Simulatorへ入れて`Question`・`AnswerRecord`・`ReviewItem`・`DailyStudyTime`を保存し、アプリ領域を削除せず現行版へ上書きした。現行版は正常起動し、旧データ4種類を値まで保持したまま、新しい`BattleRecord`の保存・再取得にも成功。現行HEADのRelease版はSimulator・物理iPhone向けbuild、両端末へのinstall・launch、開発用署名でのArchiveに成功し、ユーザーが両端末で起動・Auth・主要画面・Firebase接続・フレンドバトル最低限正常系を確認済み。本番Bundle ID `com.n.HayaosiApp`・チーム`<本番Team ID>`のArchiveは、このMacのXcodeに同チームのAccountが無いため署名前に停止したが、リリース作業はユーザーの担当外なので今回の完了条件から除外。アプリコード変更なし
 - Codex統合担当: **リリース前Security監査と最小修正を実施**。改造guestが初期score・joinedAt・回答時刻を偽装できるRTDB契約と、同一IDが複数slotを先取りできる問題をRulesで拒否し、nickname・回答payloadにも既存上限を追加。アプリはnicknameをFirestore/RTDB境界で正規化し、Firebase詳細エラーをDebugビルドだけへ集約した。Rules Emulator 39件、Simulator向けDebug/Release Build、入力正規化テスト3件、`git diff --check`成功。追跡ファイルに秘密鍵・実API keyは検出なし。変更後RTDB Rulesは本番`hayaosiapp`へdeploy済みで、REST readbackとローカルのJSONが完全一致。**本番Rules適用後、物理iPhone＋Simulatorでルーム作成→NPC追加→guest参加→双方3問以上回答→得点・順位反映→退出までE2E成功。Functions依存には利用経路外を含むmoderate advisory 7件が残る**
@@ -77,16 +79,6 @@
 - Codex(たける側): **問題0件のカテゴリ・難易度を選んだ際の案内を追加**。共通カードにカテゴリ名・星と「この範囲の問題は順次追加しています」「他の難易度を選んでください」を表示し、CPU対戦・ルーム作成では開始ボタン自体を出さず、ルーム作成処理にも0件ガードを追加。学習ヒートマップでは0件セルをタップ不可のまま、該当難易度をまとめてグリッド下へ表示する。収録データテストは各難易度の存在を必須とせず、カテゴリごとの1語以上・ID/単語重複なしだけを維持。Simulator向けビルド成功、全75テスト成功。iPhone 17 SimulatorでCPU対戦・ルーム作成のTOEIC ★2に案内が表示され、開始ボタンが存在しないことを確認
 - TOKIYA-YAMAMOTO(Codex): **Codex開発フローをFAST/NORMAL/STRICTの3段階へ整理**。`docs/MODULE_MAP.md`を最小探索の起点として追加し、`scripts/preflight.sh`でorigin/mainとの差・未commit変更・作業中宣言・競合可能性、`scripts/verify.sh`でリスク別のbuild・関連テスト・Rulesテスト、`scripts/finish-task.sh`で差分確認と人間向けGitコマンド表示を自動化。スクリプトはcommit・pushを実行しない。`CLAUDE.md`と`docs/CODING.md`を最小探索・変更リスクに応じた検証へ更新。Bash構文、help、fetchを省略したpreflight、FAST/NORMAL/STRICTのdry-runに成功。GitHub ActionsはPrivateリポジトリのmacOS実行時間を消費し得るため未追加
 - TOKIYA-YAMAMOTO(Codex): **実機2台PvPで2問目以降の回答権が相手の回答まで復帰しない不具合、端末間の進行差、同時押し反復時の誤ったホスト退出判定を修正**。Firebaseサーバーの共有開始時刻を端末のローカル時計で比較していたため、時計差が回答可否・文字送り・残り時間・ホストタイマーの差として現れていた。RTDBの`.info/serverTimeOffset`を観測し、開始合図を含む全時間判定をFirebase補正時刻に統一。回答権は短周期に再評価し、問題切替時に送信中・送信エラー・前問の誤答演出を解除。さらに、一時的な接続断でも`onDisconnect`が即座に`closed`を書き込むため、生存中のホストは再接続時に監視を再登録して直前状態を復元し、参加者は3秒後も`closed`のままの場合だけ退出として扱うようにした。明示退出は復元対象外。`failed`・`answers`の問題番号による前問除外と問題送り時の削除、得点・回答順、Firebase構造・ルールは維持。PvPリザルトでは「間違えた問題を復習」を非表示にしたが、学習履歴・復習リストへの保存は維持。Simulator向けbuildと`HostDisconnectPolicyTests`・`BattleStartTimingTests`・`BattleScoringTests`・`CPUBattleSessionTests`の計34件に成功。**修正版の実機2台で1〜3問目を双方が回答できること、表示進行が揃うこと、同時押し反復時にルームが維持されること、実際のホスト切断時だけルームが終了すること、PvP終了後に一人学習の復習リストへ誤答が残ることは未検証**
-
-- Claude(たける側): **広告(バナー+全画面)を実装**(たけるの指示で今回はClaudeが実装まで担当)。要件定義書 §4.2 を「広告を入れない/課金しない」から収益方針へ全面改訂し、`project.yml`へGoogle Mobile Ads SDK 13.8.0を追加。`Services/Ads/`に表示判定(`InterstitialSchedule`)・SDK操作(`AdsService`)・同意取得(`AdConsent`)・表示元VC(`AdPresentationContext`)を分けて配置し、`Views/Components/AdBannerView.swift`を追加。バナーは学習タブ・マイページの下端のみ、全画面はリザルト退出時のみで、初回3試合は出さず4試合目から3試合に1回。広告が閉じてから退出する順序にして遷移と重ならないようにした。**「広告を出すか」の判断は`AdsService`に集約してあるので、広告非表示サブスク(タスク5)はここへ分岐を足すだけで済む**
-  - 途中で見つけて直した点:(1)`AdConsent`がMainActor隔離されておらず、同意フォームのWKWebViewをメインスレッド外で作って起動時クラッシュ (2)`safeAreaInset`内の`GeometryReader`が正しい幅を返さず、バナーが728x90で画面からはみ出していた(縦固定なので画面幅から直接計算する方式へ変更)
-  - **`Config/Info.plist`を新規追加**(git管理対象)。`GADApplicationIdentifier`と`SKAdNetworkItems`は`INFOPLIST_KEY_*`では生成plistに入らないため、土台のplistを与えて`GENERATE_INFOPLIST_FILE`とマージしている
-  - 検証:xcodegen実行、Simulator向けビルド成功、全71テスト成功(表示判定の3件を追加)。iPhone 17 Proで学習タブ・マイページのバナー表示、対戦タブ/設定/ロビー/対戦中/リザルトに広告が出ないこと、4試合目のリザルト退出で全画面広告が出て閉じると対戦設定へ戻ることを確認
-  - **2026年8月24日:AdMob登録と本番IDの反映まで完了**。アプリID(`Config/Info.plist`)と広告ユニットID2つ(`AdUnit.swift`)は本番の値。Debugビルドは引き続きGoogleのテストIDを使うので、開発中に自分の広告を叩く心配はない。Releaseビルドの生成Info.plistとバイナリに本番IDが入ることを確認済み。**AdMob上のアプリは「要審査」で、実広告の配信はApp Store公開後**
-  - **2026年8月24日:プライバシーポリシーと利用規約を更新・新規作成**。`sutahaya-ios/app-privacy`にアプリ名変更・広告識別子の取得・AdMobの第三者提供・対象年齢(全学習者、子ども向けアプリではない)を反映。同リポジトリへ`terms.html`を新規追加し、`MyPageView`に導線を追加(プライバシーポリシーの上に表示)
-  - **2026年8月24日:`SKAdNetworkItems`をGoogle公式(AdMob)一覧の50件へ更新**(`Config/Info.plist`。従来はGoogle自身の1件のみ)。App Store Connectのデータ収集申告(Appのプライバシー)も公開済み。ビルドで生成Info.plistへ50件反映されることを確認
-  - **広告(タスク4)は実装・法務対応ともに完了**。残るのはApp Store公開そのものとAdMobアプリ審査の完了(Google側で自動進行)、および両者への申告内容の継続的な見直し
-  - **EEA向け同意フォーム(UMP)は未実装のまま**。2026年8月24日に配信国を日本のみへ限定したため、v1.0では対応不要と判断(申請素材の表を参照)。将来配信国を広げる場合は着手前に実装する。ATT許諾はSimulatorのシステムアラートが合成タップを受け付けないため、TCCへ直接許可を書いて先へ進めた(日本語の文面が出ることまでは確認済み)
 
 - Codex(たける側): **輸出コンプライアンスの非免除暗号化不使用をアプリ側で宣言**。アプリ本体に独自暗号化・鍵管理・暗号ライブラリの直接利用がなく、Firebase SDK経由の標準HTTPS/TLS通信のみであることを検索確認し、`project.yml`へ`INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO`を追加。xcodegen実行後のビルド成果物Info.plistで`ITSAppUsesNonExemptEncryption = false`を確認。Simulator向けビルド成功、全70テスト成功。本作業ではFirebase関連ファイル・本番環境を変更していない
 - Codex(たける側): **難易度セルのタップから設定画面を挟まず一人練習を即時開始するよう変更**。英単語かつ選択カテゴリ・難易度に一致する問題をシャッフルし、`QuizDefaults`の既定問題数・制限時間、`.practice`で`QuizSessionView`を構築する。該当問題0件のセルは淡色の非リンクとして表示。到達不能になった`PracticeSetupView.swift`は削除。xcodegen実行、Simulator向けビルド成功、iPhone 17 Proで全70テスト成功。**Simulatorで難易度セルから即座に第1問へ進む操作確認は、テスト終了の指示により未検証**。本作業ではFirebase関連ファイル・本番環境を変更していない
