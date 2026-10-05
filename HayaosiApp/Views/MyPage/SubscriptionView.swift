@@ -1,7 +1,7 @@
 import StoreKit
 import SwiftUI
 
-/// 広告非表示サブスクリプションの状態確認・購入・復元を行う画面。
+/// 広告非表示(買い切り)の状態確認・購入・復元を行う画面。
 struct SubscriptionView: View {
     @State private var isProcessing = false
     @State private var resultMessage: String?
@@ -31,8 +31,8 @@ struct SubscriptionView: View {
         Section("現在の状態") {
             if !subscriptionService.hasLoadedEntitlements {
                 ProgressView("購入状態を確認中…")
-            } else if subscriptionService.isSubscribed {
-                Label("広告非表示を利用中", systemImage: "checkmark.seal.fill")
+            } else if subscriptionService.hasRemovedAds {
+                Label("広告非表示を購入済み", systemImage: "checkmark.seal.fill")
                     .foregroundStyle(.green)
                 Text("バナー広告と全画面広告は表示されません。")
                     .font(.subheadline)
@@ -56,7 +56,7 @@ struct SubscriptionView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if subscriptionService.isSubscribed {
+            if subscriptionService.hasRemovedAds {
                 Label("購入済み", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             } else if let product = subscriptionService.product {
@@ -66,7 +66,7 @@ struct SubscriptionView: View {
                     HStack {
                         Text("購入する")
                         Spacer()
-                        Text("\(product.displayPrice)／月")
+                        Text(product.displayPrice)
                     }
                 }
                 .disabled(isProcessing)
@@ -86,7 +86,7 @@ struct SubscriptionView: View {
         } header: {
             Text("広告非表示")
         } footer: {
-            Text("購入はApple IDに請求され、解約しない限り毎月自動更新されます。管理・解約はApp Storeのサブスクリプション設定から行えます。")
+            Text("一度購入すれば、追加の支払いなくずっと広告が表示されません。機種変更や再インストールのときは「購入を復元」から引き継げます。")
         }
     }
 
@@ -97,11 +97,11 @@ struct SubscriptionView: View {
             }
             .disabled(isProcessing)
         } footer: {
-            Text("以前購入したサブスクリプションが反映されない場合にお試しください。")
+            Text("以前購入した広告非表示が反映されない場合にお試しください。")
         }
     }
 
-    /// 自動更新サブスクの購入画面には、利用規約とプライバシーポリシーへの導線が要る(審査ガイドライン3.1.2)
+    /// 購入画面から利用規約とプライバシーポリシーへ到達できるようにする
     private var legalSection: some View {
         Section {
             Link("利用規約(EULA)", destination: AppLinks.termsOfUse)
@@ -141,7 +141,7 @@ struct SubscriptionView: View {
             defer { isProcessing = false }
             do {
                 try await subscriptionService.restorePurchases()
-                resultMessage = subscriptionService.isSubscribed
+                resultMessage = subscriptionService.hasRemovedAds
                     ? "購入を復元しました。広告は表示されません。"
                     : "復元できる購入は見つかりませんでした。"
             } catch {

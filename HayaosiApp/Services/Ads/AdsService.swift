@@ -49,7 +49,7 @@ final class AdsService {
               isInterstitialDue,
               let ad = interstitial,
               let viewController = AdPresentationContext.topViewController else {
-            if SubscriptionService.shared.isSubscribed {
+            if SubscriptionService.shared.hasRemovedAds {
                 interstitial = nil
             }
             onFinish()
@@ -69,7 +69,7 @@ final class AdsService {
     }
 
     var canRequestAds: Bool {
-        isReadyForRequests && !SubscriptionService.shared.isSubscribed
+        isReadyForRequests && !SubscriptionService.shared.hasRemovedAds
     }
 
     private var completedBattleCount: Int {

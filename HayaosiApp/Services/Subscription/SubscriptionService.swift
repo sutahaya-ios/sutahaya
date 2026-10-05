@@ -9,13 +9,14 @@ enum SubscriptionPurchaseOutcome {
 }
 
 /// StoreKit 2の商品取得・購入・復元と、広告非表示の権利状態を管理する。
+/// 広告非表示は買い切り(非消耗型)。自動更新サブスクはガイドライン3.1.2に適合しないため使わない
 @MainActor
 @Observable
 final class SubscriptionService {
     static let shared = SubscriptionService()
-    static let productID = "com.n.HayaosiApp.premium.monthly"
+    static let productID = "com.n.HayaosiApp.removeads"
 
-    private(set) var isSubscribed = false
+    private(set) var hasRemovedAds = false
     private(set) var hasLoadedEntitlements = false
     private(set) var product: Product?
     private(set) var isLoadingProduct = false
@@ -102,20 +103,20 @@ final class SubscriptionService {
     }
 
     func refreshEntitlements() async {
-        var hasActiveSubscription = false
+        var hasPurchased = false
 
+        // 返金・キャンセルされた購入は revocationDate が入るので権利から外す
         for await verificationResult in Transaction.currentEntitlements {
             guard case .verified(let transaction) = verificationResult,
                   transaction.productID == Self.productID,
-                  transaction.revocationDate == nil,
-                  !transaction.isUpgraded else {
+                  transaction.revocationDate == nil else {
                 continue
             }
-            hasActiveSubscription = true
+            hasPurchased = true
             break
         }
 
-        isSubscribed = hasActiveSubscription
+        hasRemovedAds = hasPurchased
         hasLoadedEntitlements = true
     }
 
