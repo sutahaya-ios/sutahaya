@@ -5,6 +5,11 @@ const { HttpsError, onCall } = require("firebase-functions/v2/https");
 
 initializeApp();
 
+const {
+  competitiveIntent,
+  competitiveReconcileMatch,
+} = require("./competitive/handlers");
+
 const INVITE_COOLDOWN_MS = 10_000;
 const ACCEPTING_LEASE_MS = 10_000;
 const REGION = "asia-northeast1";
@@ -133,3 +138,6 @@ exports.sendRoomInvite = onCall({ region: REGION }, async (request) => {
     sentAtMS: sentAt.toMillis(),
   };
 });
+
+exports.competitiveIntent = competitiveIntent;
+exports.competitiveReconcileMatch = competitiveReconcileMatch;

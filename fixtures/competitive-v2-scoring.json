@@ -1,0 +1,39 @@
+{
+  "participantOrder": ["p1", "p2", "p3", "p4"],
+  "correctAnswer": "correct",
+  "cases": [
+    {
+      "name": "ordered correct and wrong answers",
+      "answers": [
+        { "uid": "p4", "answer": "wrong", "timestamp": 50 },
+        { "uid": "p1", "answer": "correct", "timestamp": 100 },
+        { "uid": "p2", "answer": "correct", "timestamp": 200 },
+        { "uid": "p3", "answer": "correct", "timestamp": 300 }
+      ],
+      "correctUIDs": ["p1", "p2", "p3"],
+      "wrongUIDs": ["p4"],
+      "scoreDeltas": { "p1": 20, "p2": 10, "p3": 5, "p4": -10 }
+    },
+    {
+      "name": "exact timestamp tie uses participant order",
+      "answers": [
+        { "uid": "p2", "answer": "correct", "timestamp": 100 },
+        { "uid": "p1", "answer": "correct", "timestamp": 100 },
+        { "uid": "p4", "answer": "correct", "timestamp": 200 },
+        { "uid": "p3", "answer": "correct", "timestamp": 200 }
+      ],
+      "correctUIDs": ["p1", "p2", "p3", "p4"],
+      "wrongUIDs": [],
+      "scoreDeltas": { "p1": 20, "p2": 10, "p3": 5, "p4": 1 }
+    },
+    {
+      "name": "unanswered players score zero",
+      "answers": [
+        { "uid": "p2", "answer": "wrong", "timestamp": 100 }
+      ],
+      "correctUIDs": [],
+      "wrongUIDs": ["p2"],
+      "scoreDeltas": { "p1": 0, "p2": -10, "p3": 0, "p4": 0 }
+    }
+  ]
+}

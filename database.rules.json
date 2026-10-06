@@ -98,6 +98,32 @@
         }
       }
     },
+    "competitiveV2": {
+      "matches": {
+        "$matchId": {
+          "public": {
+            ".read": "auth != null && root.child('competitiveV2').child('matches').child($matchId).child('private').child('participants').child(auth.uid).exists()",
+            ".write": false
+          },
+          "private": {
+            ".read": false,
+            ".write": false
+          },
+          "$other": {
+            ".read": false,
+            ".write": false
+          }
+        }
+      },
+      "clocks": {
+        ".read": false,
+        ".write": false
+      },
+      "$other": {
+        ".read": false,
+        ".write": false
+      }
+    },
     "$other": {
       ".read": false,
       ".write": false

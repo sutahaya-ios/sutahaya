@@ -1,9 +1,9 @@
 # Competitive Mode v2.0 Specification
 
-- Status: Phase 0 design baseline / Phase A-1 Architecture Decision complete
-- Last updated: 2026-09-30
+- Status: Phase A-2 Competitive Core Local / Emulator complete candidate
+- Last updated: 2026-10-06
 - Scope: Competitive Mode v2.0 only
-- Implementation status: Phase A-1 complete / Phase A-2 not started
+- Implementation status: Phase A-1 complete / Phase A-2 Production Cloud verification pending
 
 ## この文書の位置づけ
 
@@ -919,7 +919,7 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 2. 回答はPlayer別に独立受付し、question close時にcanonical orderを確定する。回答順位用のglobal sequence即時CASは使用しない。
 3. Candidate Cはfallbackとして保持し、現時点では追加Cloud Spikeを行わない。
 
-### 17.2 Phase A-2/Bで技術検証して決める
+### 17.2 Phase A-2 Production Cloud / Phase B以降で技術検証して決める
 
 1. Functions Ingressをcallable / HTTPのどちらで公開し、Auth UID / authorizationをどう検証するか。
 2. App Check / App Attestのmonitor、観測、enforce手順とreplay protection対象Intent。
@@ -976,46 +976,48 @@ Phase A-1完了結果:
 - [x] answer acknowledgementのT1→T2 / T0→T3 p50/p95と暫定targetとの差を記録した。
 - [x] Candidate Cをfallbackとして保持し、現時点で追加検証しないと決定した。
 
-### Phase A-2: Production Contract / Security Skeleton（未着手）
+### Phase A-2: Competitive Core（Local / Emulator完了候補、Production Cloud検証待ち）
 
-目的は、採用backendをClientから隠す契約境界と、Production実装に必要なSecurity・復旧・projectionの骨格を確定することである。
+目的は、固定された人間4人の1試合をserver-authoritativeに20問最後まで通し、Clientからbackend実装を隠す契約境界とSecurity・復旧・projectionの骨格を確定することである。
 
 - Intent envelope、ack、error code、protocol/config versioning
 - Firebase Auth UIDとroster / session / ownershipのServer検証。Client指定playerIdを信用しない
-- App Check / App Attestの設計。単独のSecurity Boundaryにはしない
-- Server-only Question Bankと、prompt / choices / match state / resultだけを含むpublic projectionの分離
+- 固定4 Playerの `WAITING_PLAYERS → COUNTDOWN → 20 Questions → MATCH_FINISHED`
+- 各Playerの独立回答、Player別create-only受付、canonical ordering、正誤、score、最終順位のServer判定
+- Server-only test Question Bankと、prompt / choices / match state / resultだけを含むpublic projectionの分離
 - 同じevent / 既存accepted answerを識別するidempotent answer API
-- answer write成功後のresponse失敗、retry、reconciliation
-- cold startの実測と、COUNTDOWN warm-up / minInstancesの比較。Production値は実測前に固定しない
-- answer ackから他Playerのpublic projection反映までのRealtime経路とend-to-end latency
-- Functions / RTDB / logging / egressの初期費用モデル
-- backend-neutral contract / adapter境界。ClientをRTDB path / schemaへ直接結合しない
+- deadline / all-answered closeと、answer / close競合の一意な収束
+- 4 Clientが同じpublic projectionをRealtimeに観測する経路
+- App Check / App Attestを追加できる境界。単独のSecurity Boundaryにはしない
+- backend-neutralな `CompetitiveService → Intent → Backend → authoritative projection` 境界
+- Local / Emulatorでは20問完走、Rules、Security Gate、scoring parity、Realtime projectionを検証済み
+- Production Cloudではcold / warm、T0〜T4、実Rules / Functions、4 Client同期を次に検証する
 
 Phase A-2完了条件:
 
-- Auth / authorization、App Check、private/public data境界がcontractとtestで確認されている。
-- duplicate/retryとFunction失敗後のackが冪等に収束する。
-- cold / warmとpublic projectionを含むend-to-end latencyが記録されている。
-- Production schema / Rules / Functions実装前にSecurity reviewと費用評価を通過している。
+- [x] 固定4 PlayerがLocal / Emulatorで20問を完走する。
+- [x] Auth / authorization、private/public data境界、duplicate/retry、deadline closeをcontractとtestで確認する。
+- [x] 現行フレンドバトルとのscoring parityと4 ClientのRealtime projection一致を確認する。
+- [ ] Production Cloudでcold / warmとpublic projectionを含むT0〜T4 latencyを記録する。
+- [ ] Production Rules / Functionsを隔離E2Eで確認し、一般公開前のSecurity Gateへ引き継ぐ。
 
-### Phase B: Competitive Match Core
+Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、LeaderboardはPhase A-2へ含めない。
 
-目的は人間4人の1試合をserver-authoritativeに最後まで通すこと。
+### Phase B: Identity / Matchmaking Foundation
 
-- Session/lease/epoch
-- 4-human WAITING → COUNTDOWN → questions → MATCH_FINISHED
-- answer受付/ordering/timer/score/rankのServer判定
-- question bankとsanitized payload
+目的は、Phase A-2のCompetitive Coreをユーザー向けのIdentity、queue、match assignment、再接続経路へ接続することである。
+
+- Anonymous Auth継続性とSign in with Appleを含むIdentity Decision
+- random matchmaking、queue、search range、4人確定、match assignment
+- Session/lease/epochの本番払い出しとreconnect grace
 - disconnect/reconnect/forfeit
-- canonical MatchResult
-- idempotent Settlement skeleton
-- Emulator/integration test、Simulator + physical iPhoneの最小E2E
+- Competitive Coreへのユーザー導線
+- Simulator + physical iPhoneの最小E2E
 
 Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化しない。
 
-### Phase C: Matchmaking / Rating / NPC / Season
+### Phase C: Rating / NPC / Season / Leaderboard
 
-- random matchmakingとsearch range
 - 単一hidden MMR、Tier、Rating Zone
 - Tier別NPC補充、server-owned NPC action
 - NPC数に応じたrating delta
