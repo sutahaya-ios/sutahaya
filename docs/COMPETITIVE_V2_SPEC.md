@@ -694,6 +694,35 @@ CompetitiveSession
 - clientの明示leaveだけにlock解除を依存しない。
 - session終了とsettlement失敗を分離し、settlement retry中でも永久に新規queueを禁止しない。
 
+### 11.5 Phase B Identity / Matchmaking実装契約
+
+Competitiveのcanonical identityはFirebase Auth UIDとする。Anonymous Authも同じUIDで利用でき、将来Sign in with Apple等へ**linkしてUIDを維持する**限り、match、rating、historyのownership移行は不要である。別UIDの既存accountへsign-inする場合の統合policyは後続Identity Gateとし、Phase B schemaはUID以外をownership keyにしない。
+
+Phase Bの物理pathは次を基準とする。
+
+```text
+competitiveV2/matchmaking/private/profiles/{uid}
+competitiveV2/matchmaking/private/queue/{uid}
+competitiveV2/matchmaking/private/pendingMatches/{matchId}
+competitiveV2/matchmaking/public/{uid}
+competitiveV2/matches/{matchId}
+```
+
+- `private`全体はAdmin SDK専用で、client read/writeを許可しない。
+- `public/{uid}`は認証済み本人だけがreadでき、queue全体、他UID、hidden matchmaking値、session auditは公開しない。
+- profileはaccount type/status、最新epoch、current session、protocol、server-owned matchmaking bucketだけを持つ。MMR、visible rank、season/historyはまだ持たせない。
+- Phase B暫定queue leaseは5分とする。これはProduct保証値ではなく、heartbeat/reconnect実装時にversioned configへ移す。
+- `joinQueue`の同一`intentId`再送は同じsessionへ収束する。新しいjoin IntentはQueue中だけepochを増やして旧sessionをfenceし、`MATCH_FOUND`以後は`ACTIVE_MATCH_EXISTS`で拒否する。
+- `cancelQueue`は同じsessionId/epochの`QUEUED`だけを終了できる。match claim後は`MATCH_ALREADY_ASSIGNED`とし、commitment boundary以後のforfeitには読み替えない。
+
+Matchmakingは`competitiveMatchmaking` callableの`joinQueue`受理後に必要最小限のattemptを実行する。常時server、scheduled polling、Pub/Sub hot pathは使用しない。
+
+Atomic claimは`competitiveV2/matchmaking` rootのRTDB transactionで、4 UIDのsession fence確認、queue removal、`MATCH_FOUND`、active match、assignment ticket、pending match manifestを一度に確定する。Phase A-2 matchは別pathのため、claim後に同じ`matchId`へcreate-if-absentで作成し、最後に各projectionを`WAITING_PLAYERS`へ進める。Functionが途中失敗してもpending manifestから同じmatchを再作成・finalizeでき、別matchへ同じUIDをclaimできない二段階idempotent構造とする。Match作成は既存Competitive Coreのfactory/state machineを再利用し、別Battle engineを作らない。
+
+現Phase Bでは全Playerを同一の暫定bucketへ入れる。将来MMRをServer-owned profile値からbucket/search rangeへ入力できる境界は維持するが、client指定MMR/rankはcontractで拒否する。
+
+費用はqueue操作ごとのcallable invocationとRTDB transaction/read/writeだけで、minInstances、常時worker、scheduled pollingを追加しない。概算上、4人成立あたりjoin 4 invocation、各join/session transaction、matchmaking attempt、match create 1回、finalize 1回である。初期トラフィックでは月3,000円目安と矛盾しないが、単一bucketのmatchmaking root transactionは利用者増加時にshard化判断が必要である。
+
 ---
 
 ## 12. Disconnect / Reconnect
@@ -932,6 +961,9 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 9. 未回答Playerの切断時にquestion deadlineとreconnect graceをどう組み合わせるか。
 10. authority eventとprojectionの保存・compaction方法。
 11. 実match trafficを使ったFunctions / RTDB / logging / egress費用と月3,000円目安との差。
+12. Phase B暫定5分queue lease、heartbeat間隔、期限切れsession回収の最終値。
+13. hidden MMR導入時のbucket数、search range拡大、global matchmaking transactionのshard単位。
+14. Anonymous UIDを既存linked accountへ統合する場合のProduct policy。credential linkでUIDを維持する通常経路はschema変更不要。
 
 ### 17.3 Phase C前にプロダクト判断が必要
 
@@ -976,7 +1008,7 @@ Phase A-1完了結果:
 - [x] answer acknowledgementのT1→T2 / T0→T3 p50/p95と暫定targetとの差を記録した。
 - [x] Candidate Cをfallbackとして保持し、現時点で追加検証しないと決定した。
 
-### Phase A-2: Competitive Core（Local / Emulator完了候補、Production Cloud検証待ち）
+### Phase A-2: Competitive Core（Production検証済み）
 
 目的は、固定された人間4人の1試合をserver-authoritativeに20問最後まで通し、Clientからbackend実装を隠す契約境界とSecurity・復旧・projectionの骨格を確定することである。
 
@@ -991,15 +1023,17 @@ Phase A-1完了結果:
 - App Check / App Attestを追加できる境界。単独のSecurity Boundaryにはしない
 - backend-neutralな `CompetitiveService → Intent → Backend → authoritative projection` 境界
 - Local / Emulatorでは20問完走、Rules、Security Gate、scoring parity、Realtime projectionを検証済み
-- Production Cloudではcold / warm、T0〜T4、実Rules / Functions、4 Client同期を次に検証する
+- Production Cloudでcold / warm、T0〜T4、実Rules / Functions、4 Client同期、4人×20問を検証済み
 
 Phase A-2完了条件:
 
 - [x] 固定4 PlayerがLocal / Emulatorで20問を完走する。
 - [x] Auth / authorization、private/public data境界、duplicate/retry、deadline closeをcontractとtestで確認する。
 - [x] 現行フレンドバトルとのscoring parityと4 ClientのRealtime projection一致を確認する。
-- [ ] Production Cloudでcold / warmとpublic projectionを含むT0〜T4 latencyを記録する。
-- [ ] Production Rules / Functionsを隔離E2Eで確認し、一般公開前のSecurity Gateへ引き継ぐ。
+- [x] Production Cloudでcold / warmとpublic projectionを含むT0〜T4 latencyを記録する。
+- [x] Production Rules / Functionsを隔離E2Eで確認し、一般公開前のSecurity Gateへ引き継ぐ。
+
+**Production Performance Release Blocker:** 4人同時answer時、match root transactionの競合/retryによりT1→T2がp50約702ms、p95約1,143msとなった。ordering fidelityは40/40 round、pair 240/240一致、inversion 0である。Architecture Decision Gateではないが、一般公開前にtransaction範囲の局所最適化と同条件の再測定を必須とする。Matchmaking処理は別root/callableに分離し、answer hot pathへ混ぜない。
 
 Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、LeaderboardはPhase A-2へ含めない。
 
@@ -1007,12 +1041,13 @@ Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、Leaderb
 
 目的は、Phase A-2のCompetitive Coreをユーザー向けのIdentity、queue、match assignment、再接続経路へ接続することである。
 
-- Anonymous Auth継続性とSign in with Appleを含むIdentity Decision
-- random matchmaking、queue、search range、4人確定、match assignment
-- Session/lease/epochの本番払い出しとreconnect grace
-- disconnect/reconnect/forfeit
-- Competitive Coreへのユーザー導線
-- Simulator + physical iPhoneの最小E2E
+- canonical identityはFirebase Auth UID。Anonymous Authを維持し、将来のlinked-only policyはUIDを維持するcredential linkで後付けする
+- Server-owned minimal profile、one UID = one active session、session epoch fencing
+- `NOT_QUEUED → QUEUED → MATCH_FOUND → WAITING_PLAYERS → COUNTDOWN`のqueue lifecycle
+- callable join時のrandom matchmaking、4 Human確定、Phase A-2 match assignment
+- matchmaking root transactionによる4 Player atomic claimと、pending manifestによるidempotent match finalize
+- clientは`joinQueue` / `cancelQueue` Intentと本人用projectionだけを使用し、UID/MMR/rank/matchId/participantsを指定しない
+- reconnect grace、forfeit詳細、heartbeat運用、MMR/Rank/NPC/Settlementは後続Phaseへ残す
 
 Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化しない。
 

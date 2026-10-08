@@ -5,17 +5,23 @@ import FirebaseFunctions
 
 enum CompetitiveServiceError: LocalizedError {
     case invalidPublicProjection
+    case invalidMatchmakingProjection
     case invalidAck
     case noOpenQuestion
+    case noActiveQueueSession
 
     var errorDescription: String? {
         switch self {
         case .invalidPublicProjection:
             "対戦状態を読み取れませんでした"
+        case .invalidMatchmakingProjection:
+            "マッチング状態を読み取れませんでした"
         case .invalidAck:
             "サーバー応答を読み取れませんでした"
         case .noOpenQuestion:
             "回答受付中の問題がありません"
+        case .noActiveQueueSession:
+            "キャンセルできる待機状態がありません"
         }
     }
 }
@@ -145,7 +151,7 @@ final class CompetitiveService {
         return ack
     }
 
-    private static var clientBuild: String {
+    nonisolated static var clientBuild: String {
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
         let safeBuild = build.map { character in
             character.isLetter || character.isNumber || character == "-" || character == "_"
@@ -153,5 +159,105 @@ final class CompetitiveService {
                 : "-"
         }
         return "ios-\(String(safeBuild))"
+    }
+}
+
+/// Queue参加からPhase A-2の`CompetitiveSession`受取までを担当する通信境界。
+/// UIDはcallable payloadへ送らず、監視pathの指定にだけ使用する。Rulesが本人readを強制する。
+@MainActor
+@Observable
+final class CompetitiveMatchmakingService {
+    private(set) var state: CompetitiveMatchmakingProjection?
+    private(set) var listeningError: Error?
+
+    private let uid: String
+    private let database: DatabaseReference
+    private let functions: Functions
+    @ObservationIgnored nonisolated(unsafe) private var projectionReference: DatabaseReference?
+    @ObservationIgnored nonisolated(unsafe) private var projectionObserver: DatabaseHandle?
+
+    init(
+        uid: String,
+        database: DatabaseReference = Database.database().reference(),
+        functions: Functions = Functions.functions(region: CompetitiveService.region)
+    ) {
+        self.uid = uid
+        self.database = database
+        self.functions = functions
+    }
+
+    deinit {
+        if let projectionReference, let projectionObserver {
+            projectionReference.removeObserver(withHandle: projectionObserver)
+        }
+    }
+
+    func observeMatchmakingState() {
+        stopObservingMatchmakingState()
+        let reference = database.child("competitiveV2/matchmaking/public/\(uid)")
+        projectionReference = reference
+        projectionObserver = reference.observe(.value) { [weak self] snapshot in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                guard snapshot.exists() else {
+                    self.state = nil
+                    self.listeningError = nil
+                    return
+                }
+                guard let state = CompetitiveMatchmakingProjection(databaseValue: snapshot.value) else {
+                    self.listeningError = CompetitiveServiceError.invalidMatchmakingProjection
+                    return
+                }
+                self.state = state
+                self.listeningError = nil
+            }
+        } withCancel: { [weak self] error in
+            MainActor.assumeIsolated {
+                self?.listeningError = error
+            }
+        }
+    }
+
+    func stopObservingMatchmakingState() {
+        if let projectionReference, let projectionObserver {
+            projectionReference.removeObserver(withHandle: projectionObserver)
+        }
+        projectionReference = nil
+        projectionObserver = nil
+        state = nil
+        listeningError = nil
+    }
+
+    func joinQueue(eventId: String = UUID().uuidString) async throws -> CompetitiveMatchmakingAck {
+        try await send([
+            "intentId": eventId,
+            "type": "joinQueue",
+            "protocolVersion": CompetitiveService.protocolVersion,
+            "clientBuild": CompetitiveService.clientBuild,
+            "payload": [:]
+        ])
+    }
+
+    func cancelQueue(eventId: String = UUID().uuidString) async throws -> CompetitiveMatchmakingAck {
+        guard let state, state.state == .queued else {
+            throw CompetitiveServiceError.noActiveQueueSession
+        }
+        return try await send([
+            "intentId": eventId,
+            "type": "cancelQueue",
+            "protocolVersion": CompetitiveService.protocolVersion,
+            "clientBuild": CompetitiveService.clientBuild,
+            "sessionId": state.sessionId,
+            "sessionEpoch": state.sessionEpoch,
+            "payload": [:]
+        ])
+    }
+
+    private func send(_ envelope: [String: Any]) async throws -> CompetitiveMatchmakingAck {
+        let response = try await functions.httpsCallable("competitiveMatchmaking").call(envelope)
+        guard let ack = CompetitiveMatchmakingAck(value: response.data) else {
+            throw CompetitiveServiceError.invalidAck
+        }
+        return ack
     }
 }

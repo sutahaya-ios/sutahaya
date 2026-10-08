@@ -9,6 +9,7 @@ const {
   competitiveIntent,
   competitiveReconcileMatch,
 } = require("./competitive/handlers");
+const { competitiveMatchmaking } = require("./competitive/matchmakingHandlers");
 
 const INVITE_COOLDOWN_MS = 10_000;
 const ACCEPTING_LEASE_MS = 10_000;
@@ -141,3 +142,4 @@ exports.sendRoomInvite = onCall({ region: REGION }, async (request) => {
 
 exports.competitiveIntent = competitiveIntent;
 exports.competitiveReconcileMatch = competitiveReconcileMatch;
+exports.competitiveMatchmaking = competitiveMatchmaking;

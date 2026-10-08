@@ -207,6 +207,59 @@ struct CompetitiveSession: Equatable, Sendable {
     let assignmentTicket: String
 }
 
+enum CompetitiveMatchmakingState: String, Equatable, Sendable {
+    case notQueued = "NOT_QUEUED"
+    case queued = "QUEUED"
+    case matchFound = "MATCH_FOUND"
+    case waitingPlayers = "WAITING_PLAYERS"
+}
+
+struct CompetitiveMatchmakingProjection: Equatable, Sendable {
+    let uid: String
+    let state: CompetitiveMatchmakingState
+    let sessionId: String
+    let sessionEpoch: Int
+    let protocolVersion: String
+    let matchId: String?
+    let assignmentTicket: String?
+    let queuedAtEpochMS: Double?
+    let updatedAtEpochMS: Double
+
+    var competitiveSession: CompetitiveSession? {
+        guard state == .waitingPlayers,
+              let matchId,
+              let assignmentTicket
+        else { return nil }
+        return CompetitiveSession(
+            matchId: matchId,
+            sessionId: sessionId,
+            sessionEpoch: sessionEpoch,
+            assignmentTicket: assignmentTicket
+        )
+    }
+
+    init?(databaseValue rawValue: Any?) {
+        guard let value = CompetitiveValue.dictionary(rawValue),
+              let uid = CompetitiveValue.string(value["uid"]),
+              let stateValue = CompetitiveValue.string(value["state"]),
+              let state = CompetitiveMatchmakingState(rawValue: stateValue),
+              let sessionId = CompetitiveValue.string(value["sessionId"]),
+              let sessionEpoch = CompetitiveValue.int(value["sessionEpoch"]),
+              let protocolVersion = CompetitiveValue.string(value["protocolVersion"]),
+              let updatedAtEpochMS = CompetitiveValue.double(value["updatedAtEpochMs"])
+        else { return nil }
+        self.uid = uid
+        self.state = state
+        self.sessionId = sessionId
+        self.sessionEpoch = sessionEpoch
+        self.protocolVersion = protocolVersion
+        self.matchId = CompetitiveValue.string(value["matchId"])
+        self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
+        self.queuedAtEpochMS = CompetitiveValue.double(value["queuedAtEpochMs"])
+        self.updatedAtEpochMS = updatedAtEpochMS
+    }
+}
+
 enum CompetitiveIntentStatus: String, Equatable, Sendable {
     case accepted = "ACCEPTED"
     case rejected = "REJECTED"
@@ -236,6 +289,39 @@ struct CompetitiveIntentAck: Equatable, Sendable {
         self.retryable = CompetitiveValue.bool(value["retryable"]) ?? false
         self.originalStatus = CompetitiveValue.string(value["originalStatus"])
             .flatMap(CompetitiveIntentStatus.init(rawValue:))
+    }
+}
+
+struct CompetitiveMatchmakingAck: Equatable, Sendable {
+    let intentId: String
+    let status: CompetitiveIntentStatus
+    let rejectionCode: String?
+    let retryable: Bool
+    let originalStatus: CompetitiveIntentStatus?
+    let sessionId: String?
+    let sessionEpoch: Int?
+    let matchmakingState: CompetitiveMatchmakingState?
+    let matchId: String?
+    let assignmentTicket: String?
+
+    init?(value rawValue: Any) {
+        guard let value = CompetitiveValue.dictionary(rawValue),
+              let intentId = CompetitiveValue.string(value["intentId"]),
+              let statusValue = CompetitiveValue.string(value["status"]),
+              let status = CompetitiveIntentStatus(rawValue: statusValue)
+        else { return nil }
+        self.intentId = intentId
+        self.status = status
+        self.rejectionCode = CompetitiveValue.string(value["rejectionCode"])
+        self.retryable = CompetitiveValue.bool(value["retryable"]) ?? false
+        self.originalStatus = CompetitiveValue.string(value["originalStatus"])
+            .flatMap(CompetitiveIntentStatus.init(rawValue:))
+        self.sessionId = CompetitiveValue.string(value["sessionId"])
+        self.sessionEpoch = CompetitiveValue.int(value["sessionEpoch"])
+        self.matchmakingState = CompetitiveValue.string(value["matchmakingState"])
+            .flatMap(CompetitiveMatchmakingState.init(rawValue:))
+        self.matchId = CompetitiveValue.string(value["matchId"])
+        self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
     }
 }
 

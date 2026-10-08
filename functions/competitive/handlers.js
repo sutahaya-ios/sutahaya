@@ -4,23 +4,14 @@ const { performance } = require("node:perf_hooks");
 const { randomUUID } = require("node:crypto");
 const {
   MAX_BODY_BYTES,
-  REGION,
+  PHASE,
   ROOT_PATH,
   SERVER_VERSION,
 } = require("./constants");
 const { validateClientIntent, validateReconcileIntent } = require("./contract");
 const { processClientIntent, processReconcile } = require("./core");
-
-const FUNCTION_OPTIONS = {
-  region: REGION,
-  memory: "256MiB",
-  cpu: 1,
-  timeoutSeconds: 30,
-  minInstances: 0,
-  maxInstances: 20,
-  // Phase A-2ではApp Check境界だけを作り、Production enforcementは有効化しない。
-  enforceAppCheck: false,
-};
+const { FUNCTION_OPTIONS } = require("./functionOptions");
+const { releaseFinishedMatchSessions } = require("./matchmakingHandlers");
 
 const INSTANCE_ID = randomUUID();
 const INSTANCE_STARTED_MONOTONIC_MS = performance.now();
@@ -155,7 +146,7 @@ async function commitReconcile(envelope, uid, nowEpochMs) {
   const reference = matchRef(envelope.matchId);
   const initial = await reference.get();
   if (!initial.child("private").exists()) {
-    return rejection(envelope.intentId, "UNKNOWN_MATCH");
+    return { ack: rejection(envelope.intentId, "UNKNOWN_MATCH"), phase: null };
   }
   const initialValue = initial.val();
   let firstAttempt = true;
@@ -171,9 +162,12 @@ async function commitReconcile(envelope, uid, nowEpochMs) {
     return computation.match;
   }, undefined, false);
   if (!transaction.committed || !computation || !transaction.snapshot.exists()) {
-    return rejection(envelope.intentId, "UNKNOWN_MATCH");
+    return { ack: rejection(envelope.intentId, "UNKNOWN_MATCH"), phase: null };
   }
-  return computation.ack;
+  return {
+    ack: computation.ack,
+    phase: transaction.snapshot.child("private/phase").val(),
+  };
 }
 
 function logOutcome(kind, envelope, uid, ack, appCheckPresent) {
@@ -284,8 +278,12 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
       return ack;
     }
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
+    const committed = await commitReconcile(envelope, uid, now);
+    if ([PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING].includes(committed.phase)) {
+      await releaseFinishedMatchSessions(envelope.matchId);
+    }
     const ack = withDiagnostics(
-      await commitReconcile(envelope, uid, now),
+      committed.ack,
       invocation,
       now
     );
