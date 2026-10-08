@@ -9,7 +9,9 @@
     "test:competitive-core": "FIREBASE_CLI_DISABLE_UPDATE_CHECK=true firebase emulators:exec --project demo-hayaosiapp --only auth,database,functions \"node --test --test-force-exit FirebaseFunctionsTests/competitiveCore.test.js\"",
     "test:competitive-matchmaking": "FIREBASE_CLI_DISABLE_UPDATE_CHECK=true firebase emulators:exec --project demo-hayaosiapp --only auth,database,functions \"node --test --test-force-exit FirebaseFunctionsTests/competitiveMatchmaking.test.js\"",
     "test:competitive-cloud-e2e-driver": "node --test scripts/competitive-v2-cloud-e2e.test.js",
-    "competitive:cloud-e2e:review": "node scripts/competitive-v2-cloud-e2e.cjs --review"
+    "competitive:cloud-e2e:review": "node scripts/competitive-v2-cloud-e2e.cjs --review",
+    "test:competitive-phase-b-cloud-e2e-driver": "node --test scripts/competitive-v2-phase-b-cloud-e2e.test.js",
+    "competitive:phase-b-cloud-e2e:review": "node scripts/competitive-v2-phase-b-cloud-e2e.cjs --review"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.1",
