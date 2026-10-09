@@ -56,6 +56,7 @@ struct BattleFlowView: View {
             if session.state?.status != .finished && session.state?.status != .closed {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
+                        debugLeave("leave button tapped")
                         if session.state?.status == .playing {
                             showLeaveDialog = true
                         } else {
@@ -75,6 +76,7 @@ struct BattleFlowView: View {
         }
         .confirmationDialog("対戦から退出しますか?", isPresented: $showLeaveDialog, titleVisibility: .visible) {
             Button("退出する", role: .destructive) {
+                debugLeave("leave confirmed")
                 leaveAndDismiss()
             }
         } message: {
@@ -95,6 +97,11 @@ struct BattleFlowView: View {
                 SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
                 AdsService.shared.recordBattleFinished()
+            }
+        }
+        .onChange(of: showLeaveDialog) { _, isPresented in
+            if isPresented {
+                debugLeave("confirmation presented")
             }
         }
     }
@@ -147,7 +154,9 @@ struct BattleFlowView: View {
     }
 
     private func leaveAndDismiss() {
+        debugLeave("session.leave called")
         session.leave()
+        debugLeave("dismiss requested")
         dismiss()
     }
 
@@ -163,5 +172,19 @@ struct BattleFlowView: View {
         } else {
             matchStartObservedAt = nil
         }
+    }
+
+    /// 途中退出不能の切り分け用。Releaseでは出力しない。
+    private func debugLeave(_ event: String) {
+        #if DEBUG
+        let game = session.state?.game
+        print(
+            "[BattleLeave] event=\(event) "
+                + "status=\(String(describing: session.state?.status)) "
+                + "questionIndex=\(String(describing: game?.questionIndex)) "
+                + "phase=\(String(describing: game?.phase)) "
+                + "dialog=\(showLeaveDialog)"
+        )
+        #endif
     }
 }
