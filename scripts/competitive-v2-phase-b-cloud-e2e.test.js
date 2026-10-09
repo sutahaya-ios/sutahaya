@@ -11,6 +11,7 @@ const {
   assignmentMeasurement,
   cleanupTargets,
   executionConfiguration,
+  isAbsentRTDBField,
   isAssignmentProjection,
   makeRunId,
   makeSentinelId,
@@ -133,6 +134,12 @@ test("assignment measurement uses exact server timing only when the ack exposes 
   });
   assert.equal(summary.t1ToT2Ms, 12.346);
   assert.equal(summary.serverTimingAvailability, "ACK_EXPOSED");
+});
+
+test("RTDB release treats null and missing fields as absent, but rejects a value", () => {
+  assert.equal(isAbsentRTDBField(null), true);
+  assert.equal(isAbsentRTDBField(undefined), true);
+  assert.equal(isAbsentRTDBField("match-still-active"), false);
 });
 
 test("cleanup plan is exact and rejects broad or excessive targets", () => {
