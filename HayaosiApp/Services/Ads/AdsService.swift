@@ -10,6 +10,7 @@ final class AdsService {
     static let shared = AdsService()
 
     private static let completedBattleCountKey = "completedBattleCount"
+    private static let nextAdBattleNumberKey = "nextAdBattleNumber"
 
     private var interstitial: InterstitialAd?
     private var dismissObserver: InterstitialDismissObserver?
@@ -34,6 +35,11 @@ final class AdsService {
     /// リザルトを読んでいる数秒のうちに読み込みを終わらせ、退出時に待たせないための先読み
     func recordBattleFinished() {
         completedBattleCount += 1
+        // 前回の出す番を逃していれば、ここで次回予定を早める
+        nextAdBattleNumber = InterstitialSchedule.catchUp(
+            nextAdBattleNumber: nextAdBattleNumber,
+            completedBattleCount: completedBattleCount
+        )
         guard canRequestAds else {
             interstitial = nil
             return
@@ -42,8 +48,9 @@ final class AdsService {
         Task { await preloadInterstitial() }
     }
 
-    /// リザルトからの退出時に呼ぶ。広告を出す番なら表示し、閉じられてから `onFinish` を実行する。
-    /// 出す番でない場合と先読みが間に合わなかった場合は、待たせずにそのまま `onFinish` を実行する
+    /// リザルトから離れる操作(退出・再戦)で呼ぶ。広告を出す番なら表示し、閉じられてから `onFinish` を実行する。
+    /// 出す番でない場合と先読みが間に合わなかった場合は、待たせずにそのまま `onFinish` を実行する。
+    /// 表示できなかった番は次の対戦完走時に「逃した」と判定され、次回予定が1試合早まる
     func presentInterstitialIfDue(onFinish: @escaping () -> Void) {
         guard canRequestAds,
               isInterstitialDue,
@@ -56,6 +63,10 @@ final class AdsService {
             return
         }
 
+        nextAdBattleNumber = InterstitialSchedule.scheduleAfterPresent(
+            presentedBattleNumber: completedBattleCount
+        )
+
         let observer = InterstitialDismissObserver(onDismiss: onFinish)
         // SDKのdelegateはweak参照なので、表示が終わるまでこちらで保持する
         dismissObserver = observer
@@ -65,7 +76,10 @@ final class AdsService {
     }
 
     private var isInterstitialDue: Bool {
-        InterstitialSchedule.shouldPresent(completedBattleCount: completedBattleCount)
+        InterstitialSchedule.shouldPresent(
+            completedBattleCount: completedBattleCount,
+            nextAdBattleNumber: nextAdBattleNumber
+        )
     }
 
     var canRequestAds: Bool {
@@ -75,6 +89,15 @@ final class AdsService {
     private var completedBattleCount: Int {
         get { UserDefaults.standard.integer(forKey: Self.completedBattleCountKey) }
         set { UserDefaults.standard.set(newValue, forKey: Self.completedBattleCountKey) }
+    }
+
+    /// 次に広告を出す試合番号。未保存なら初回予定を使う
+    private var nextAdBattleNumber: Int {
+        get {
+            let stored = UserDefaults.standard.integer(forKey: Self.nextAdBattleNumberKey)
+            return stored > 0 ? stored : InterstitialSchedule.firstAdBattleNumber
+        }
+        set { UserDefaults.standard.set(newValue, forKey: Self.nextAdBattleNumberKey) }
     }
 
     private func preloadInterstitial() async {

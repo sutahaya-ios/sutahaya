@@ -151,7 +151,7 @@ struct BattleFlowView: View {
         dismiss()
     }
 
-    /// リザルトからの退出だけ全画面広告を挟む(要件 §4.2)。
+    /// リザルトから離れる操作に全画面広告を挟む(要件 §4.2)。復習への遷移では出さない。
     /// 遷移アニメーションと広告の表示が重ならないよう、広告が閉じてから退出する
     private func leaveAfterInterstitial() {
         AdsService.shared.presentInterstitialIfDue { leaveAndDismiss() }

@@ -43,8 +43,12 @@ struct BattleResultView: View {
 
             VStack(spacing: 12) {
                 if session.isHost {
+                    // 再戦もリザルトから離れる操作なので広告を挟む(要件 §4.2)。
+                    // 参加者はホストの操作で自動的に戻るため、ここを通らない
                     Button(session.isOnline ? "再戦する(ロビーに戻る)" : "もう一度対戦する") {
-                        Task { await session.rematch() }
+                        AdsService.shared.presentInterstitialIfDue {
+                            Task { await session.rematch() }
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
