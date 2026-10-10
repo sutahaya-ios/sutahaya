@@ -126,7 +126,7 @@ function reviewPlan() {
       "COMPETITIVE_V2_PHASE_B_E2E_ALLOW_PRODUCTION",
     ],
     safeguards: [
-      "--execute or --phase-a-smoke and exact confirmation are both required",
+      "one execution mode and the exact Production confirmation are both required",
       "the global queue and pending-match roots must be empty before writes",
       "all four Auth users must already exist",
       "UIDs and credentials are never included in reports",
@@ -210,6 +210,10 @@ function isAssignmentProjection(value, matchId = null) {
     && typeof value.matchId === "string"
     && (matchId === null || value.matchId === matchId)
     && typeof value.assignmentTicket === "string";
+}
+
+function isAbsentRTDBField(value) {
+  return value === null || value === undefined;
 }
 
 function assignmentMeasurement(startedAtMonotonicMs, ackAtMonotonicMs, observations, ack) {
@@ -634,6 +638,52 @@ async function runRetryAndCancellationChecks(runtime) {
   );
 }
 
+async function runStaleSessionInvariant(runtime) {
+  const player = runtime.players[0];
+  const first = await invoke(player.matchmaking, matchmakingIntent(
+    "joinQueue",
+    "resume-first-" + randomUUID()
+  ));
+  assertAck(first, "ACCEPTED", null, "resume first joinQueue");
+  const second = await invoke(player.matchmaking, matchmakingIntent(
+    "joinQueue",
+    "resume-second-" + randomUUID()
+  ));
+  assertAck(second, "ACCEPTED", null, "resume second joinQueue");
+  assert(second.sessionEpoch === first.sessionEpoch + 1,
+    "resume joinQueue must fence the previous session");
+
+  const stale = await invoke(player.matchmaking, matchmakingIntent(
+    "cancelQueue",
+    "resume-stale-" + randomUUID(),
+    {
+      sessionId: first.sessionId,
+      sessionEpoch: first.sessionEpoch,
+    }
+  ));
+  assertAck(stale, "REJECTED", "STALE_SESSION_EPOCH", "resume stale cancellation");
+  const queue = (await runtime.adminRTDB.ref(
+    MATCHMAKING_ROOT + "/private/queue/" + player.uid
+  ).get()).val();
+  assert(queue?.sessionId === second.sessionId,
+    "stale cancellation changed the current queue entry");
+
+  const cancelled = await invoke(player.matchmaking, matchmakingIntent(
+    "cancelQueue",
+    "resume-cancel-" + randomUUID(),
+    {
+      sessionId: second.sessionId,
+      sessionEpoch: second.sessionEpoch,
+    }
+  ));
+  assertAck(cancelled, "ACCEPTED", null, "resume current cancellation");
+  await waitForProjection(
+    player,
+    (value) => value?.state === "NOT_QUEUED",
+    "resume cancelled projection"
+  );
+}
+
 function updatePlayerAssignments(runtime, projections) {
   for (const player of runtime.players) {
     const projection = projections.get(player.uid);
@@ -875,7 +925,8 @@ async function runSessionRelease(runtime, matchId, sentinelId, sentinelValue) {
       ).get(),
     ]);
     assert(profile.val()?.state === "FINISHED", "released session must be FINISHED");
-    assert(profile.val()?.matchId === null, "released session must clear active match");
+    assert(isAbsentRTDBField(profile.val()?.matchId),
+      "released session must clear active match");
     assert(!queue.exists(), "released session must not remain queued");
   }
   const sentinel = (await runtime.adminRTDB.ref(
@@ -989,7 +1040,7 @@ async function cleanup(runtime, config, sentinelId) {
   };
 }
 
-async function executePhaseB(config) {
+async function executePhaseB(config, { resumeAfterReleaseFix = false } = {}) {
   const runId = makeRunId();
   const sentinelId = makeSentinelId(runId);
   let runtime = null;
@@ -1003,13 +1054,19 @@ async function executePhaseB(config) {
     cleanupArmed = true;
     startProjectionTrackers(runtime);
     startPendingTracker(runtime);
-    await assertUnauthenticatedRejected(runtime, config);
-    await assertInvalidClientAuthority(runtime.players[0]);
-    await runRetryAndCancellationChecks(runtime);
+    if (resumeAfterReleaseFix) {
+      await runStaleSessionInvariant(runtime);
+    } else {
+      await assertUnauthenticatedRejected(runtime, config);
+      await assertInvalidClientAuthority(runtime.players[0]);
+      await runRetryAndCancellationChecks(runtime);
+    }
 
     const sentinelValue = await createSentinel(runtime, sentinelId, runId);
     const releaseMatch = await createMatchFromQueue(runtime, "release");
-    await assertPostMatchSecurity(runtime, releaseMatch.matchId);
+    if (!resumeAfterReleaseFix) {
+      await assertPostMatchSecurity(runtime, releaseMatch.matchId);
+    }
     await runSessionRelease(
       runtime,
       releaseMatch.matchId,
@@ -1033,9 +1090,11 @@ async function executePhaseB(config) {
       },
       assertions: {
         isolationGate: true,
-        unauthenticatedRejected: true,
-        clientAuthorityFieldsRejected: true,
-        retryAndIdempotency: true,
+        stableRetryAndSecurityEvidenceReused: resumeAfterReleaseFix,
+        unauthenticatedRejected: resumeAfterReleaseFix ? "REUSED" : true,
+        clientAuthorityFieldsRejected: resumeAfterReleaseFix ? "REUSED" : true,
+        retryAndIdempotency: resumeAfterReleaseFix ? "REUSED" : true,
+        staleSessionInvariant: true,
         fourHumansExactlyOneMatch: true,
         queueAndManifestConsistency: true,
         ownProjectionTransitions: true,
@@ -1157,15 +1216,16 @@ async function main() {
   }
   const execute = process.argv.includes("--execute");
   const smoke = process.argv.includes("--phase-a-smoke");
-  if (execute === smoke) {
+  const resume = process.argv.includes("--resume-after-release-fix");
+  if ([execute, smoke, resume].filter(Boolean).length !== 1) {
     throw new Error(
-      "Refusing to run. Select exactly one of --review, --phase-a-smoke, or --execute"
+      "Refusing to run. Select exactly one execution mode"
     );
   }
   const config = executionConfiguration();
   const result = smoke
     ? await executePhaseASmoke(config)
-    : await executePhaseB(config);
+    : await executePhaseB(config, { resumeAfterReleaseFix: resume });
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 
@@ -1184,6 +1244,7 @@ module.exports = {
   assignmentMeasurement,
   cleanupTargets,
   executionConfiguration,
+  isAbsentRTDBField,
   isAssignmentProjection,
   makeRunId,
   makeSentinelId,
