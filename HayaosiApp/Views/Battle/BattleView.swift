@@ -295,12 +295,20 @@ struct BattleView: View {
                     canAnswer: session.canAnswer(at: timeline.date) && pendingAnswer == nil
                 ) { choice in
                     Haptics.impact(.heavy)
-                    let pending = PendingAnswer(questionIndex: game.questionIndex, choice: choice)
+                    let displayedQuestion = DisplayedQuestionContext(
+                        questionID: question.id,
+                        questionIndex: game.questionIndex
+                    )
+                    let pending = PendingAnswer(
+                        displayedQuestion: displayedQuestion,
+                        choice: choice
+                    )
                     pendingAnswer = pending
                     isAwaitingHostResult = false
                     answerErrorMessage = nil
                     session.submitAnswer(
                         choice,
+                        displayedQuestion: displayedQuestion,
                         visibleCount: session.visibleCharacterCount(at: .now)
                     ) { outcome in
                         guard pendingAnswer == pending else { return }
@@ -348,8 +356,10 @@ struct BattleView: View {
 }
 
 private struct PendingAnswer: Equatable {
-    let questionIndex: Int
+    let displayedQuestion: DisplayedQuestionContext
     let choice: String
+
+    var questionIndex: Int { displayedQuestion.questionIndex }
 }
 
 private struct QuestionKey: Equatable {

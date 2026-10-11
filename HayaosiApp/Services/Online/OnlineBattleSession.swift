@@ -572,17 +572,29 @@ final class OnlineBattleSession: NPCManageableBattleSession {
     /// 文字送り型は選択肢を押した瞬間が回答なので、押下時刻(サーバー時刻)と表示文字数を一緒に残す。
     /// 先着はサーバー時刻で決まるため、端末の時計のずれに影響されない
     func submitAnswer(_ choice: String, visibleCount: Int) {
-        submitAnswer(choice, visibleCount: visibleCount) { _ in }
+        guard let state, let game = state.game,
+              state.questions.indices.contains(game.questionIndex) else { return }
+        let question = state.questions[game.questionIndex]
+        submitAnswer(
+            choice,
+            displayedQuestion: DisplayedQuestionContext(
+                questionID: question.id,
+                questionIndex: game.questionIndex
+            ),
+            visibleCount: visibleCount
+        ) { _ in }
     }
 
     /// Firebase writeの正式拒否と、server timestamp／host採点の確定待ちを分けて返す。
     func submitAnswer(
         _ choice: String,
+        displayedQuestion: DisplayedQuestionContext,
         visibleCount: Int,
         completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
     ) {
         guard let state, state.status == .playing,
-              let game = state.game, game.phase == .question else {
+              let game = state.game, game.phase == .question,
+              state.questions.indices.contains(game.questionIndex) else {
             completion(.rejected)
             return
         }
@@ -597,7 +609,23 @@ final class OnlineBattleSession: NPCManageableBattleSession {
             completion(.rejected)
             return
         }
-        let questionIndex = game.questionIndex
+        let currentQuestion = state.questions[game.questionIndex]
+        guard let submission = OnlineAnswerSubmission.make(
+            choice: choice,
+            visibleCount: visibleCount,
+            displayedQuestion: displayedQuestion,
+            currentQuestionID: currentQuestion.id,
+            currentQuestionIndex: game.questionIndex
+        ) else {
+            OnlineService.debugLog(
+                "表示問題と送信時問題が不一致のため回答を破棄: "
+                    + "displayed=\(displayedQuestion.questionID)#\(displayedQuestion.questionIndex), "
+                    + "current=\(currentQuestion.id)#\(game.questionIndex)"
+            )
+            completion(.rejected)
+            return
+        }
+        let questionIndex = submission.questionIndex
         let timeLimit = state.settings.timeLimit
         let participantIDs = state.players.map(\.id)
         Task { [weak self] in
@@ -609,9 +637,9 @@ final class OnlineBattleSession: NPCManageableBattleSession {
             do {
                 try await answerRef.setValue([
                     "questionIndex": questionIndex,
-                    "choice": choice,
+                    "choice": submission.choice,
                     "ts": ServerValue.timestamp(),
-                    "visibleCount": visibleCount
+                    "visibleCount": submission.visibleCount
                 ])
             } catch {
                 lastError = "回答を送信できませんでした"

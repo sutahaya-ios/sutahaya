@@ -124,6 +124,34 @@ final class BattleStartTimingTests: XCTestCase {
         )
     }
 
+    func test_共通回答contractは表示問題と現在問題が一致すれば受理する() {
+        let session = StubBattleSession(state: makeRoomState(startDelayMS: 0, startedAtMS: 1_000))
+        var outcome: BattleAnswerSubmissionOutcome?
+
+        session.submitAnswer(
+            "恩恵",
+            displayedQuestion: DisplayedQuestionContext(questionID: "q1", questionIndex: 0),
+            visibleCount: 3
+        ) { outcome = $0 }
+
+        XCTAssertEqual(outcome, .accepted)
+        XCTAssertEqual(session.submittedChoices, ["恩恵"])
+    }
+
+    func test_共通回答contractは表示問題と現在問題が違えば送信しない() {
+        let session = StubBattleSession(state: makeRoomState(startDelayMS: 0, startedAtMS: 1_000))
+        var outcome: BattleAnswerSubmissionOutcome?
+
+        session.submitAnswer(
+            "前問題の正解",
+            displayedQuestion: DisplayedQuestionContext(questionID: "old", questionIndex: 0),
+            visibleCount: 3
+        ) { outcome = $0 }
+
+        XCTAssertEqual(outcome, .rejected)
+        XCTAssertTrue(session.submittedChoices.isEmpty)
+    }
+
     private func makeRoomState(startDelayMS: Double, startedAtMS: Double) -> RoomState {
         let question = RoomState.QuestionPayload(
             id: "q1",
@@ -165,6 +193,7 @@ private final class StubBattleSession: BattleSession {
     let battleClockOffsetMS: Double
     let state: RoomState?
     let wrongQuestionIDs: Set<String> = []
+    private(set) var submittedChoices: [String] = []
 
     init(state: RoomState, battleClockOffsetMS: Double = 0) {
         self.state = state
@@ -174,7 +203,9 @@ private final class StubBattleSession: BattleSession {
     func startGame(questions: [Question]) async {}
     func rematch() async {}
     func updateSettings(_ settings: RoomState.Settings) async throws {}
-    func submitAnswer(_ choice: String, visibleCount: Int) {}
+    func submitAnswer(_ choice: String, visibleCount: Int) {
+        submittedChoices.append(choice)
+    }
     func leave() {}
     func saveResultsIfNeeded(context: ModelContext) {}
 }

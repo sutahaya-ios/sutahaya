@@ -11,6 +11,12 @@ enum BattleAnswerSubmissionOutcome: Equatable {
     case rejected
 }
 
+/// 画面に表示していた問題と、送信する回答を結び付ける識別情報。
+struct DisplayedQuestionContext: Equatable {
+    let questionID: String
+    let questionIndex: Int
+}
+
 /// 対戦セッションの共通インターフェース。
 /// オンライン対戦(OnlineBattleSession=Firebase)とCPU対戦(CPUBattleSession=ローカル)が実装し、
 /// ロビー・対戦・リザルト画面はこのプロトコル越しに描画する
@@ -35,9 +41,11 @@ protocol BattleSession: AnyObject, Observable {
     /// 回答する。選択肢を押した瞬間が回答にあたるため、
     /// そのとき何文字まで見えていたかを一緒に渡す(記録と、後からの調整に使う)
     func submitAnswer(_ choice: String, visibleCount: Int)
-    /// 通信結果まで必要な画面向け。送信中とhost確定待ちを正式拒否から分離して返す。
+    /// 通信結果まで必要な画面向け。表示していた問題へ回答を固定し、
+    /// 送信中とhost確定待ちを正式拒否から分離して返す。
     func submitAnswer(
         _ choice: String,
+        displayedQuestion: DisplayedQuestionContext,
         visibleCount: Int,
         completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
     )
@@ -75,9 +83,17 @@ extension BattleSession {
     /// CPU対戦など同期的に回答できる実装は、従来の回答処理を呼んだ時点で成功とみなす。
     func submitAnswer(
         _ choice: String,
+        displayedQuestion: DisplayedQuestionContext,
         visibleCount: Int,
         completion: @escaping (BattleAnswerSubmissionOutcome) -> Void
     ) {
+        guard let game = state?.game,
+              let currentQuestion,
+              currentQuestion.id == displayedQuestion.questionID,
+              game.questionIndex == displayedQuestion.questionIndex else {
+            completion(.rejected)
+            return
+        }
         submitAnswer(choice, visibleCount: visibleCount)
         completion(.accepted)
     }
