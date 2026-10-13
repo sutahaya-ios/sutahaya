@@ -1,254 +1,213 @@
 import SwiftUI
 import SwiftData
 
-/// カテゴリ内の難易度別正答率を色分けし、選んだ条件で練習へ進める
+/// 選択したレベルの習得率を確認し、復習またはランダム練習へ進む
 struct CategoryHeatmapView: View {
-    private static let difficultyColumns = Array(
-        repeating: GridItem(.flexible(), spacing: 6),
-        count: StudyDifficulty.allCases.count
-    )
+    private static let controlSpacing: CGFloat = 10
+    private static let cornerRadius: CGFloat = 16
+    private static let levelHeight: CGFloat = 48
+    private static let actionHeight: CGFloat = 112
 
     let category: StudyCategory
 
     @Query private var records: [AnswerRecord]
     @Query private var questions: [Question]
     @Query private var reviewItems: [ReviewItem]
+    @State private var selectedDifficulty: StudyDifficulty = .one
+    @State private var quizQuestions: [Question] = []
+    @State private var isPracticing = false
 
     var body: some View {
         let proficiency = CategoryProficiencySummary.calculate(
             records: records,
             questions: questions,
-            category: category
+            category: category,
+            difficulty: selectedDifficulty
         )
         let reviewItemCount = ReviewListFilter.filter(
             reviewItems: reviewItems,
             questions: questions,
             category: category
         ).count
-        let unavailableDifficulties = StudyDifficulty.allCases.filter {
-            practiceQuestions(for: $0).isEmpty
-        }
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("レベルをタップして練習を始める")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+            VStack(spacing: 24) {
+                DifficultyProficiencyRing(
+                    difficulty: selectedDifficulty,
+                    proficiencyRate: proficiency.progress
+                )
+                .padding(.vertical, 16)
 
-                LazyVGrid(columns: Self.difficultyColumns, spacing: 6) {
-                    ForEach(StudyDifficulty.allCases) { difficulty in
-                        let matchingQuestions = practiceQuestions(for: difficulty)
+                difficultySelector
+                practiceActions(reviewItemCount: reviewItemCount)
 
-                        if matchingQuestions.isEmpty {
-                            DifficultyAccuracyCell(
-                                difficulty: difficulty,
-                                accuracy: proficiency.accuracy(for: difficulty),
-                                isEnabled: false
-                            )
-                            .accessibilityLabel("\(difficulty.starDisplay)、問題なし")
-                        } else {
-                            NavigationLink {
-                                QuizSessionView(
-                                    questions: Array(
-                                        matchingQuestions
-                                            .shuffled()
-                                            .prefix(QuizDefaults.questionCount)
-                                    ),
-                                    timeLimit: QuizDefaults.timeLimit,
-                                    mode: .practice
-                                )
-                            } label: {
-                                DifficultyAccuracyCell(
-                                    difficulty: difficulty,
-                                    accuracy: proficiency.accuracy(for: difficulty),
-                                    isEnabled: true
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-
-                if !unavailableDifficulties.isEmpty {
+                if practiceQuestions.isEmpty {
                     QuestionAvailabilityNotice(
                         category: category,
-                        difficulties: unavailableDifficulties
+                        difficulties: [selectedDifficulty]
                     )
                 }
-
-                Text("\(category.displayName)・難易度別正答率")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-
-                if reviewItemCount > 0 {
-                    Rectangle()
-                        .fill(Color(.separator))
-                        .frame(height: 0.5)
-
-                    NavigationLink {
-                        ReviewListView(category: category)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .foregroundStyle(Color.accentColor)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("復習リスト")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(.primary)
-                                Text("間違えた問題 \(reviewItemCount)問")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(.secondarySystemBackground))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color(.separator), lineWidth: 0.5)
-                                }
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, -2)
-                }
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 24)
         }
         .navigationTitle(category.displayName)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $isPracticing) {
+            QuizSessionView(
+                questions: quizQuestions,
+                timeLimit: QuizDefaults.timeLimit,
+                mode: .practice
+            )
+        }
     }
 
-    private func practiceQuestions(for difficulty: StudyDifficulty) -> [Question] {
-        questions
-            .matching(category: category, difficulty: difficulty)
+    private var difficultySelector: some View {
+        HStack(spacing: Self.controlSpacing) {
+            ForEach(StudyDifficulty.allCases) { difficulty in
+                let isSelected = selectedDifficulty == difficulty
+
+                Button {
+                    selectedDifficulty = difficulty
+                } label: {
+                    Text("\(difficulty.rawValue)")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: Self.levelHeight)
+                        .foregroundStyle(isSelected ? Color.blue : Color.primary)
+                        .background(
+                            isSelected ? Color.blue.opacity(0.12) : Color(.secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: Self.cornerRadius)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: Self.cornerRadius)
+                                .strokeBorder(
+                                    isSelected ? Color.blue : Color(.separator).opacity(0.3)
+                                )
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("レベル\(difficulty.rawValue)")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+    }
+
+    private func practiceActions(reviewItemCount: Int) -> some View {
+        HStack(alignment: .top, spacing: Self.controlSpacing) {
+            NavigationLink {
+                ReviewListView(category: category)
+            } label: {
+                actionLabel(
+                    "復習",
+                    symbol: "arrow.counterclockwise",
+                    detail: "間違えた\(reviewItemCount)問",
+                    isPrimary: false
+                )
+            }
+            .buttonStyle(.plain)
+
+            Button(action: startPractice) {
+                actionLabel("ランダム練習", symbol: "shuffle", isPrimary: true)
+            }
+            .buttonStyle(.plain)
+            .disabled(practiceQuestions.isEmpty)
+            .opacity(practiceQuestions.isEmpty ? 0.4 : 1)
+            .accessibilityHint("レベル\(selectedDifficulty.rawValue)からランダムに出題します")
+        }
+    }
+
+    private func actionLabel(
+        _ title: String,
+        symbol: String,
+        detail: String? = nil,
+        isPrimary: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundStyle(isPrimary ? Color.white : Color.blue)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isPrimary ? Color.white : Color.primary)
+                if let detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: Self.actionHeight, alignment: .topLeading)
+        .background(
+            isPrimary ? Color.blue : Color(.secondarySystemBackground),
+            in: RoundedRectangle(cornerRadius: Self.cornerRadius)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
+    }
+
+    private var practiceQuestions: [Question] {
+        questions.matching(category: category, difficulty: selectedDifficulty)
+    }
+
+    private func startPractice() {
+        guard !practiceQuestions.isEmpty else { return }
+        quizQuestions = Array(practiceQuestions.shuffled().prefix(QuizDefaults.questionCount))
+        isPracticing = true
     }
 }
 
-private struct DifficultyAccuracyCell: View {
-    private static let ringDiameter: CGFloat = 56
-    private static let ringLineWidth: CGFloat = 6
-
-    private struct Style {
-        let text: String
-        let ringColor: Color
-        let foregroundColor: Color
-    }
+private struct DifficultyProficiencyRing: View {
+    private static let diameter: CGFloat = 172
+    private static let lineWidth: CGFloat = 10
 
     let difficulty: StudyDifficulty
-    let accuracy: Double?
-    let isEnabled: Bool
+    let proficiencyRate: Double
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 20) {
+            Text("レベル\(difficulty.rawValue)")
+                .font(.title3.weight(.semibold))
+
             ZStack {
                 Circle()
-                    .stroke(
-                        Color(.secondarySystemBackground),
-                        lineWidth: Self.ringLineWidth
-                    )
-
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(
-                        style.ringColor,
-                        style: StrokeStyle(
-                            lineWidth: Self.ringLineWidth,
-                            lineCap: .round
+                    .stroke(Color(.secondarySystemBackground), lineWidth: Self.lineWidth)
+                if progress > 0 {
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            Color.blue,
+                            style: StrokeStyle(lineWidth: Self.lineWidth, lineCap: .round)
                         )
-                    )
-                    .rotationEffect(.degrees(-90))
-
-                Text(style.text)
-                    .font(.system(size: 13, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(style.foregroundColor)
+                        .rotationEffect(.degrees(-90))
+                }
+                VStack(spacing: 5) {
+                    Text(rateText)
+                        .font(.largeTitle.weight(.semibold))
+                        .monospacedDigit()
+                    Text("習得率")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .frame(width: Self.ringDiameter, height: Self.ringDiameter)
-
-            Text("★\(difficulty.rawValue)")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+            .frame(width: Self.diameter, height: Self.diameter)
+            .padding(Self.lineWidth / 2)
         }
         .frame(maxWidth: .infinity)
-        .opacity(isEnabled ? 1 : 0.4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("レベル\(difficulty.rawValue)、習得率\(rateText)")
     }
 
     private var progress: Double {
-        min(max(accuracy ?? 0, 0), 1)
+        min(max(proficiencyRate, 0), 1)
     }
 
-    private var style: Style {
-        guard let accuracy else {
-            return Style(
-                text: "－",
-                ringColor: .clear,
-                foregroundColor: .secondary
-            )
-        }
-
-        let percentage = Int(accuracy * 100)
-        if percentage >= 80 {
-            return Style(
-                text: "\(percentage)%",
-                ringColor: .proficiencyGreen,
-                foregroundColor: .proficiencyGreenText
-            )
-        }
-        if percentage >= 55 {
-            return Style(
-                text: "\(percentage)%",
-                ringColor: .proficiencyYellow,
-                foregroundColor: .proficiencyYellowText
-            )
-        }
-        return Style(
-            text: "\(percentage)%",
-            ringColor: .proficiencyRed,
-            foregroundColor: .proficiencyRedText
-        )
+    private var rateText: String {
+        return "\(Int(progress * 100))%"
     }
-}
-
-private extension Color {
-    static let proficiencyGreen = Color(
-        red: 234.0 / 255.0,
-        green: 243.0 / 255.0,
-        blue: 222.0 / 255.0
-    )
-    static let proficiencyGreenText = Color(
-        red: 39.0 / 255.0,
-        green: 80.0 / 255.0,
-        blue: 10.0 / 255.0
-    )
-    static let proficiencyYellow = Color(
-        red: 250.0 / 255.0,
-        green: 238.0 / 255.0,
-        blue: 218.0 / 255.0
-    )
-    static let proficiencyYellowText = Color(
-        red: 99.0 / 255.0,
-        green: 56.0 / 255.0,
-        blue: 6.0 / 255.0
-    )
-    static let proficiencyRed = Color(
-        red: 252.0 / 255.0,
-        green: 235.0 / 255.0,
-        blue: 235.0 / 255.0
-    )
-    static let proficiencyRedText = Color(
-        red: 121.0 / 255.0,
-        green: 31.0 / 255.0,
-        blue: 31.0 / 255.0
-    )
 }
 
 #Preview {
