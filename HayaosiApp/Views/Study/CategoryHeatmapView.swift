@@ -6,7 +6,6 @@ struct CategoryHeatmapView: View {
     private static let controlSpacing: CGFloat = 10
     private static let cornerRadius: CGFloat = 16
     private static let levelHeight: CGFloat = 48
-    private static let actionHeight: CGFloat = 112
 
     let category: StudyCategory
 
@@ -16,6 +15,18 @@ struct CategoryHeatmapView: View {
     @State private var selectedDifficulty: StudyDifficulty = .one
     @State private var quizQuestions: [Question] = []
     @State private var isPracticing = false
+    @State private var sessionTimeLimit = QuizDefaults.timeLimit
+    @AppStorage("studyPracticeQuestionCount") private var storedQuestionCount = QuizDefaults.questionCount
+    @AppStorage private var storedTimeLimit: Double
+
+    init(category: StudyCategory) {
+        self.category = category
+        // 教材ごとの時間を保持し、英単語とSPIの選択肢が混ざらないようにする。
+        _storedTimeLimit = AppStorage(
+            wrappedValue: category.defaultTimeLimit,
+            "studyPracticeTimeLimit.\(category.rawValue)"
+        )
+    }
 
     var body: some View {
         let proficiency = CategoryProficiencySummary.calculate(
@@ -56,7 +67,7 @@ struct CategoryHeatmapView: View {
         .navigationDestination(isPresented: $isPracticing) {
             QuizSessionView(
                 questions: quizQuestions,
-                timeLimit: QuizDefaults.timeLimit,
+                timeLimit: sessionTimeLimit,
                 mode: .practice
             )
         }
@@ -93,60 +104,96 @@ struct CategoryHeatmapView: View {
     }
 
     private func practiceActions(reviewItemCount: Int) -> some View {
-        HStack(alignment: .top, spacing: Self.controlSpacing) {
-            NavigationLink {
-                ReviewListView(category: category)
-            } label: {
-                actionLabel(
-                    "復習",
-                    symbol: "arrow.counterclockwise",
-                    detail: "間違えた\(reviewItemCount)問",
-                    isPrimary: false
+        VStack(spacing: 18) {
+            HStack {
+                settingMenu(
+                    "問題数",
+                    values: QuizDefaults.questionCountOptions,
+                    selection: Binding(get: { questionCount }, set: { storedQuestionCount = $0 }),
+                    unit: "問"
+                )
+                Divider().frame(height: 40)
+                settingMenu(
+                    "1問の制限時間",
+                    values: QuizDefaults.timeLimitOptions(for: category).map { Int($0) },
+                    selection: Binding(get: { Int(timeLimit) }, set: { storedTimeLimit = Double($0) }),
+                    unit: "秒"
                 )
             }
-            .buttonStyle(.plain)
 
             Button(action: startPractice) {
-                actionLabel("ランダム練習", symbol: "shuffle", isPrimary: true)
+                Label("ランダム練習", systemImage: "shuffle")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .foregroundStyle(.white)
+                    .background(.blue, in: RoundedRectangle(cornerRadius: Self.cornerRadius))
             }
             .buttonStyle(.plain)
             .disabled(practiceQuestions.isEmpty)
             .opacity(practiceQuestions.isEmpty ? 0.4 : 1)
-            .accessibilityHint("レベル\(selectedDifficulty.rawValue)からランダムに出題します")
-        }
-    }
+            .accessibilityHint("レベル\(selectedDifficulty.rawValue)から最大\(questionCount)問、1問\(Int(timeLimit))秒で出題します")
 
-    private func actionLabel(
-        _ title: String,
-        symbol: String,
-        detail: String? = nil,
-        isPrimary: Bool
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundStyle(isPrimary ? Color.white : Color.blue)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isPrimary ? Color.white : Color.primary)
-                if let detail {
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            NavigationLink {
+                ReviewListView(category: category)
+            } label: {
+                Label("復習 · 間違えた\(reviewItemCount)問", systemImage: "arrow.counterclockwise")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
-            Spacer(minLength: 0)
+            .buttonStyle(.plain)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: Self.actionHeight, alignment: .topLeading)
+        .padding(18)
         .background(
-            isPrimary ? Color.blue : Color(.secondarySystemBackground),
+            Color(.secondarySystemBackground),
             in: RoundedRectangle(cornerRadius: Self.cornerRadius)
         )
-        .contentShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
+    }
+
+    private func settingMenu(
+        _ title: String,
+        values: [Int],
+        selection: Binding<Int>,
+        unit: String
+    ) -> some View {
+        VStack(spacing: 5) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Menu {
+                Picker(title, selection: selection) {
+                    ForEach(values, id: \.self) { value in
+                        Text("\(value)\(unit)").tag(value)
+                    }
+                }
+            } label: {
+                HStack(spacing: 7) {
+                    Text("\(selection.wrappedValue)\(unit)")
+                        .font(.title3.weight(.semibold))
+                        .monospacedDigit()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2)
+                }
+                .foregroundStyle(.blue)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel(title)
+            .accessibilityValue("\(selection.wrappedValue)\(unit)")
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var questionCount: Int {
+        QuizDefaults.questionCountOptions.contains(storedQuestionCount)
+            ? storedQuestionCount : QuizDefaults.questionCount
+    }
+
+    private var timeLimit: TimeInterval {
+        QuizDefaults.timeLimitOptions(for: category).contains(storedTimeLimit)
+            ? storedTimeLimit : category.defaultTimeLimit
     }
 
     private var practiceQuestions: [Question] {
@@ -155,7 +202,8 @@ struct CategoryHeatmapView: View {
 
     private func startPractice() {
         guard !practiceQuestions.isEmpty else { return }
-        quizQuestions = Array(practiceQuestions.shuffled().prefix(QuizDefaults.questionCount))
+        quizQuestions = Array(practiceQuestions.shuffled().prefix(questionCount))
+        sessionTimeLimit = timeLimit
         isPracticing = true
     }
 }
