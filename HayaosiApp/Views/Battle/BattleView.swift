@@ -5,7 +5,7 @@ import SwiftData
 struct BattleView: View {
     /// 文字送りの更新間隔
     private static let tickInterval: TimeInterval = 0.1
-    private static let wrongFeedbackDuration: TimeInterval = 1.2
+    private static let answerFeedbackDuration: TimeInterval = 1.2
 
     let session: any BattleSession
 
@@ -15,8 +15,8 @@ struct BattleView: View {
     @State private var pendingAnswer: PendingAnswer?
     @State private var isAwaitingHostResult = false
     @State private var answerErrorMessage: String?
-    @State private var wrongFeedbackQuestionIndex: Int?
-    @State private var wrongFeedbackTask: Task<Void, Never>?
+    @State private var answerFeedback: AnswerFeedback?
+    @State private var answerFeedbackTask: Task<Void, Never>?
     @State private var liveScoreBase: LiveScoreBase?
 
     var body: some View {
@@ -59,8 +59,10 @@ struct BattleView: View {
         .navigationBarTitleDisplayMode(.inline)
         .animation(BattleAnimation.reveal, value: session.state?.game?.questionIndex)
         .overlay {
-            if wrongFeedbackQuestionIndex == session.state?.game?.questionIndex {
-                WrongAnswerFeedback()
+            if let answerFeedback,
+               answerFeedback.questionIndex == session.state?.game?.questionIndex {
+                AnswerFeedbackSymbol(isCorrect: answerFeedback.isCorrect)
+                    .allowsHitTesting(false)
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
@@ -71,8 +73,8 @@ struct BattleView: View {
             pendingAnswer = nil
             isAwaitingHostResult = false
             answerErrorMessage = nil
-            wrongFeedbackTask?.cancel()
-            wrongFeedbackQuestionIndex = nil
+            answerFeedbackTask?.cancel()
+            answerFeedback = nil
             captureLiveScoreBaseIfPossible(replacingExisting: true)
         }
         .onChange(of: failedIDs) { oldIDs, newIDs in
@@ -83,7 +85,7 @@ struct BattleView: View {
                let questionIndex = session.state?.game?.questionIndex {
                 pendingAnswer = nil
                 isAwaitingHostResult = false
-                showWrongFeedback(for: questionIndex)
+                showAnswerFeedback(isCorrect: false, for: questionIndex)
             }
         }
         .onChange(of: myAnswerChoice) { _, newChoice in
@@ -94,9 +96,13 @@ struct BattleView: View {
             }
         }
         // 正解も回答した時点で鳴らす。発表まで待たせると手応えが遅れて伝わるため
-        .onChange(of: correctIDs.count) { oldCount, newCount in
-            if newCount > oldCount {
+        .onChange(of: correctIDs) { oldIDs, newIDs in
+            if newIDs.count > oldIDs.count {
                 SoundPlayer.shared.play(.correct)
+            }
+            if !oldIDs.contains(session.myID), newIDs.contains(session.myID),
+               let questionIndex = session.state?.game?.questionIndex {
+                showAnswerFeedback(isCorrect: true, for: questionIndex)
             }
         }
         // 正解の音は回答時に鳴らし終えているので、発表では誰も取れなかった時だけ鳴らす
@@ -106,7 +112,7 @@ struct BattleView: View {
             }
         }
         .onDisappear {
-            wrongFeedbackTask?.cancel()
+            answerFeedbackTask?.cancel()
         }
     }
 
@@ -260,14 +266,8 @@ struct BattleView: View {
                 Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(.red)
-            } else if let mine = myAnswer(in: game) {
-                // 文字送りしないジャンルでは「何文字目で押したか」に意味がない
-                Label(
-                    genre.usesProgressiveReveal
-                        ? "回答しました(\(mine.visibleCount)文字目)"
-                        : "回答しました",
-                    systemImage: "checkmark.circle"
-                )
+            } else if myAnswer(in: game) != nil {
+                Label("回答しました", systemImage: "checkmark.circle")
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
             } else if pendingAnswer?.questionIndex == game.questionIndex {
@@ -339,16 +339,20 @@ struct BattleView: View {
         session.player(for: playerID)?.nickname
     }
 
-    private func showWrongFeedback(for questionIndex: Int) {
-        wrongFeedbackTask?.cancel()
+    private func showAnswerFeedback(isCorrect: Bool, for questionIndex: Int) {
+        answerFeedbackTask?.cancel()
         withAnimation(BattleAnimation.reveal) {
-            wrongFeedbackQuestionIndex = questionIndex
+            answerFeedback = AnswerFeedback(questionIndex: questionIndex, isCorrect: isCorrect)
         }
-        wrongFeedbackTask = Task {
-            try? await Task.sleep(for: .seconds(Self.wrongFeedbackDuration))
+        answerFeedbackTask = Task {
+            do {
+                try await Task.sleep(for: .seconds(Self.answerFeedbackDuration))
+            } catch {
+                return
+            }
             guard !Task.isCancelled else { return }
             withAnimation(BattleAnimation.reveal) {
-                wrongFeedbackQuestionIndex = nil
+                answerFeedback = nil
             }
         }
     }
@@ -372,15 +376,20 @@ private struct LiveScoreBase {
     let scores: [String: Int]
 }
 
-private struct WrongAnswerFeedback: View {
+private struct AnswerFeedback {
+    let questionIndex: Int
+    let isCorrect: Bool
+}
+
+private struct AnswerFeedbackSymbol: View {
+    private static let symbolSize: CGFloat = 100
+
+    let isCorrect: Bool
+
     var body: some View {
-        Label("不正解", systemImage: "xmark.circle.fill")
-            .font(.title.bold())
-            .foregroundStyle(.white)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 18)
-            .background(.red.gradient, in: RoundedRectangle(cornerRadius: 18))
-            .shadow(radius: 8)
-            .accessibilityLabel("不正解")
+        Image(systemName: isCorrect ? "circle" : "xmark")
+            .font(.system(size: Self.symbolSize, weight: .bold))
+            .foregroundStyle(isCorrect ? Color.green : Color.red)
+            .accessibilityLabel(isCorrect ? "正解" : "不正解")
     }
 }

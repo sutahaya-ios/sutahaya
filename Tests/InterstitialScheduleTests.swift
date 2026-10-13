@@ -103,3 +103,23 @@ final class InterstitialScheduleTests: XCTestCase {
         return (due, shown)
     }
 }
+
+/// 対戦と一人練習は別々に数える。既存ユーザーの保存値を壊さないことも確かめる
+final class InterstitialContextTests: XCTestCase {
+    func test_対戦と練習で保存キーが分かれている() {
+        XCTAssertNotEqual(
+            InterstitialContext.battle.completedCountKey,
+            InterstitialContext.quiz.completedCountKey
+        )
+        XCTAssertNotEqual(
+            InterstitialContext.battle.nextAdNumberKey,
+            InterstitialContext.quiz.nextAdNumberKey
+        )
+    }
+
+    /// 公開済みの端末に保存済みの値を引き継ぐため、対戦側のキーは変更できない
+    func test_対戦の保存キーは変更しない() {
+        XCTAssertEqual(InterstitialContext.battle.completedCountKey, "completedBattleCount")
+        XCTAssertEqual(InterstitialContext.battle.nextAdNumberKey, "nextAdBattleNumber")
+    }
+}

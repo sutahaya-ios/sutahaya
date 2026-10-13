@@ -50,7 +50,12 @@ struct ReviewListView: View {
             }
         }
         .navigationDestination(isPresented: $isPlaying) {
-            QuizSessionView(questions: quizQuestions, timeLimit: Self.timeLimit, mode: .practice)
+            QuizSessionView(
+                questions: quizQuestions,
+                timeLimit: Self.timeLimit,
+                mode: .practice,
+                showsInterstitial: false
+            )
         }
     }
 

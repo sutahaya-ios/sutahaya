@@ -19,7 +19,7 @@ struct StudyMaterialAddSheet: View {
                         AvailableStudyMaterialCard(
                             category: category,
                             isPinned: pinnedCategories.contains(category),
-                            onPin: { pin(category) }
+                            onTogglePin: { togglePin(category) }
                         )
                     }
 
@@ -41,10 +41,11 @@ struct StudyMaterialAddSheet: View {
         }
     }
 
-    private func pin(_ category: StudyCategory) {
-        guard !pinnedCategories.contains(category) else {
-            return
+    private func togglePin(_ category: StudyCategory) {
+        if let index = pinnedCategories.firstIndex(of: category) {
+            pinnedCategories.remove(at: index)
+        } else {
+            pinnedCategories.append(category)
         }
-        pinnedCategories.append(category)
     }
 }

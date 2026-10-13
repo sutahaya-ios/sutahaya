@@ -12,6 +12,7 @@ struct QuizSessionView: View {
     private static let wrongFeedbackDuration: TimeInterval = 1.6
 
     let mode: PlayMode
+    private let showsInterstitial: Bool
     let timeLimit: TimeInterval
     private let sourceQuestions: [Question]
 
@@ -24,17 +25,28 @@ struct QuizSessionView: View {
 
     private let timer = Timer.publish(every: Self.tickInterval, on: .main, in: .common).autoconnect()
 
-    init(questions: [Question], timeLimit: TimeInterval, mode: PlayMode) {
+    /// 復習から始めた場合は広告を出さない。学習行動を止めないため(要件 §4.2)
+    init(
+        questions: [Question],
+        timeLimit: TimeInterval,
+        mode: PlayMode,
+        showsInterstitial: Bool = true
+    ) {
         self.sourceQuestions = questions
         self.timeLimit = timeLimit
         self.mode = mode
+        self.showsInterstitial = showsInterstitial
         _session = State(initialValue: QuizSession(questions: questions, timeLimit: timeLimit))
     }
 
     var body: some View {
         Group {
             if session.phase == .finished {
-                QuizResultView(session: session, onRetry: retry, onClose: { dismiss() })
+                QuizResultView(
+                    session: session,
+                    onRetry: { leaveResultAfterInterstitial(then: retry) },
+                    onClose: { leaveResultAfterInterstitial(then: { dismiss() }) }
+                )
             } else if let entry = session.currentEntry {
                 questionBody(entry: entry)
             }
@@ -76,6 +88,9 @@ struct QuizSessionView: View {
             case .finished:
                 SoundPlayer.shared.play(.fanfare)
                 recordIfNeeded()
+                if showsInterstitial {
+                    AdsService.shared.recordSessionFinished(.quiz)
+                }
             }
         }
     }
@@ -195,6 +210,16 @@ struct QuizSessionView: View {
             elapsedSeconds: elapsedSeconds,
             context: modelContext
         )
+    }
+
+    /// リザルトから離れる操作に全画面広告を挟む(要件 §4.2)。
+    /// 広告が閉じてから次の動作へ進み、遷移と重ならないようにする
+    private func leaveResultAfterInterstitial(then next: @escaping () -> Void) {
+        guard showsInterstitial else {
+            next()
+            return
+        }
+        AdsService.shared.presentInterstitialIfDue(for: .quiz, onFinish: next)
     }
 
     private func retry() {
