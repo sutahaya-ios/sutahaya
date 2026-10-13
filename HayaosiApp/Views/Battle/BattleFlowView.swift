@@ -12,6 +12,7 @@ struct BattleFlowView: View {
     @State private var showLeaveDialog = false
     @State private var showSettings = false
     @State private var matchStartObservedAt: Date?
+    @State private var hasPlayedMatchStartSound = false
 
     var body: some View {
         Group {
@@ -20,7 +21,7 @@ struct BattleFlowView: View {
                 if session.isStartingMatch {
                     // hostの開始write待ち中から既存の開始演出へ入り、
                     // Firebase往復がロビー画面のフリーズに見えないようにする。
-                    BattleStartView(progress: nil)
+                    startView
                 } else {
                     BattleLobbyView(
                         session: session,
@@ -91,6 +92,10 @@ struct BattleFlowView: View {
         }
         .onChange(of: session.state?.status) { _, newStatus in
             updateMatchStartObservation(for: newStatus)
+            if newStatus == .waiting {
+                // 再戦でロビーへ戻ったら、次の試合でまた鳴らせるようにする
+                hasPlayedMatchStartSound = false
+            }
             if newStatus == .finished {
                 SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
@@ -116,18 +121,14 @@ struct BattleFlowView: View {
                     now: timeline.date
                 )
                 if remaining > 0 {
-                    BattleStartView(progress: BattleStartTiming.progress(
-                        scheduledStartAtMS: localScheduledStartAtMS,
-                        observedAt: observedAt,
-                        now: timeline.date
-                    ))
+                    startView
                 } else {
                     BattleView(session: session)
                 }
             }
         } else if (session.state?.game?.startDelayMS ?? 0) > 0,
                   matchStartObservedAt == nil {
-            BattleStartView(progress: 0)
+            startView
         } else {
             BattleView(session: session)
         }
@@ -144,6 +145,16 @@ struct BattleFlowView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+    }
+
+    private var startView: some View {
+        BattleStartView(players: session.state?.players ?? [], myID: session.myID)
+            .onAppear {
+                // 開始画面はhostの開始write待ちと出題前の2段階で出るため、1試合に1回へ絞る
+                guard !hasPlayedMatchStartSound else { return }
+                hasPlayedMatchStartSound = true
+                SoundPlayer.shared.play(.matchStart)
+            }
     }
 
     private func leaveAndDismiss() {

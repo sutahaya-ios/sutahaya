@@ -43,26 +43,6 @@ final class BattleStartTimingTests: XCTestCase {
         XCTAssertEqual(remaining, 0)
     }
 
-    func test_進行率は0から1の範囲で増える() {
-        let scheduledStartAtMS = observedAt.addingTimeInterval(2).timeIntervalSince1970 * 1_000
-
-        XCTAssertEqual(BattleStartTiming.progress(
-            scheduledStartAtMS: scheduledStartAtMS,
-            observedAt: observedAt,
-            now: observedAt
-        ), 0, accuracy: 0.001)
-        XCTAssertEqual(BattleStartTiming.progress(
-            scheduledStartAtMS: scheduledStartAtMS,
-            observedAt: observedAt,
-            now: observedAt.addingTimeInterval(1)
-        ), 0.5, accuracy: 0.001)
-        XCTAssertEqual(BattleStartTiming.progress(
-            scheduledStartAtMS: scheduledStartAtMS,
-            observedAt: observedAt,
-            now: observedAt.addingTimeInterval(3)
-        ), 1, accuracy: 0.001)
-    }
-
     func test_開始前の残り時間は制限時間を超えず文字も見えない() {
         let rawStartAtMS = observedAt.timeIntervalSince1970 * 1_000
         let session = StubBattleSession(state: makeRoomState(
