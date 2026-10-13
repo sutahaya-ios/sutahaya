@@ -5,6 +5,13 @@
 	<!-- ここは GENERATE_INFOPLIST_FILE の土台。project.yml の INFOPLIST_KEY_* で表現できない
 	     キー(辞書・配列)だけを置く。単純な値は project.yml 側へ書く -->
 
+	<!-- 対応言語の宣言。.lprojを持たないため、ここで明示しないと英語アプリとして扱われ、
+	     StoreKitの購入ダイアログなどシステムUIが英語になる(App Storeの対応言語表示も同じ) -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ja</string>
+	</array>
+
 	<!-- AdMobのアプリID。未設定だとSDKが起動時に意図的にクラッシュする -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-7792161969727895~2281364152</string>
