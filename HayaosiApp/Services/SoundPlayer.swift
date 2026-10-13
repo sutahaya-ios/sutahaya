@@ -10,6 +10,7 @@ final class SoundPlayer {
         case wrong = "se_wrong"            // 不正解(ブブー)
         case timeUp = "se_timeup"          // 時間切れ
         case fanfare = "se_fanfare"        // リザルト
+        case matchStart = "se_match_start"  // 対戦開始の合図
     }
 
     static let shared = SoundPlayer()
