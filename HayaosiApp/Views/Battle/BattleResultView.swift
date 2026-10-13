@@ -46,7 +46,7 @@ struct BattleResultView: View {
                     // 再戦もリザルトから離れる操作なので広告を挟む(要件 §4.2)。
                     // 参加者はホストの操作で自動的に戻るため、ここを通らない
                     Button(session.isOnline ? "再戦する(ロビーに戻る)" : "もう一度対戦する") {
-                        AdsService.shared.presentInterstitialIfDue {
+                        AdsService.shared.presentInterstitialIfDue(for: .battle) {
                             Task { await session.rematch() }
                         }
                     }

@@ -94,7 +94,7 @@ struct BattleFlowView: View {
             if newStatus == .finished {
                 SoundPlayer.shared.play(.fanfare)
                 session.saveResultsIfNeeded(context: modelContext)
-                AdsService.shared.recordBattleFinished()
+                AdsService.shared.recordSessionFinished(.battle)
             }
         }
     }
@@ -154,7 +154,7 @@ struct BattleFlowView: View {
     /// リザルトから離れる操作に全画面広告を挟む(要件 §4.2)。復習への遷移では出さない。
     /// 遷移アニメーションと広告の表示が重ならないよう、広告が閉じてから退出する
     private func leaveAfterInterstitial() {
-        AdsService.shared.presentInterstitialIfDue { leaveAndDismiss() }
+        AdsService.shared.presentInterstitialIfDue(for: .battle) { leaveAndDismiss() }
     }
 
     private func updateMatchStartObservation(for status: RoomState.Status?) {
