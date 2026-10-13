@@ -8,30 +8,60 @@ struct BattleExplanationListView: View {
     let correctAnswers: [String: String]
 
     var body: some View {
-        List {
-            ForEach(Array(questions.enumerated()), id: \.element.id) { index, question in
-                Section("第\(index + 1)問") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(question.text)
-                            .font(.subheadline)
-
-                        if let table = question.table {
-                            QuestionTableView(table: table)
-                        }
-
-                        Label(correctAnswers[question.id] ?? question.answer, systemImage: "checkmark.circle.fill")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.green)
-
-                        QuestionExplanationView(explanation: question.explanation)
-                    }
-                    .padding(.vertical, 4)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                Text("\(questions.count)問の解説")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                ForEach(Array(questions.enumerated()), id: \.element.id) { index, question in
+                    explanationCard(question, index: index)
                 }
             }
+            .padding(20)
         }
-        .listStyle(.insetGrouped)
+        .background(Color(.systemBackground))
+        .tint(.blue)
         .navigationTitle("解説")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func explanationCard(_ question: Question, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // 解説なしの問題を除いた通し番号なので、元の出題番号とは区別する。
+            Text("解説 \(index + 1)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(question.text)
+                .font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
+            if let table = question.table {
+                QuestionTableView(table: table)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Label("正解", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.blue)
+                Text(correctAnswers[question.id] ?? question.answer)
+                    .font(.title3.bold())
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+            VStack(alignment: .leading, spacing: 10) {
+                Label("解説", systemImage: "text.book.closed")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(question.explanation)
+                    .font(.body)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
     }
 }
 

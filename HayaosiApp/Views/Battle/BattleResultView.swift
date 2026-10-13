@@ -13,72 +13,15 @@ struct BattleResultView: View {
     @State private var isExplanationPresented = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("対戦結果")
-                .font(.title.bold())
-
-            List {
-                ForEach(rankedPlayers) { player in
-                    HStack(spacing: 12) {
-                        Text("\(rank(of: player))位")
-                            .font(.headline)
-                            .frame(width: 44, alignment: .leading)
-                        Text(player.nickname)
-                            .fontWeight(player.id == session.myID ? .bold : .regular)
-                        if player.id == session.myID {
-                            Text("(自分)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Text("\(player.score)pt")
-                            .monospacedDigit()
-                    }
-                    .listRowBackground(
-                        player.id == session.myID ? Color.accentColor.opacity(0.1) : nil
-                    )
-                }
-            }
-            .listStyle(.insetGrouped)
-
-            VStack(spacing: 12) {
-                if session.isHost {
-                    // 再戦もリザルトから離れる操作なので広告を挟む(要件 §4.2)。
-                    // 参加者はホストの操作で自動的に戻るため、ここを通らない
-                    Button(session.isOnline ? "再戦する(ロビーに戻る)" : "もう一度対戦する") {
-                        AdsService.shared.presentInterstitialIfDue(for: .battle) {
-                            Task { await session.rematch() }
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else {
-                    Text("ホストが再戦を選ぶとロビーに戻ります")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                if !explainedQuestions.isEmpty {
-                    Button("解説を見る(\(explainedQuestions.count)問)") {
-                        isExplanationPresented = true
-                    }
-                    .buttonStyle(.bordered)
-                }
-
-                if !session.isOnline, !session.wrongQuestionIDs.isEmpty {
-                    Button("間違えた\(session.wrongQuestionIDs.count)問を復習") {
-                        isReviewPresented = true
-                    }
-                    .buttonStyle(.bordered)
-                }
-
-                Button("退出") {
-                    onLeave()
-                }
-                .buttonStyle(.bordered)
-            }
-        }
-        .padding(.vertical)
-        .navigationTitle("リザルト")
+        // スクロールさせず1画面に収める。退出・再戦の操作位置を毎回同じにするため
+        BattleResultPodiumView(players: rankedPlayers, myID: session.myID)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .safeAreaInset(edge: .bottom, spacing: 0) { actions }
+        .background(Color(.systemBackground))
+        .tint(.blue)
+        .navigationTitle("対戦結果")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $isExplanationPresented) {
             NavigationStack {
@@ -103,6 +46,51 @@ struct BattleResultView: View {
                     }
             }
         }
+    }
+
+    private var actions: some View {
+        VStack(spacing: 10) {
+            if session.isHost {
+                // 再戦時の広告と処理は従来どおり。参加者はホストの操作で戻る。
+                Button {
+                    AdsService.shared.presentInterstitialIfDue(for: .battle) {
+                        Task { await session.rematch() }
+                    }
+                } label: {
+                    Text(session.isOnline ? "再戦する（ロビーに戻る）" : "もう一度対戦する")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .foregroundStyle(.white)
+                        .background(.blue, in: RoundedRectangle(cornerRadius: 14))
+                }
+            } else {
+                Text("ホストが再戦を選ぶとロビーに戻ります")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(minHeight: 44)
+            }
+            if !explainedQuestions.isEmpty {
+                Button("解説を見る（\(explainedQuestions.count)問）") {
+                    isExplanationPresented = true
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            if !session.isOnline, !session.wrongQuestionIDs.isEmpty {
+                Button("間違えた\(session.wrongQuestionIDs.count)問を復習") {
+                    isReviewPresented = true
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            Button("退出", action: onLeave)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Color(.systemBackground))
     }
 
     /// 出題順のまま、解説を持つ問題だけを残す。英単語だけの対戦では空になる
@@ -130,8 +118,4 @@ struct BattleResultView: View {
         BattleRanking.ranked(session.state?.players ?? [])
     }
 
-    /// 同点は同順位(要件 §5.1.3)。計算はテスト可能な BattleRanking に置く
-    private func rank(of player: RoomState.Player) -> Int {
-        BattleRanking.rank(of: player, in: rankedPlayers)
-    }
 }
