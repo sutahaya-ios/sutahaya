@@ -260,14 +260,8 @@ struct BattleView: View {
                 Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(.red)
-            } else if let mine = myAnswer(in: game) {
-                // 文字送りしないジャンルでは「何文字目で押したか」に意味がない
-                Label(
-                    genre.usesProgressiveReveal
-                        ? "回答しました(\(mine.visibleCount)文字目)"
-                        : "回答しました",
-                    systemImage: "checkmark.circle"
-                )
+            } else if myAnswer(in: game) != nil {
+                Label("回答しました", systemImage: "checkmark.circle")
                     .font(.subheadline.bold())
                     .foregroundStyle(.orange)
             } else if pendingAnswer?.questionIndex == game.questionIndex {
