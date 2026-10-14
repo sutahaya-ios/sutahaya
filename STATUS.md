@@ -146,4 +146,4 @@
 - 共有設定の本番Bundle IDは `com.n.HayaosiApp`。署名(`DEVELOPMENT_TEAM`)と共同開発者用Bundle ID(`APP_BUNDLE_IDENTIFIER`)は `Config/local.xcconfig`(git管理外)で各自が指定し、本番設定を上書きしてcommitしない
 - テストはロジックのみ(`Tests/`)。通信層はユニットテスト対象外にし、実機の通し確認で担保する
 - 文書の役割:要件定義書=スコープと意図の正 / 本節=実装詳細の正 / `STATUS_ARCHIVE.md`=完了した過去記録
-- 広告非表示サブスクはStoreKit 2の月額1本(`com.n.HayaosiApp.premium.monthly`)。v1.0では広告非表示だけを提供し、日本語→英語モード・問題パック解放は将来対応
+- 広告非表示はStoreKit 2の買い切り1本(非消耗型`com.n.HayaosiApp.removeads`・500円)。自動更新サブスクはガイドライン3.1.2で却下されたため使わない。v1.0では広告非表示だけを提供し、日本語→英語モード・問題パック解放は将来対応
