@@ -46,6 +46,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/handlers.js`・`functions/competitive/core.js`・Competitive Core関連test・`docs/COMPETITIVE_V2_SPEC.md` | **Competitive v2 Phase B.5**。4人同時回答時のanswer hot pathを、server authority・deadline・duplicate・scoringを維持したまま局所最適化し、EmulatorでBefore/Afterを測定する。Production deployは行わない | 2026年10月19日 |
 ---
 ## 最新更新(2026年8月25日〜10月10日)
 - Codex(2026年10月13日): **対戦の中央フィードバックを緑の○・赤の×へ変更**。`BattleView.swift`で自分の正解確定時にも表示し、100pt・1.2秒で消去。既存レイアウト・選択肢・再回答不可の案内は維持。Simulator向けビルドと採点関連15テスト成功。**実画面での表示・タイミングは未検証**(Computer Useの操作権限なし)。
