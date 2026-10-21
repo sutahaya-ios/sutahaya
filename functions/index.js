@@ -7,6 +7,7 @@ initializeApp();
 
 const {
   competitiveIntent,
+  competitivePresenceChanged,
   competitiveReconcileMatch,
 } = require("./competitive/handlers");
 const { competitiveMatchmaking } = require("./competitive/matchmakingHandlers");
@@ -141,5 +142,6 @@ exports.sendRoomInvite = onCall({ region: REGION }, async (request) => {
 });
 
 exports.competitiveIntent = competitiveIntent;
+exports.competitivePresenceChanged = competitivePresenceChanged;
 exports.competitiveReconcileMatch = competitiveReconcileMatch;
 exports.competitiveMatchmaking = competitiveMatchmaking;

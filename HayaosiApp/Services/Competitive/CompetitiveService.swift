@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 import FirebaseDatabase
 import FirebaseFunctions
 
@@ -43,6 +44,8 @@ final class CompetitiveService {
     // detach Firebase's observer without crossing an actor boundary.
     @ObservationIgnored nonisolated(unsafe) private var publicReference: DatabaseReference?
     @ObservationIgnored nonisolated(unsafe) private var publicObserver: DatabaseHandle?
+    @ObservationIgnored nonisolated(unsafe) private var presenceReference: DatabaseReference?
+    @ObservationIgnored nonisolated(unsafe) private var lifecycleObservers: [NSObjectProtocol] = []
 
     init(
         session: CompetitiveSession,
@@ -52,12 +55,14 @@ final class CompetitiveService {
         self.session = session
         self.database = database
         self.functions = functions
+        observeAppLifecycle()
     }
 
     deinit {
         if let publicReference, let publicObserver {
             publicReference.removeObserver(withHandle: publicObserver)
         }
+        lifecycleObservers.forEach(NotificationCenter.default.removeObserver)
     }
 
     func startListening() {
@@ -76,6 +81,13 @@ final class CompetitiveService {
             }
         } withCancel: { [weak self] error in
             MainActor.assumeIsolated {
+                self?.listeningError = error
+            }
+        }
+        Task { [weak self] in
+            do {
+                try await self?.registerConnectedPresence()
+            } catch {
                 self?.listeningError = error
             }
         }
@@ -121,6 +133,79 @@ final class CompetitiveService {
 
     func leave(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
         try await send(type: "leave", eventId: eventId)
+    }
+
+    func forfeit(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
+        try await send(type: "forfeit", eventId: eventId)
+    }
+
+    /// Background移行など、通信切断を確定できる場合にgrace開始をServerへ通知する。
+    func markDisconnected() async throws {
+        try await presence().setValue(presencePayload(status: "DISCONNECTED"))
+    }
+
+    /// 同じUID / session fenceで15秒以内に復帰する。新しいmatch sessionは作らない。
+    func reconnect(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
+        try await registerConnectedPresence()
+        return try await send(type: "reconnect", eventId: eventId)
+    }
+
+    private func presence() -> DatabaseReference {
+        if let presenceReference { return presenceReference }
+        let reference = database.child(
+            "competitiveV2/presence/\(session.matchId)/\(session.uid)"
+        )
+        presenceReference = reference
+        return reference
+    }
+
+    private func presencePayload(status: String) -> [String: Any] {
+        [
+            "status": status,
+            "sessionId": session.sessionId,
+            "sessionEpoch": session.sessionEpoch,
+            "updatedAtEpochMs": ServerValue.timestamp()
+        ]
+    }
+
+    private func registerConnectedPresence() async throws {
+        let reference = presence()
+        try await reference.onDisconnectSetValue(presencePayload(status: "DISCONNECTED"))
+        try await reference.setValue(presencePayload(status: "CONNECTED"))
+    }
+
+    private func observeAppLifecycle() {
+        let center = NotificationCenter.default
+        lifecycleObservers = [
+            center.addObserver(
+                forName: UIApplication.didEnterBackgroundNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self, self.publicObserver != nil else { return }
+                    do {
+                        try await self.markDisconnected()
+                    } catch {
+                        self.listeningError = error
+                    }
+                }
+            },
+            center.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self, self.publicObserver != nil else { return }
+                    do {
+                        _ = try await self.reconnect()
+                    } catch {
+                        self.listeningError = error
+                    }
+                }
+            },
+        ]
     }
 
     private func send(
@@ -175,6 +260,7 @@ final class CompetitiveMatchmakingService {
     private let functions: Functions
     @ObservationIgnored nonisolated(unsafe) private var projectionReference: DatabaseReference?
     @ObservationIgnored nonisolated(unsafe) private var projectionObserver: DatabaseHandle?
+    @ObservationIgnored nonisolated(unsafe) private var npcFillTask: Task<Void, Never>?
 
     init(
         uid: String,
@@ -190,6 +276,7 @@ final class CompetitiveMatchmakingService {
         if let projectionReference, let projectionObserver {
             projectionReference.removeObserver(withHandle: projectionObserver)
         }
+        npcFillTask?.cancel()
     }
 
     func observeMatchmakingState() {
@@ -210,6 +297,10 @@ final class CompetitiveMatchmakingService {
                 }
                 self.state = state
                 self.listeningError = nil
+                if state.state != .queued {
+                    self.npcFillTask?.cancel()
+                    self.npcFillTask = nil
+                }
             }
         } withCancel: { [weak self] error in
             MainActor.assumeIsolated {
@@ -226,16 +317,59 @@ final class CompetitiveMatchmakingService {
         projectionObserver = nil
         state = nil
         listeningError = nil
+        npcFillTask?.cancel()
+        npcFillTask = nil
     }
 
     func joinQueue(eventId: String = UUID().uuidString) async throws -> CompetitiveMatchmakingAck {
-        try await send([
+        let result = try await send([
             "intentId": eventId,
             "type": "joinQueue",
             "protocolVersion": CompetitiveService.protocolVersion,
             "clientBuild": CompetitiveService.clientBuild,
             "payload": [:]
         ])
+        if result.status != .rejected,
+           result.matchmakingState == .queued,
+           let sessionId = result.sessionId,
+           let sessionEpoch = result.sessionEpoch,
+           let nextCheckAfterMs = result.nextCheckAfterMs,
+           nextCheckAfterMs > 0 {
+            scheduleNPCFillCheck(
+                afterMilliseconds: nextCheckAfterMs,
+                sessionId: sessionId,
+                sessionEpoch: sessionEpoch
+            )
+        }
+        return result
+    }
+
+    private func scheduleNPCFillCheck(
+        afterMilliseconds: Int,
+        sessionId: String,
+        sessionEpoch: Int
+    ) {
+        npcFillTask?.cancel()
+        npcFillTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(afterMilliseconds) * 1_000_000)
+                guard !Task.isCancelled, let self else { return }
+                _ = try await self.send([
+                    "intentId": UUID().uuidString,
+                    "type": "checkQueue",
+                    "protocolVersion": CompetitiveService.protocolVersion,
+                    "clientBuild": CompetitiveService.clientBuild,
+                    "sessionId": sessionId,
+                    "sessionEpoch": sessionEpoch,
+                    "payload": [:]
+                ])
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self else { return }
+                self.listeningError = error
+            }
+        }
     }
 
     func cancelQueue(eventId: String = UUID().uuidString) async throws -> CompetitiveMatchmakingAck {

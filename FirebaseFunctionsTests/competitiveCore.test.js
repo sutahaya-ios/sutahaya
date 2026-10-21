@@ -37,6 +37,7 @@ const publicPhases = new Set([
   PHASE.QUESTION_RESULT,
   PHASE.NEXT_QUESTION,
   PHASE.MATCH_FINISHED,
+  PHASE.SETTLED,
 ]);
 
 let testEnv;
@@ -595,7 +596,7 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
       }
     }
 
-    await waitForTrackers(trackers, (value) => value.phase === PHASE.MATCH_FINISHED, "MATCH_FINISHED");
+    await waitForTrackers(trackers, (value) => value.phase === PHASE.SETTLED, "SETTLED");
     const finalProjection = trackers[0].latest;
     assert.equal(questionResults.length, 20);
     assert.equal(Object.values(finalProjection.finalResult.finalScores).reduce(
@@ -625,18 +626,13 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
 
     const privateState = await readPrivate(matchId);
     assert.equal(privateState.currentQuestionIndex, 19);
-    assert.equal(privateState.phase, PHASE.MATCH_FINISHED);
+    assert.equal(privateState.phase, PHASE.SETTLED);
     assert.equal(privateState.questionInstances.length, 20);
     assert.equal(Object.keys(privateState.currentQuestion.answers).length, 4);
     const finalScores = { ...privateState.scores };
-    assert.equal((await callReconcile(
-      clients[0],
-      matchId,
-      "settlement"
-    )).status, "ACCEPTED");
-    const settlementPending = await readPrivate(matchId);
-    assert.equal(settlementPending.phase, PHASE.SETTLEMENT_PENDING);
-    assert.deepEqual(settlementPending.scores, finalScores);
+    const settled = await readPrivate(matchId);
+    assert.equal(settled.phase, PHASE.SETTLED);
+    assert.deepEqual(settled.scores, finalScores);
     console.info("COMPETITIVE_HOT_PATH_METRICS", JSON.stringify({
       sampleCount: hotPathMeasurements.length,
       t1ToT2Ms: metricSummary(hotPathMeasurements.map((entry) => entry.t1ToT2Ms)),

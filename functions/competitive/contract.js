@@ -5,7 +5,14 @@ const {
 } = require("./constants");
 
 const SAFE_ID = new RegExp(`^[A-Za-z0-9][A-Za-z0-9:_-]{0,${MAX_ID_LENGTH - 1}}$`);
-const CLIENT_INTENTS = new Set(["joinMatch", "ready", "submitAnswer", "leave"]);
+const CLIENT_INTENTS = new Set([
+  "joinMatch",
+  "ready",
+  "submitAnswer",
+  "leave",
+  "reconnect",
+  "forfeit",
+]);
 
 function plainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);

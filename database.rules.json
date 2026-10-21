@@ -119,6 +119,29 @@
         ".read": false,
         ".write": false
       },
+      "presence": {
+        "$matchId": {
+          "$uid": {
+            ".read": false,
+            ".write": "auth != null && auth.uid == $uid && (!newData.exists() || (newData.hasChildren(['status', 'sessionId', 'sessionEpoch', 'updatedAtEpochMs']) && root.child('competitiveV2').child('matches').child($matchId).child('private').child('participants').child($uid).child('sessionId').val() == newData.child('sessionId').val() && root.child('competitiveV2').child('matches').child($matchId).child('private').child('participants').child($uid).child('sessionEpoch').val() == newData.child('sessionEpoch').val() && root.child('competitiveV2').child('matchmaking').child('private').child('profiles').child($uid).child('currentSession').child('matchId').val() == $matchId && root.child('competitiveV2').child('matchmaking').child('private').child('profiles').child($uid).child('currentSession').child('sessionId').val() == newData.child('sessionId').val() && root.child('competitiveV2').child('matchmaking').child('private').child('profiles').child($uid).child('currentSession').child('sessionEpoch').val() == newData.child('sessionEpoch').val()))",
+            "status": {
+              ".validate": "newData.isString() && (newData.val() == 'CONNECTED' || newData.val() == 'DISCONNECTED')"
+            },
+            "sessionId": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9][A-Za-z0-9:_-]{0,127}$/)"
+            },
+            "sessionEpoch": {
+              ".validate": "newData.isNumber() && newData.val() >= 1"
+            },
+            "updatedAtEpochMs": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
       "matchmaking": {
         "public": {
           "$uid": {

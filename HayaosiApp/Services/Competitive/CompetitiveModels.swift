@@ -30,13 +30,28 @@ struct CompetitiveQuestion: Equatable, Sendable {
 }
 
 struct CompetitiveParticipant: Identifiable, Equatable, Sendable {
+    enum Kind: String, Equatable, Sendable {
+        case human = "HUMAN"
+        case npc = "NPC"
+    }
+
+    enum Status: String, Equatable, Sendable {
+        case connected = "CONNECTED"
+        case reconnecting = "RECONNECTING"
+        case forfeited = "FORFEITED"
+    }
+
     let uid: String
     let slot: Int
+    let kind: Kind
     let displayName: String
     let joined: Bool
     let ready: Bool
     let active: Bool
     let forfeited: Bool
+    let status: Status
+    let disconnectedAtEpochMS: Double?
+    let reconnectDeadlineEpochMS: Double?
     let answered: Bool
     let score: Int
     var id: String { uid }
@@ -104,14 +119,22 @@ struct CompetitivePublicState: Equatable, Sendable {
                   let answered = CompetitiveValue.bool(participant["answered"]),
                   let score = CompetitiveValue.int(participant["score"])
             else { return nil }
+            let kind = CompetitiveValue.string(participant["kind"])
+                .flatMap(CompetitiveParticipant.Kind.init(rawValue:)) ?? .human
+            let status = CompetitiveValue.string(participant["status"])
+                .flatMap(CompetitiveParticipant.Status.init(rawValue:)) ?? .connected
             return CompetitiveParticipant(
                 uid: uid,
                 slot: slot,
+                kind: kind,
                 displayName: displayName,
                 joined: joined,
                 ready: ready,
                 active: active,
                 forfeited: forfeited,
+                status: status,
+                disconnectedAtEpochMS: CompetitiveValue.double(participant["disconnectedAtEpochMs"]),
+                reconnectDeadlineEpochMS: CompetitiveValue.double(participant["reconnectDeadlineEpochMs"]),
                 answered: answered,
                 score: score
             )
@@ -201,6 +224,7 @@ struct CompetitivePublicState: Equatable, Sendable {
 }
 
 struct CompetitiveSession: Equatable, Sendable {
+    let uid: String
     let matchId: String
     let sessionId: String
     let sessionEpoch: Int
@@ -231,6 +255,7 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
               let assignmentTicket
         else { return nil }
         return CompetitiveSession(
+            uid: uid,
             matchId: matchId,
             sessionId: sessionId,
             sessionEpoch: sessionEpoch,
@@ -303,6 +328,7 @@ struct CompetitiveMatchmakingAck: Equatable, Sendable {
     let matchmakingState: CompetitiveMatchmakingState?
     let matchId: String?
     let assignmentTicket: String?
+    let nextCheckAfterMs: Int?
 
     init?(value rawValue: Any) {
         guard let value = CompetitiveValue.dictionary(rawValue),
@@ -322,6 +348,7 @@ struct CompetitiveMatchmakingAck: Equatable, Sendable {
             .flatMap(CompetitiveMatchmakingState.init(rawValue:))
         self.matchId = CompetitiveValue.string(value["matchId"])
         self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
+        self.nextCheckAfterMs = CompetitiveValue.int(value["nextCheckAfterMs"])
     }
 }
 

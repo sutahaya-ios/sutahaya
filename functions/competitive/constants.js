@@ -1,13 +1,26 @@
 const REGION = "asia-southeast1";
 const ROOT_PATH = "competitiveV2";
 const PROTOCOL_VERSION = "competitive-v2-a2-1";
-const SERVER_VERSION = "competitive-core-b5-1";
-const CONFIG_VERSION = "competitive-test-config-1";
+const SERVER_VERSION = "competitive-core-c1-1";
+const CONFIG_VERSION = "competitive-phase-c-config-1";
 const SETTLEMENT_VERSION = "competitive-settlement-1";
 const PLAYER_COUNT = 4;
 const QUESTION_COUNT = 20;
 const MAX_BODY_BYTES = 4_096;
 const MAX_ID_LENGTH = 128;
+const RECONNECT_GRACE_MS = 15_000;
+const BRONZE_NPC_FILL_WAIT_MS = 5_000;
+
+const PARTICIPANT_KIND = Object.freeze({
+  HUMAN: "HUMAN",
+  NPC: "NPC",
+});
+
+const PARTICIPANT_STATUS = Object.freeze({
+  CONNECTED: "CONNECTED",
+  RECONNECTING: "RECONNECTING",
+  FORFEITED: "FORFEITED",
+});
 
 const PHASE = Object.freeze({
   CREATED: "CREATED",
@@ -22,13 +35,17 @@ const PHASE = Object.freeze({
 });
 
 module.exports = {
+  BRONZE_NPC_FILL_WAIT_MS,
   CONFIG_VERSION,
   MAX_BODY_BYTES,
   MAX_ID_LENGTH,
   PHASE,
+  PARTICIPANT_KIND,
+  PARTICIPANT_STATUS,
   PLAYER_COUNT,
   PROTOCOL_VERSION,
   QUESTION_COUNT,
+  RECONNECT_GRACE_MS,
   REGION,
   ROOT_PATH,
   SERVER_VERSION,

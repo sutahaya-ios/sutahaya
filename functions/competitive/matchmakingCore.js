@@ -1,5 +1,10 @@
 const { createHash } = require("node:crypto");
-const { PROTOCOL_VERSION } = require("./constants");
+const {
+  BRONZE_NPC_FILL_WAIT_MS,
+  PARTICIPANT_KIND,
+  PLAYER_COUNT,
+  PROTOCOL_VERSION,
+} = require("./constants");
 
 const QUEUE_BUCKET = "phase-b-open";
 const QUEUE_LEASE_MS = 5 * 60 * 1000;
@@ -146,6 +151,7 @@ function processJoinQueue(input, intent, uid, {
     sessionId: session.sessionId,
     sessionEpoch: session.sessionEpoch,
     matchmakingState: SESSION_STATE.QUEUED,
+    nextCheckAfterMs: BRONZE_NPC_FILL_WAIT_MS,
   });
   saveResult(profile, intent, uid, result, nowEpochMs);
   return { state, ack: result, changed: true };
@@ -193,6 +199,32 @@ function processCancelQueue(input, intent, uid, nowEpochMs) {
   return { state, ack: result, changed: true };
 }
 
+function processCheckQueue(input, intent, uid, nowEpochMs) {
+  const state = normalized(input);
+  const profile = state.private.profiles[uid];
+  const duplicate = existingResult(profile, intent, uid);
+  if (duplicate) return { state, ack: duplicate, changed: false };
+  const session = profile?.currentSession;
+  if (!session) return { state, ack: rejected(intent, "SESSION_NOT_ACTIVE"), changed: false };
+  if (session.sessionId !== intent.sessionId || session.sessionEpoch !== intent.sessionEpoch) {
+    const result = rejected(intent, "STALE_SESSION_EPOCH");
+    saveResult(profile, intent, uid, result, nowEpochMs);
+    return { state, ack: result, changed: true };
+  }
+  if (session.state !== SESSION_STATE.QUEUED) {
+    const result = rejected(intent, "SESSION_NOT_QUEUED");
+    saveResult(profile, intent, uid, result, nowEpochMs);
+    return { state, ack: result, changed: true };
+  }
+  const result = ack(intent, "ACCEPTED", {
+    sessionId: session.sessionId,
+    sessionEpoch: session.sessionEpoch,
+    matchmakingState: SESSION_STATE.QUEUED,
+  });
+  saveResult(profile, intent, uid, result, nowEpochMs);
+  return { state, ack: result, changed: true };
+}
+
 function expireStaleQueue(state, nowEpochMs) {
   let changed = false;
   for (const [uid, entry] of Object.entries(state.private.queue)) {
@@ -234,9 +266,14 @@ function claimNextMatch(input, {
     })
     .sort((left, right) => left.queuedAtEpochMs - right.queuedAtEpochMs
       || left.uid.localeCompare(right.uid));
-  if (candidates.length < 4) return { state, claimed: null, changed };
+  if (candidates.length === 0) return { state, claimed: null, changed };
+  const npcFillEligible = nowEpochMs - candidates[0].queuedAtEpochMs
+    >= BRONZE_NPC_FILL_WAIT_MS;
+  if (candidates.length < PLAYER_COUNT && !npcFillEligible) {
+    return { state, claimed: null, changed };
+  }
 
-  const selected = candidates.slice(0, 4);
+  const selected = candidates.slice(0, PLAYER_COUNT);
   const participants = selected.map((entry, slot) => {
     const profile = state.private.profiles[entry.uid];
     const session = profile.currentSession;
@@ -253,11 +290,21 @@ function claimNextMatch(input, {
     return {
       uid: entry.uid,
       slot,
+      kind: PARTICIPANT_KIND.HUMAN,
       sessionId: session.sessionId,
       sessionEpoch: session.sessionEpoch,
       assignmentTicket: assignmentTickets[slot],
     };
   });
+  while (participants.length < PLAYER_COUNT) {
+    const slot = participants.length;
+    participants.push({
+      uid: `npc:${matchId}:${slot}`,
+      slot,
+      kind: PARTICIPANT_KIND.NPC,
+      displayName: `NPC ${slot + 1}`,
+    });
+  }
   const claimed = {
     matchId,
     status: "CLAIMED",
@@ -276,6 +323,7 @@ function finalizeClaim(input, matchId, nowEpochMs) {
   const pending = state.private.pendingMatches[matchId];
   if (!pending) return { state, finalized: false, changed: false };
   for (const participant of pending.participants) {
+    if (participant.kind === PARTICIPANT_KIND.NPC) continue;
     const profile = state.private.profiles[participant.uid];
     const session = profile?.currentSession;
     if (!session
@@ -321,6 +369,7 @@ module.exports = {
   claimNextMatch,
   finalizeClaim,
   processCancelQueue,
+  processCheckQueue,
   processJoinQueue,
   releaseFinishedMatch,
 };

@@ -10,6 +10,7 @@ const {
   claimNextMatch,
   finalizeClaim,
   processCancelQueue,
+  processCheckQueue,
   processJoinQueue,
   releaseFinishedMatch,
 } = require("./matchmakingCore");
@@ -70,12 +71,14 @@ function waitingMatch(claim, nowEpochMs) {
     matchId: claim.matchId,
     players: claim.participants.map((participant) => ({
       uid: participant.uid,
-      displayName: `Player ${participant.slot + 1}`,
+      displayName: participant.displayName || `Player ${participant.slot + 1}`,
+      kind: participant.kind,
       sessionId: participant.sessionId,
       sessionEpoch: participant.sessionEpoch,
       assignmentTicket: participant.assignmentTicket,
     })),
     createdAtEpochMs: nowEpochMs,
+    requiresActiveSessionFence: true,
   });
   const first = claim.participants[0];
   const envelope = {
@@ -99,9 +102,10 @@ function sameRoster(match, claim) {
     && claim.participants.every((candidate) => {
       const saved = participants[candidate.uid];
       return saved
-        && saved.sessionId === candidate.sessionId
-        && saved.sessionEpoch === candidate.sessionEpoch
-        && saved.assignmentTicket === candidate.assignmentTicket;
+        && (saved.kind || "HUMAN") === candidate.kind
+        && (saved.sessionId ?? null) === (candidate.sessionId ?? null)
+        && (saved.sessionEpoch ?? null) === (candidate.sessionEpoch ?? null)
+        && (saved.assignmentTicket ?? null) === (candidate.assignmentTicket ?? null);
     });
 }
 
@@ -119,8 +123,9 @@ async function finalizeMatch(claim) {
     finalizeClaim(current, claim.matchId, Date.now())
   );
   if (!finalized.transaction.committed && !finalized.computation.finalized) {
+    const firstHuman = claim.participants.find((participant) => participant.kind !== "NPC");
     const snapshot = await matchmakingRef()
-      .child(`private/profiles/${claim.participants[0].uid}/currentSession`)
+      .child(`private/profiles/${firstHuman.uid}/currentSession`)
       .get();
     if (snapshot.val()?.matchId !== claim.matchId) {
       throw new Error("MATCH_FINALIZATION_LOST");
@@ -188,10 +193,15 @@ const competitiveMatchmaking = onCall(FUNCTION_OPTIONS, async (request) => {
         }
       ));
       if (outcome.computation.ack.status !== "REJECTED") await attemptMatchmaking();
-    } else {
+    } else if (intent.type === "cancelQueue") {
       outcome = await transactMatchmaking((current) =>
         processCancelQueue(current, intent, uid, Date.now())
       );
+    } else {
+      outcome = await transactMatchmaking((current) =>
+        processCheckQueue(current, intent, uid, Date.now())
+      );
+      if (outcome.computation.ack.status !== "REJECTED") await attemptMatchmaking();
     }
     const result = ackWithProjection(outcome.computation.ack, await projectionFor(uid));
     console.info("competitive_matchmaking_event", {
@@ -215,6 +225,7 @@ const competitiveMatchmaking = onCall(FUNCTION_OPTIONS, async (request) => {
 
 async function releaseFinishedMatchSessions(matchId) {
   await transactMatchmaking((current) => releaseFinishedMatch(current, matchId, Date.now()));
+  await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}`).remove();
 }
 
 module.exports = {

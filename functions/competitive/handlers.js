@@ -1,5 +1,6 @@
 const { getDatabase, ServerValue } = require("firebase-admin/database");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
+const { onValueWritten } = require("firebase-functions/v2/database");
 const { performance } = require("node:perf_hooks");
 const { randomUUID } = require("node:crypto");
 const {
@@ -11,8 +12,10 @@ const {
 const { validateClientIntent, validateReconcileIntent } = require("./contract");
 const {
   allActivePlayersAnswered,
+  existingIntentOutcome,
   intentFingerprint,
   processClientIntent,
+  processPresenceSignal,
   processReconcile,
 } = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
@@ -21,6 +24,9 @@ const { releaseFinishedMatchSessions } = require("./matchmakingHandlers");
 const INSTANCE_ID = randomUUID();
 const INSTANCE_STARTED_MONOTONIC_MS = performance.now();
 let instanceInvocationCount = 0;
+const DATABASE_TRIGGER_REGION = process.env.FUNCTIONS_EMULATOR === "true"
+  ? "us-central1"
+  : FUNCTION_OPTIONS.region;
 
 function beginInvocation() {
   const t1MonotonicMs = performance.now();
@@ -80,6 +86,12 @@ function answerCloseClaimRef(envelope) {
   );
 }
 
+function activeSessionRef(uid) {
+  return getDatabase().ref(
+    `${ROOT_PATH}/matchmaking/private/profiles/${uid}/currentSession`
+  );
+}
+
 function rejection(intentId, code, state = null) {
   return {
     intentId: intentId || "unknown",
@@ -124,6 +136,7 @@ function preflightAnswer(match, envelope, uid) {
   }
   if (state.currentQuestion.questionId !== envelope.questionId) return "QUESTION_MISMATCH";
   if (!state.participants?.[uid]?.active) return "NOT_ACTIVE_PLAYER";
+  if (state.participants[uid].status === "RECONNECTING") return "PLAYER_RECONNECTING";
   if (!Number.isSafeInteger(envelope.stateVersion)
       || envelope.stateVersion < state.currentQuestion.openedStateVersion
       || envelope.stateVersion > state.stateVersion) {
@@ -132,6 +145,19 @@ function preflightAnswer(match, envelope, uid) {
   if (!state.currentQuestion.choices.some(
     (choice) => choice.answerId === envelope.payload.answerId
   )) return "INVALID_ANSWER_ID";
+  return null;
+}
+
+async function preflightActiveSession(match, envelope, uid) {
+  if (!match?.private?.requiresActiveSessionFence) return null;
+  const session = (await activeSessionRef(uid).get()).val();
+  if (!session
+      || session.sessionId !== envelope.sessionId
+      || session.sessionEpoch !== envelope.sessionEpoch
+      || session.matchId !== envelope.matchId
+      || !["MATCH_FOUND", "WAITING_PLAYERS"].includes(session.state)) {
+    return "STALE_ACTIVE_MATCH_SESSION";
+  }
   return null;
 }
 
@@ -584,6 +610,23 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
     }
+    const activeSessionError = await preflightActiveSession(match, envelope, uid);
+    if (activeSessionError) {
+      const ack = withDiagnostics(
+        rejection(envelope.intentId, activeSessionError, match),
+        invocation
+      );
+      logOutcome("intent", envelope, uid, ack, Boolean(request.app));
+      return ack;
+    }
+    const duplicate = envelope.type === "submitAnswer"
+      ? null
+      : existingIntentOutcome(match, envelope, uid);
+    if (duplicate) {
+      const ack = withDiagnostics(duplicate, invocation);
+      logOutcome("intent", envelope, uid, ack, Boolean(request.app));
+      return ack;
+    }
     if (envelope.type === "submitAnswer") {
       const committed = await commitAnswerIntent(envelope, uid, match);
       const ack = withDiagnostics(
@@ -646,9 +689,36 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
       logOutcome("reconcile", envelope, uid, ack, Boolean(request.app));
       return ack;
     }
+    const activeSessionError = await preflightActiveSession(match, envelope, uid);
+    if (activeSessionError) {
+      const ack = withDiagnostics(
+        rejection(envelope.intentId, activeSessionError, match),
+        invocation
+      );
+      logOutcome("reconcile", envelope, uid, ack, Boolean(request.app));
+      return ack;
+    }
+    const duplicate = existingIntentOutcome(match, envelope, uid);
+    if (duplicate) {
+      const ack = withDiagnostics(duplicate, invocation);
+      logOutcome("reconcile", envelope, uid, ack, Boolean(request.app));
+      return ack;
+    }
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
-    const committed = await commitReconcile(envelope, uid, now);
-    if ([PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING].includes(committed.phase)) {
+    let committed = await commitReconcile(envelope, uid, now);
+    if (committed.phase === PHASE.MATCH_FINISHED) {
+      committed = await commitReconcile({
+        ...envelope,
+        intentId: `settlement-prepare-${envelope.matchId}`,
+      }, uid, now);
+    }
+    if (committed.phase === PHASE.SETTLEMENT_PENDING) {
+      committed = await commitReconcile({
+        ...envelope,
+        intentId: `settle-${envelope.matchId}`,
+      }, uid, now);
+    }
+    if ([PHASE.MATCH_FINISHED, PHASE.SETTLED].includes(committed.phase)) {
       await releaseFinishedMatchSessions(envelope.matchId);
     }
     const ack = withDiagnostics(
@@ -671,11 +741,62 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
   }
 });
 
+const competitivePresenceChanged = onValueWritten({
+  ref: `${ROOT_PATH}/presence/{matchId}/{uid}`,
+  region: DATABASE_TRIGGER_REGION,
+  memory: FUNCTION_OPTIONS.memory,
+  cpu: FUNCTION_OPTIONS.cpu,
+  timeoutSeconds: FUNCTION_OPTIONS.timeoutSeconds,
+  minInstances: FUNCTION_OPTIONS.minInstances,
+  maxInstances: FUNCTION_OPTIONS.maxInstances,
+}, async (event) => {
+  const signal = event.data.after.val();
+  if (!signal || !["CONNECTED", "DISCONNECTED"].includes(signal.status)) return;
+  const { matchId, uid } = event.params;
+  const reference = matchRef(matchId);
+  const initial = await reference.get();
+  const initialValue = initial.val();
+  if (!initialValue?.private) return;
+  const envelope = {
+    sessionId: signal.sessionId,
+    sessionEpoch: signal.sessionEpoch,
+    matchId,
+  };
+  const participantError = preflightParticipant(initialValue, envelope, uid);
+  if (participantError) {
+    console.info("competitive_presence_ignored", { reason: participantError });
+    return;
+  }
+  const activeSessionError = await preflightActiveSession(initialValue, envelope, uid);
+  if (activeSessionError) {
+    console.info("competitive_presence_ignored", { reason: activeSessionError });
+    return;
+  }
+  const eventEpochMs = Date.parse(event.time);
+  const nowEpochMs = Number.isFinite(eventEpochMs) ? eventEpochMs : Date.now();
+  let computation = null;
+  let firstAttempt = true;
+  const transaction = await reference.transaction((current) => {
+    if (current === null && firstAttempt) current = initialValue;
+    firstAttempt = false;
+    if (!current?.private) return;
+    computation = processPresenceSignal(current, signal, uid, nowEpochMs);
+    return computation.rejectionCode === null ? computation.match : undefined;
+  }, undefined, false);
+  if (!transaction.committed) {
+    console.info("competitive_presence_ignored", {
+      reason: computation?.rejectionCode || "NO_STATE_CHANGE",
+    });
+  }
+});
+
 module.exports = {
   FUNCTION_OPTIONS,
   MAX_BODY_BYTES,
   competitiveIntent,
+  competitivePresenceChanged,
   competitiveReconcileMatch,
+  preflightActiveSession,
   preflightParticipant,
   withDiagnostics,
 };

@@ -1,6 +1,8 @@
 const { createHash } = require("node:crypto");
 const {
   CONFIG_VERSION,
+  PARTICIPANT_KIND,
+  PARTICIPANT_STATUS,
   PHASE,
   PROTOCOL_VERSION,
   SERVER_VERSION,
@@ -33,11 +35,15 @@ function publicParticipants(privateState) {
     return [uid, {
       uid,
       slot: participant.slot,
+      kind: participant.kind || PARTICIPANT_KIND.HUMAN,
       displayName: participant.displayName,
       joined: participant.joined,
       ready: participant.ready,
       active: participant.active,
       forfeited: participant.forfeited,
+      status: participant.status || PARTICIPANT_STATUS.CONNECTED,
+      disconnectedAtEpochMs: participant.disconnectedAtEpochMs ?? null,
+      reconnectDeadlineEpochMs: participant.reconnectDeadlineEpochMs ?? null,
       answerQuestionId: privateState.currentQuestion?.questionId ?? null,
       answered: Boolean(currentAnswers[uid]),
       score: privateState.scores[uid] || 0,
@@ -115,6 +121,7 @@ function acceptedAnswersForCurrentQuestion(privateState) {
   const candidates = inboxAnswers || question.answers || {};
   return Object.fromEntries(Object.entries(candidates).filter(([uid, answer]) => (
     privateState.participants?.[uid]
+      && !privateState.participants[uid].scoreFrozen
       && answer?.uid === uid
       && answer.questionId === question.questionId
       && answer.status !== "REJECTED"
@@ -225,11 +232,83 @@ function reject(match, envelope, uid, code, authorityTimestamp, stateBefore) {
 function validateParticipant(privateState, envelope, uid) {
   const participant = privateState.participants?.[uid];
   if (!participant) return { code: "NOT_MATCH_MEMBER" };
+  if (participant.kind === PARTICIPANT_KIND.NPC) return { code: "NOT_HUMAN_PLAYER" };
   if (participant.sessionId !== envelope.sessionId
       || participant.sessionEpoch !== envelope.sessionEpoch) {
     return { code: "STALE_SESSION_EPOCH" };
   }
   return { participant };
+}
+
+function npcPlans(privateState, questionIndex, question) {
+  const reactionBaseMs = Number.isFinite(privateState.config?.npcSkillInput?.reactionBaseMs)
+    ? privateState.config.npcSkillInput.reactionBaseMs
+    : 250;
+  return Object.fromEntries(privateState.participantOrder.flatMap((uid) => {
+    const participant = privateState.participants[uid];
+    if (participant?.kind !== PARTICIPANT_KIND.NPC || !participant.active) return [];
+    const behavior = (questionIndex + participant.slot) % 3;
+    if (behavior === 2) return [];
+    const answerId = behavior === 0
+      ? question.correctAnswerId
+      : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
+    return [[uid, {
+      uid,
+      eventId: `npc-answer-${question.questionId}-${uid}`,
+      questionId: question.questionId,
+      answerId,
+      acceptedAtEpochMs: question.openedAtEpochMs
+        + reactionBaseMs
+        + (participant.slot * 25)
+        + ((questionIndex % 5) * 20),
+      status: "ACCEPTED",
+      source: "SERVER_NPC",
+    }]];
+  }));
+}
+
+function applyDueNPCActions(privateState, nowEpochMs) {
+  const question = privateState.currentQuestion;
+  if (privateState.phase !== PHASE.QUESTION_OPEN || !question) return false;
+  let changed = false;
+  privateState.answerInbox ||= {};
+  privateState.answerInbox[question.questionId] ||= {};
+  question.answers ||= {};
+  for (const [uid, plan] of Object.entries(question.npcPlans || {})) {
+    if (plan.acceptedAtEpochMs > nowEpochMs
+        || plan.acceptedAtEpochMs > question.deadlineEpochMs
+        || privateState.answerInbox[question.questionId][uid]) continue;
+    privateState.answerInbox[question.questionId][uid] = plan;
+    question.answers[uid] = plan;
+    changed = true;
+  }
+  return changed;
+}
+
+function forfeitParticipant(privateState, participant, nowEpochMs, reason) {
+  if (!participant.active || participant.forfeited) return false;
+  participant.active = false;
+  participant.forfeited = true;
+  participant.scoreFrozen = true;
+  participant.status = PARTICIPANT_STATUS.FORFEITED;
+  participant.forfeitReason = reason;
+  participant.forfeitedAtEpochMs = nowEpochMs;
+  delete participant.disconnectedAtEpochMs;
+  delete participant.reconnectDeadlineEpochMs;
+  return true;
+}
+
+function expireReconnectGrace(privateState, nowEpochMs) {
+  let changed = false;
+  for (const uid of privateState.participantOrder) {
+    const participant = privateState.participants[uid];
+    if (participant?.status !== PARTICIPANT_STATUS.RECONNECTING
+        || !Number.isFinite(participant.reconnectDeadlineEpochMs)
+        || nowEpochMs < participant.reconnectDeadlineEpochMs) continue;
+    changed = forfeitParticipant(privateState, participant, nowEpochMs, "RECONNECT_TIMEOUT")
+      || changed;
+  }
+  return changed;
 }
 
 function openQuestion(privateState, questionIndex, nowEpochMs, nextStateVersion) {
@@ -250,6 +329,11 @@ function openQuestion(privateState, questionIndex, nowEpochMs, nextStateVersion)
     answers: {},
     result: null,
   };
+  privateState.currentQuestion.npcPlans = npcPlans(
+    privateState,
+    questionIndex,
+    privateState.currentQuestion
+  );
   privateState.resultEndsAtEpochMs = null;
 }
 
@@ -353,21 +437,83 @@ function processClientIntent(
     };
   }
 
-  if (envelope.type === "leave") {
-    participant.active = false;
-    participant.forfeited = state.phase !== PHASE.WAITING_PLAYERS;
-    if (state.phase === PHASE.WAITING_PLAYERS) {
-      state.phase = PHASE.MATCH_FINISHED;
-      state.matchResult = {
-        matchId: state.matchId,
-        outcome: "ABORTED",
-        abortReason: "PLAYER_LEFT_BEFORE_COUNTDOWN",
-        finishedAtEpochMs: nowEpochMs,
-        configVersion: state.configVersion,
+  if (envelope.type === "reconnect") {
+    if ([PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING, PHASE.SETTLED].includes(state.phase)) {
+      return { match, ack: reject(match, envelope, uid, "INVALID_MATCH_STATE", nowEpochMs, stateBefore) };
+    }
+    if (participant.forfeited || !participant.active) {
+      return { match, ack: reject(match, envelope, uid, "PLAYER_FORFEITED", nowEpochMs, stateBefore) };
+    }
+    if (participant.status === PARTICIPANT_STATUS.CONNECTED) {
+      return {
+        match,
+        ack: recordOutcome(match, envelope, uid, {
+          accepted: true, stateChanged: false, stateBefore, authorityTimestamp: nowEpochMs,
+        }),
       };
-    } else if (state.phase === PHASE.QUESTION_OPEN && allActivePlayersAnswered(state)) {
+    }
+    if (participant.status !== PARTICIPANT_STATUS.RECONNECTING) {
+      return { match, ack: reject(match, envelope, uid, "NOT_RECONNECTING", nowEpochMs, stateBefore) };
+    }
+    if (nowEpochMs > participant.reconnectDeadlineEpochMs) {
+      forfeitParticipant(state, participant, nowEpochMs, "RECONNECT_TIMEOUT");
+      return {
+        match,
+        ack: recordOutcome(match, envelope, uid, {
+          accepted: false,
+          rejectionCode: "RECONNECT_GRACE_EXPIRED",
+          stateChanged: true,
+          stateBefore,
+          authorityTimestamp: nowEpochMs,
+        }),
+      };
+    }
+    participant.status = PARTICIPANT_STATUS.CONNECTED;
+    delete participant.disconnectedAtEpochMs;
+    delete participant.reconnectDeadlineEpochMs;
+    return {
+      match,
+      ack: recordOutcome(match, envelope, uid, {
+        accepted: true, stateChanged: true, stateBefore, authorityTimestamp: nowEpochMs,
+      }),
+    };
+  }
+
+  if (envelope.type === "forfeit") {
+    if ([PHASE.CREATED, PHASE.WAITING_PLAYERS].includes(state.phase)) {
+      return { match, ack: reject(match, envelope, uid, "MATCH_NOT_COMMITTED", nowEpochMs, stateBefore) };
+    }
+    if ([PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING, PHASE.SETTLED].includes(state.phase)) {
+      return { match, ack: reject(match, envelope, uid, "INVALID_MATCH_STATE", nowEpochMs, stateBefore) };
+    }
+    if (!forfeitParticipant(state, participant, nowEpochMs, "EXPLICIT_FORFEIT")) {
+      return { match, ack: reject(match, envelope, uid, "PLAYER_FORFEITED", nowEpochMs, stateBefore) };
+    }
+    if (state.phase === PHASE.QUESTION_OPEN && allActivePlayersAnswered(state)) {
       closeQuestion(state, nowEpochMs, "ALL_ACTIVE_PLAYERS_ANSWERED");
     }
+    return {
+      match,
+      ack: recordOutcome(match, envelope, uid, {
+        accepted: true, stateChanged: true, stateBefore, authorityTimestamp: nowEpochMs,
+      }),
+    };
+  }
+
+  if (envelope.type === "leave") {
+    if (state.phase !== PHASE.WAITING_PLAYERS) {
+      return { match, ack: reject(match, envelope, uid, "FORFEIT_REQUIRED", nowEpochMs, stateBefore) };
+    }
+    participant.active = false;
+    participant.status = PARTICIPANT_STATUS.FORFEITED;
+    state.phase = PHASE.MATCH_FINISHED;
+    state.matchResult = {
+      matchId: state.matchId,
+      outcome: "ABORTED",
+      abortReason: "PLAYER_LEFT_BEFORE_COUNTDOWN",
+      finishedAtEpochMs: nowEpochMs,
+      configVersion: state.configVersion,
+    };
     return {
       match,
       ack: recordOutcome(match, envelope, uid, {
@@ -416,6 +562,8 @@ function processClientIntent(
     return { match, ack: reject(match, envelope, uid, "DEADLINE_EXCEEDED", nowEpochMs, stateBefore) };
   }
 
+  // Invalid/stale human requests must not advance server-owned NPC state.
+  applyDueNPCActions(state, nowEpochMs);
   state.answerInbox ||= {};
   state.answerInbox[question.questionId] ||= {};
   if (state.answerInbox[question.questionId][uid]) {
@@ -445,7 +593,7 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
     return { match, ack: reject(match, envelope, uid, validation.code, nowEpochMs, stateBefore) };
   }
 
-  let changed = false;
+  let changed = expireReconnectGrace(state, nowEpochMs);
   if (state.phase === PHASE.CREATED) {
     state.phase = PHASE.WAITING_PLAYERS;
     changed = true;
@@ -454,6 +602,7 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
     openQuestion(state, 0, nowEpochMs, state.stateVersion + 1);
     changed = true;
   } else if (state.phase === PHASE.QUESTION_OPEN) {
+    changed = applyDueNPCActions(state, nowEpochMs) || changed;
     if (allActivePlayersAnswered(state)) {
       closeQuestion(state, nowEpochMs, "ALL_ANSWERED");
       changed = true;
@@ -478,8 +627,13 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
     state.settlement = {
       settlementId: `${state.matchId}:${SETTLEMENT_VERSION}`,
       settlementVersion: SETTLEMENT_VERSION,
-      status: "PENDING_IMPLEMENTATION",
+      status: "CORE_RESULT_READY",
     };
+    changed = true;
+  } else if (state.phase === PHASE.SETTLEMENT_PENDING) {
+    state.phase = PHASE.SETTLED;
+    state.settlement.status = "SETTLED_NO_RATING_PHASE_C";
+    state.settlement.settledAtEpochMs = nowEpochMs;
     changed = true;
   }
 
@@ -494,6 +648,66 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
   };
 }
 
+function processPresenceSignal(inputMatch, signal, uid, nowEpochMs) {
+  const match = clone(inputMatch);
+  const state = match.private;
+  const participant = state?.participants?.[uid];
+  if (!state || !participant || participant.kind === PARTICIPANT_KIND.NPC) {
+    return { match, changed: false, rejectionCode: "NOT_MATCH_MEMBER" };
+  }
+  if (participant.sessionId !== signal.sessionId
+      || participant.sessionEpoch !== signal.sessionEpoch) {
+    return { match, changed: false, rejectionCode: "STALE_SESSION_EPOCH" };
+  }
+  if (participant.forfeited || !participant.active
+      || [PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING, PHASE.SETTLED].includes(state.phase)) {
+    return { match, changed: false, rejectionCode: "INVALID_MATCH_STATE" };
+  }
+  const stateBefore = state.phase;
+  if (signal.status === "DISCONNECTED") {
+    if (participant.status === PARTICIPANT_STATUS.RECONNECTING) {
+      return { match, changed: false, rejectionCode: null };
+    }
+    participant.status = PARTICIPANT_STATUS.RECONNECTING;
+    participant.disconnectedAtEpochMs = nowEpochMs;
+    participant.reconnectDeadlineEpochMs = nowEpochMs + state.config.reconnectGraceMs;
+  } else if (signal.status === "CONNECTED") {
+    if (participant.status !== PARTICIPANT_STATUS.RECONNECTING) {
+      return { match, changed: false, rejectionCode: null };
+    }
+    if (nowEpochMs > participant.reconnectDeadlineEpochMs) {
+      forfeitParticipant(state, participant, nowEpochMs, "RECONNECT_TIMEOUT");
+    } else {
+      participant.status = PARTICIPANT_STATUS.CONNECTED;
+      delete participant.disconnectedAtEpochMs;
+      delete participant.reconnectDeadlineEpochMs;
+    }
+  } else {
+    return { match, changed: false, rejectionCode: "INVALID_PRESENCE_STATUS" };
+  }
+  state.serverSequence += 1;
+  state.stateVersion += 1;
+  state.audit ||= {};
+  state.audit[String(state.serverSequence)] = {
+    eventId: `presence-${uid}-${nowEpochMs}`,
+    eventType: `presence:${signal.status}`,
+    matchId: state.matchId,
+    serverSequence: state.serverSequence,
+    sessionId: signal.sessionId,
+    sessionEpoch: signal.sessionEpoch,
+    playerUID: uid,
+    stateBefore,
+    stateAfter: state.phase,
+    accepted: true,
+    authorityTimestamp: nowEpochMs,
+    protocolVersion: state.protocolVersion,
+    serverVersion: state.serverVersion,
+    configVersion: state.configVersion,
+  };
+  syncPublic(match);
+  return { match, changed: true, rejectionCode: null };
+}
+
 module.exports = {
   acceptedAnswersForCurrentQuestion,
   activeParticipantUIDs,
@@ -501,6 +715,7 @@ module.exports = {
   existingIntentOutcome,
   intentFingerprint,
   processClientIntent,
+  processPresenceSignal,
   processReconcile,
   syncPublic,
 };

@@ -1,10 +1,13 @@
 const { randomUUID } = require("node:crypto");
 const {
   CONFIG_VERSION,
+  PARTICIPANT_KIND,
+  PARTICIPANT_STATUS,
   PHASE,
   PLAYER_COUNT,
   PROTOCOL_VERSION,
   SERVER_VERSION,
+  RECONNECT_GRACE_MS,
 } = require("./constants");
 const { TEST_QUESTION_BANK } = require("./questionBank");
 
@@ -32,23 +35,36 @@ function buildCompetitiveMatch({
   countdownDurationMs = 10,
   questionDurationMs = 5_000,
   resultDurationMs = 10,
+  reconnectGraceMs = RECONNECT_GRACE_MS,
+  requiresActiveSessionFence = false,
+  npcSkillInput = null,
 }) {
   if (!Array.isArray(players) || players.length !== PLAYER_COUNT) {
     throw new Error("Competitive match requires exactly four players");
   }
   const participantOrder = players.map((player) => player.uid);
-  const participants = Object.fromEntries(players.map((player, slot) => [player.uid, {
-    uid: player.uid,
-    slot,
-    displayName: player.displayName || `Player ${slot + 1}`,
-    sessionId: player.sessionId,
-    sessionEpoch: player.sessionEpoch,
-    assignmentTicket: player.assignmentTicket,
-    joined: false,
-    ready: false,
-    active: true,
-    forfeited: false,
-  }]));
+  const participants = Object.fromEntries(players.map((player, slot) => {
+    const kind = player.kind === PARTICIPANT_KIND.NPC
+      ? PARTICIPANT_KIND.NPC
+      : PARTICIPANT_KIND.HUMAN;
+    const isNPC = kind === PARTICIPANT_KIND.NPC;
+    return [player.uid, {
+      uid: player.uid,
+      slot,
+      kind,
+      displayName: player.displayName || (isNPC ? `NPC ${slot + 1}` : `Player ${slot + 1}`),
+      ...(isNPC ? {} : {
+        sessionId: player.sessionId,
+        sessionEpoch: player.sessionEpoch,
+        assignmentTicket: player.assignmentTicket,
+      }),
+      joined: isNPC,
+      ready: isNPC,
+      active: true,
+      forfeited: false,
+      status: PARTICIPANT_STATUS.CONNECTED,
+    }];
+  }));
 
   return {
     private: {
@@ -67,12 +83,18 @@ function buildCompetitiveMatch({
       questionInstances: buildQuestionInstances(matchId),
       currentQuestionIndex: -1,
       currentQuestion: null,
+      requiresActiveSessionFence,
       intentResults: {},
       audit: {},
       config: {
         countdownDurationMs,
         questionDurationMs,
         resultDurationMs,
+        reconnectGraceMs,
+        npcSkillInput: npcSkillInput || {
+          profileVersion: "phase-c-fixed-test-1",
+          reactionBaseMs: 250,
+        },
       },
     },
   };

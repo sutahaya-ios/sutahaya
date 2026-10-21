@@ -16,6 +16,7 @@ final class CompetitiveMatchmakingModelsTests: XCTestCase {
 
         XCTAssertEqual(projection.state, .waitingPlayers)
         XCTAssertEqual(projection.competitiveSession, CompetitiveSession(
+            uid: "player-1",
             matchId: "match-1",
             sessionId: "session-1",
             sessionEpoch: 3,
@@ -46,12 +47,14 @@ final class CompetitiveMatchmakingModelsTests: XCTestCase {
             "sessionEpoch": 2,
             "matchmakingState": "MATCH_FOUND",
             "matchId": "match-1",
-            "assignmentTicket": "ticket-1"
+            "assignmentTicket": "ticket-1",
+            "nextCheckAfterMs": 5_000
         ]))
 
         XCTAssertEqual(ack.status, .accepted)
         XCTAssertEqual(ack.matchmakingState, .matchFound)
         XCTAssertEqual(ack.matchId, "match-1")
         XCTAssertEqual(ack.assignmentTicket, "ticket-1")
+        XCTAssertEqual(ack.nextCheckAfterMs, 5_000)
     }
 }

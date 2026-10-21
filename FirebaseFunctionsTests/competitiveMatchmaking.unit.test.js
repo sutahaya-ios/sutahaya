@@ -1,13 +1,17 @@
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 
-const { PROTOCOL_VERSION } = require("../functions/competitive/constants");
+const {
+  BRONZE_NPC_FILL_WAIT_MS,
+  PROTOCOL_VERSION,
+} = require("../functions/competitive/constants");
 const { validateMatchmakingIntent } = require("../functions/competitive/matchmakingContract");
 const {
   SESSION_STATE,
   claimNextMatch,
   finalizeClaim,
   processCancelQueue,
+  processCheckQueue,
   processJoinQueue,
   releaseFinishedMatch,
 } = require("../functions/competitive/matchmakingCore");
@@ -194,5 +198,53 @@ describe("Competitive Phase B matchmaking unit", () => {
       );
       assert.equal(released.state.private.profiles[participant.uid].currentSession.matchId, null);
     }
+  });
+
+  it("waits five seconds before filling Bronze vacancies with server-owned NPCs", () => {
+    const joined = addPlayer({}, "p1", 0);
+    assert.equal(joined.ack.nextCheckAfterMs, BRONZE_NPC_FILL_WAIT_MS);
+    let queued = joined.state;
+    queued = addPlayer(queued, "p2", 1).state;
+    queued = addPlayer(queued, "p3", 2).state;
+    assert.equal(claim(queued, "too-early", 5_999).claimed, null);
+
+    const result = claim(queued, "npc-match", 6_002);
+    assert.equal(result.claimed.participants.length, 4);
+    assert.equal(result.claimed.participants.filter((player) => player.kind === "HUMAN").length, 3);
+    assert.equal(result.claimed.participants.filter((player) => player.kind === "NPC").length, 1);
+    const finalized = finalizeClaim(result.state, "npc-match", 6_100);
+    assert.equal(finalized.finalized, true);
+  });
+
+  it("fills one to three human rosters but never adds NPC to an immediate four-human match", () => {
+    for (let humanCount = 1; humanCount <= 3; humanCount += 1) {
+      const result = claim(addPlayers(humanCount), `npc-${humanCount}`, 6_100);
+      assert.equal(result.claimed.participants.filter((player) => player.kind === "HUMAN").length, humanCount);
+      assert.equal(result.claimed.participants.filter((player) => player.kind === "NPC").length, 4 - humanCount);
+    }
+    const humanOnly = claim(addPlayers(4), "human-only", 1_100);
+    assert.ok(humanOnly.claimed.participants.every((player) => player.kind === "HUMAN"));
+  });
+
+  it("validates the queue check with the active session fence", () => {
+    const state = addPlayers(1);
+    const session = state.private.profiles.p1.currentSession;
+    const intent = {
+      intentId: "check-p1",
+      type: "checkQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-unit",
+      sessionId: session.sessionId,
+      sessionEpoch: session.sessionEpoch,
+      payload: {},
+    };
+    assert.equal(validateMatchmakingIntent(intent), null);
+    assert.equal(processCheckQueue(state, intent, "p1", 1_100).ack.status, "ACCEPTED");
+    assert.equal(processCheckQueue(state, {
+      ...intent,
+      intentId: "check-p1-stale",
+      sessionEpoch: 99,
+    }, "p1", 1_100)
+      .ack.rejectionCode, "STALE_SESSION_EPOCH");
   });
 });

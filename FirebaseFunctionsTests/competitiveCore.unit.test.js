@@ -8,6 +8,7 @@ const { validateClientIntent } = require("../functions/competitive/contract");
 const {
   acceptedAnswersForCurrentQuestion,
   processClientIntent,
+  processPresenceSignal,
   processReconcile,
   syncPublic,
 } = require("../functions/competitive/core");
@@ -282,5 +283,135 @@ describe("Competitive Core unit", () => {
     assert.equal(JSON.stringify(match.public).includes(match.private.currentQuestion.correctAnswerId), true,
       "all answer IDs are choices, but the projection does not identify which one is correct");
     assert.equal(Object.hasOwn(match.public.currentQuestion, "correctAnswerId"), false);
+  });
+
+  it("separates reconnect grace from explicit forfeit and fences the same session", () => {
+    let match = openMatch();
+    const disconnectedAt = 3_000;
+    let presence = processPresenceSignal(match, {
+      status: "DISCONNECTED",
+      sessionId: players[0].sessionId,
+      sessionEpoch: players[0].sessionEpoch,
+    }, players[0].uid, disconnectedAt);
+    assert.equal(presence.changed, true);
+    match = presence.match;
+    assert.equal(match.private.participants.p1.status, "RECONNECTING");
+    assert.equal(match.private.participants.p1.reconnectDeadlineEpochMs, 18_000);
+
+    const resumed = applyClient(
+      match,
+      players[0],
+      envelope("reconnect", players[0], "within-grace"),
+      17_999
+    );
+    assert.equal(resumed.ack.status, "ACCEPTED");
+    assert.equal(resumed.match.private.participants.p1.status, "CONNECTED");
+
+    presence = processPresenceSignal(resumed.match, {
+      status: "DISCONNECTED",
+      sessionId: players[0].sessionId,
+      sessionEpoch: players[0].sessionEpoch,
+    }, players[0].uid, 20_000);
+    const expired = applyReconcile(presence.match, players[1], "expire-grace", 35_001);
+    assert.equal(expired.match.private.participants.p1.status, "FORFEITED");
+    assert.equal(expired.match.private.participants.p1.forfeitReason, "RECONNECT_TIMEOUT");
+
+    const finished = openMatch();
+    finished.private.phase = PHASE.MATCH_FINISHED;
+    assert.equal(applyClient(
+      finished,
+      players[0],
+      envelope("reconnect", players[0], "after-finish"),
+      40_000
+    ).ack.rejectionCode, "INVALID_MATCH_STATE");
+  });
+
+  it("accepts explicit forfeit during countdown and keeps the remaining roster active", () => {
+    let match = waitingMatch();
+    for (const [index, player] of players.entries()) {
+      match = applyClient(match, player, envelope("joinMatch", player, `countdown-join-${index}`, {
+        payload: { assignmentTicket: player.assignmentTicket },
+      }), 1_010 + index).match;
+      match = applyClient(
+        match,
+        player,
+        envelope("ready", player, `countdown-ready-${index}`),
+        1_020 + index
+      ).match;
+    }
+    assert.equal(match.private.phase, PHASE.COUNTDOWN);
+    const result = applyClient(
+      match,
+      players[0],
+      envelope("forfeit", players[0], "during-countdown"),
+      1_030
+    );
+    assert.equal(result.ack.status, "ACCEPTED");
+    assert.equal(result.match.private.participants.p1.status, "FORFEITED");
+    assert.equal(result.match.private.phase, PHASE.COUNTDOWN);
+    assert.ok(result.match.private.participants.p2.active);
+  });
+
+  it("freezes an explicit forfeiter score and keeps the participant in final ranking", () => {
+    let match = openMatch();
+    match.private.scores.p1 = 20;
+    const question = match.private.currentQuestion;
+    const event = envelope("submitAnswer", players[0], "before-forfeit", {
+      questionId: question.questionId,
+      stateVersion: match.private.stateVersion,
+      payload: { answerId: question.correctAnswerId },
+    });
+    match = applyClient(match, players[0], event, 2_100, {
+      uid: "p1",
+      eventId: event.intentId,
+      questionId: question.questionId,
+      answerId: question.correctAnswerId,
+      acceptedAtEpochMs: 2_100,
+      status: "ACCEPTED",
+    }).match;
+    const forfeited = applyClient(
+      match,
+      players[0],
+      envelope("forfeit", players[0], "explicit"),
+      2_200
+    );
+    assert.equal(forfeited.ack.status, "ACCEPTED");
+    match = applyReconcile(
+      forfeited.match,
+      players[1],
+      "close-after-forfeit",
+      question.deadlineEpochMs + 1
+    ).match;
+    assert.equal(match.private.scores.p1, 20);
+    assert.equal(match.private.currentQuestion.result.scoreDeltas.p1, 0);
+    assert.ok(match.private.participantOrder.includes("p1"));
+  });
+
+  it("uses server-owned NPC actions with correct, wrong, and unanswered outcomes", () => {
+    const mixedPlayers = [players[0], ...[1, 2, 3].map((slot) => ({
+      uid: `npc:unit:${slot}`,
+      kind: "NPC",
+      displayName: `NPC ${slot}`,
+    }))];
+    let match = buildTestMatch({
+      matchId: "match-unit",
+      players: mixedPlayers,
+      createdAtEpochMs: 1_000,
+      countdownDurationMs: 1,
+      questionDurationMs: 1_000,
+    });
+    match = applyReconcile(match, players[0], "npc-created", 1_001).match;
+    match = applyClient(match, players[0], envelope("joinMatch", players[0], "npc-join", {
+      payload: { assignmentTicket: players[0].assignmentTicket },
+    }), 1_002).match;
+    match = applyClient(match, players[0], envelope("ready", players[0], "npc-ready"), 1_003).match;
+    match = applyReconcile(match, players[0], "npc-open", 1_004).match;
+    match = applyReconcile(match, players[0], "npc-deadline", 2_005).match;
+
+    const result = match.private.currentQuestion.result;
+    assert.ok(result.correctUIDs.some((uid) => uid.startsWith("npc:")));
+    assert.ok(result.wrongUIDs.some((uid) => uid.startsWith("npc:")));
+    assert.ok(result.unansweredUIDs.some((uid) => uid.startsWith("npc:")));
+    assert.equal(match.public.participants["npc:unit:1"].kind, "NPC");
   });
 });

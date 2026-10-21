@@ -281,7 +281,7 @@ CREATED
 
 - **Server保持**: immutable roster snapshot、startAt、最初のquestion参照、全deadline基準時刻。
 - **公開**: roster、countdown基準、接続状態、公開設定。
-- **許可Intent**: `reconnect`、`leave`、`heartbeat`。
+- **許可Intent**: `reconnect`、明示的な `forfeit`、`heartbeat`。
 - **拒否**: `submitAnswer`、roster変更、ready取消。
 - **Timeout**: startAt到達をServer timer eventとして処理する。clientのanimation完了を待たない。
 - **遷移**: 最初の問題をsanitized projectionへcommitして `QUESTION_OPEN`。COUNTDOWN以後の明示的leaveは原則forfeit。通信断・app終了は即時forfeitにせず `RECONNECTING` とし、grace超過時だけforfeitにする。Server側障害はPlayerのforfeitにしない。
@@ -290,19 +290,19 @@ CREATED
 
 - **Server保持**: canonical question、correct answer、active Player集合、Playerごとの回答済み状態、受理済み回答、`questionOpenedAt`、`questionDeadline`、採点設定。
 - **公開**: match固有でopaqueな `questionId`、prompt、opaque `answerId`付きchoices、deadline基準、score、Playerごとの回答済み状態。correct answerは非公開。
-- **許可Intent**: 未回答humanの `submitAnswer(answerId)`、全Playerの `reconnect`、`leave`、`heartbeat`。
+- **許可Intent**: 未回答humanの `submitAnswer(answerId)`、humanの `reconnect` / `forfeit`、`heartbeat`。
 - **受付**: 各active Playerにつき1回答だけをServerが受理する。最初のPlayerが回答しても他Playerをlockせず、正解・不正解にかかわらずそのPlayerだけが当該問題で回答済みになる。
 - **拒否**: 同一Playerの2回目の回答、自由入力、未知answerId、roster外、問題不一致、deadline後回答。
 - **採点**: 受理済み回答をauthoritativeな受付順へ並べ、正解者だけをその順に20 / 10 / 5 / 4位以降1点、誤答は-10点、無回答は0点とする。誤答は正解順位を消費しない。同一の権威受付時刻なら、開始時に固定したroster/slot順をtie-breakに使う。
 - **途中反映**: 現行体験を維持するため、Serverは受理済み回答集合と問題開始時scoreから途中scoreを再計算して公開できる。ただし最終的な回答集合・順序・得点はquestion closeで確定し、再送で二重加点しない。
 - **Timeout**: 最初の `questionOpenedAt` を基準とする `questionDeadline` 到達をServer timer eventとして確定し、延長・再設定しない。
-- **遷移**: 全active Player（当該問題へ参加しないNPCを除く）が回答済み、またはdeadline到達で、canonicalな回答集合・正誤・得点を閉じて `QUESTION_RESULT`。回答のたびにはphaseを変えない。
+- **遷移**: 全active Playerが回答済み、またはdeadline到達で、canonicalな回答集合・正誤・得点を閉じて `QUESTION_RESULT`。無回答を選んだNPCもdeadlineまでは未回答として扱い、回答のたびにはphaseを変えない。
 
 ### 5.6 QUESTION_RESULT
 
 - **Server保持**: closedな回答集合、authoritativeな回答順、各回答のcorrectness、correct answer、score delta、total scores、question result sequence。
 - **公開**: 回答者ごとの結果、正解、score delta、total scores、結果表示期限。
-- **許可Intent**: `reconnect`、`leave`、`heartbeat`。
+- **許可Intent**: `reconnect`、`forfeit`、`heartbeat`。
 - **拒否**: `submitAnswer`、結果変更要求。
 - **Timeout**: result表示期限をServer timer eventで処理する。
 - **遷移**: 残り問題ありなら `NEXT_QUESTION`、終了条件成立なら `MATCH_FINISHED`。
@@ -311,7 +311,7 @@ CREATED
 
 - **Server保持**: 前問題のclosed marker、次question参照、Playerごとの回答済み状態reset、score snapshot。
 - **公開**: transition状態と現在score。次問題の秘密情報はまだ公開しない。
-- **許可Intent**: `reconnect`、`leave`、`heartbeat`。
+- **許可Intent**: `reconnect`、`forfeit`、`heartbeat`。
 - **拒否**: `submitAnswer`。
 - **Timeout**: 内部準備のretry deadline。失敗時は同じnext-question eventを冪等retryする。
 - **遷移**: 次問題のpublic payloadとdeadlineを同一commitで作り `QUESTION_OPEN`。終了条件なら `MATCH_FINISHED`。
@@ -625,6 +625,8 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - 上位TierとRating Zoneはhuman 4人のみとし、NPCを投入しない。
 - 境界、待機時間、許容NPC数はversioned matchmaking configで管理する。
 
+Phase Cの確定範囲では、現行の単一bucketをBronze相当として扱い、queue先頭humanの待機開始からServer clockで5秒経過しても4 human未満なら、1〜3 humanの不足枠をNPCで補って必ず4枠にする。5秒以内に4 humanが揃った場合はNPCを入れない。Silver以上の待機時間・bucket境界・search rangeは未決定であり、Phase C実装へ推測で追加しない。
+
 ### 10.2 Server ownership
 
 - NPCのprofile、strength、擬似MMR、反応時間、answer、correctness、scoreはserverが生成する。
@@ -632,6 +634,7 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - NPCも各問1回だけ独立回答し、人間と同じauthoritative orderingと20 / 10 / 5 / 1、誤答-10、無回答0の得点規則を使う。
 - NPCは実UID、client session、leaderboard entry、player history、永続MMRを持たない。
 - public projectionではNPCであることを明示する。
+- Phase Cではversion付き固定test skill inputをServerへ渡せる境界だけを設け、将来human平均hidden MMRから強さを導く余地を残す。MMRそのものはまだ実装しない。
 
 ### 10.3 MMRへの影響
 
@@ -717,6 +720,8 @@ competitiveV2/matches/{matchId}
 
 Matchmakingは`competitiveMatchmaking` callableの`joinQueue`受理後に必要最小限のattemptを実行する。常時server、scheduled polling、Pub/Sub hot pathは使用しない。
 
+Phase CではServerが`joinQueue`応答でversioned Bronze policy由来の`nextCheckAfterMs`を返し、Clientはその経過後に`checkQueue` Intentを1回送る。Clientは待機秒数をハードコードせず、NPC投入可否や人数も指定しない。Serverが保存済み`queuedAtEpochMs`と現行policyを再検証してmatchをclaimするため、Client timerは再評価の契機にすぎず、NPC投入判断のAuthorityではない。
+
 Atomic claimは`competitiveV2/matchmaking` rootのRTDB transactionで、4 UIDのsession fence確認、queue removal、`MATCH_FOUND`、active match、assignment ticket、pending match manifestを一度に確定する。Phase A-2 matchは別pathのため、claim後に同じ`matchId`へcreate-if-absentで作成し、最後に各projectionを`WAITING_PLAYERS`へ進める。Functionが途中失敗してもpending manifestから同じmatchを再作成・finalizeでき、別matchへ同じUIDをclaimできない二段階idempotent構造とする。Match作成は既存Competitive Coreのfactory/state machineを再利用し、別Battle engineを作らない。
 
 現Phase Bでは全Playerを同一の暫定bucketへ入れる。将来MMRをServer-owned profile値からbucket/search rangeへ入力できる境界は維持するが、client指定MMR/rankはcontractで拒否する。
@@ -744,12 +749,15 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 - grace内に戻れば同じslotへ復帰する。
 - grace超過はserver eventとしてOrdering Authorityへ投入し、開始後はforfeit、開始前はno-show/abort扱いとする。
 
+Phase Cではgraceを15秒に固定する。`competitiveV2/presence/{matchId}/{uid}`は本人だけが同じactive session fenceで書ける接続signalであり、match participant statusの変更はRTDB triggerがServer authorityとして行う。grace中も問題deadlineと他Playerの進行を止めず、その間に通過した問題は無回答0点となる。同じUID / sessionId / sessionEpoch / matchIdで15秒以内に戻った場合だけ同じslotへ復帰し、別sessionや別matchからの遅延signal/Intentは拒否する。
+
 ### 12.3 Explicit leave
 
 - Queue中およびcommitment boundary前のleaveはqueue/match cancelとして扱い、原則MMR penaltyなし。
 - 4枠確定後にCOUNTDOWNを開始するcommitment boundary以後の明示的leaveは原則forfeit。
 - client UIは開始後の退出結果を明示するが、clientが「penaltyなし」を指定できない。
 - app終了・network lossは明示的leaveと同一扱いにせず、`RECONNECTING` とgraceを経由する。
+- Phase Cのcommitment boundary以後は`leave`を受理せず、専用`forfeit` Intentだけを即時棄権として受理する。forfeit時点の累積scoreを固定し、そのPlayerを残り問題のactive集合から外すが、最終結果・通常のscore順位・forfeitedUIDsには残す。将来のMMR最下位扱いはPhase D settlementで実装する。
 
 ### 12.4 Server側障害
 
@@ -757,15 +765,12 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 - 継続不能ならmatchをServer faultとしてabortし、Playerへ敗北・MMR penaltyを適用しない。
 - 部分的に進んだstateはcanonical event/outboxから復旧し、復旧不能時もclient申告値で結果を補完しない。
 
-### 12.5 未決定値
+### 12.5 Phase Cで確定した値と残件
 
-- heartbeat間隔
-- lease長
-- reconnect grace長
-- 未回答Playerが問題中に切断した場合、deadlineとreconnect graceのどちらを優先するか
-- match継続可能な残human数
-
-これらはlatency spikeと実機network testの結果を踏まえて決める。
+- reconnect graceは15秒。
+- 問題deadlineを優先し、disconnect中もmatchを止めない。missした問題は無回答0点。
+- presence signal、明示forfeit、timeout forfeitはServer stateへ収束し、Client表示だけでは確定しない。
+- 残件はheartbeat/leaseのProduction運用値と、Server障害時の自動abort/recovery policy。
 
 ---
 
@@ -774,6 +779,8 @@ disconnect判定はclientの自己申告だけに依存しない。次を組み�
 ### 13.1 方針
 
 分散storage全体での「厳密に1回だけ実行」を前提にしない。canonical settlementを1件作り、各反映先へ**少なくとも1回retryしても、結果は1回分だけ適用される**設計にする。
+
+Phase Cではrating/historyを実装せず、deterministic settlementIdでcore結果だけを`SETTLEMENT_PENDING → SETTLED`へ冪等確定する。MMR、Tier、Season、Leaderboard、履歴への反映はPhase Dで追加し、Phase Cの`SETTLED_NO_RATING_PHASE_C`を「rating反映済み」と解釈しない。
 
 ### 13.2 Identity
 
@@ -957,19 +964,19 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 5. region、min instances、concurrency、COUNTDOWN中warm-up、retry/backoff。
 6. HTTP acknowledgementからpublic projection反映までのend-to-end latency。
 7. latency compensation方式・上限とnear-tie threshold。Client自己申告時刻はAuthorityにしない。
-8. heartbeat間隔、lease長、reconnect graceの具体秒数。
-9. 未回答Playerの切断時にquestion deadlineとreconnect graceをどう組み合わせるか。
+8. heartbeat間隔とProduction lease長。reconnect graceはPhase Cで15秒に確定済み。
+9. disconnect中もquestion deadlineを優先する方針は確定済み。Server障害とtransport切断を誤分類しない運用検証は残る。
 10. authority eventとprojectionの保存・compaction方法。
 11. 実match trafficを使ったFunctions / RTDB / logging / egress費用と月3,000円目安との差。
 12. Phase B暫定5分queue lease、heartbeat間隔、期限切れsession回収の最終値。
 13. hidden MMR導入時のbucket数、search range拡大、global matchmaking transactionのshard単位。
 14. Anonymous UIDを既存linked accountへ統合する場合のProduct policy。credential linkでUIDを維持する通常経路はschema変更不要。
 
-### 17.3 Phase C前にプロダクト判断が必要
+### 17.3 Phase D前にプロダクト判断が必要
 
 1. Hidden MMR計算式、初期MMR、provisional期間。
 2. Tier境界とRating Zone境界。
-3. Bronze/SilverそれぞれのNPC投入待機時間、search range拡大、最大NPC数。
+3. Bronzeは5秒後に最大3 NPCで確定済み。Silver以上のNPC投入待機時間、search range拡大、最大NPC数。
 4. NPC数別のMMR減衰式。
 5. Season期間とSoft reset方式/carry-over。
 6. Top 20 leaderboardの同率順位規則。
@@ -1058,20 +1065,25 @@ Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、Leaderb
 - callable join時のrandom matchmaking、4 Human確定、Phase A-2 match assignment
 - matchmaking root transactionによる4 Player atomic claimと、pending manifestによるidempotent match finalize
 - clientは`joinQueue` / `cancelQueue` Intentと本人用projectionだけを使用し、UID/MMR/rank/matchId/participantsを指定しない
-- reconnect grace、forfeit詳細、heartbeat運用、MMR/Rank/NPC/Settlementは後続Phaseへ残す
+- reconnect grace、forfeit詳細、NPC、core-only settlementはPhase C、heartbeat運用とMMR/Rankは後続Phaseへ残す
 
 Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化しない。
 
-### Phase C: Rating / NPC / Season / Leaderboard
+### Phase C: Reconnect / Forfeit / Bronze NPC / Core Settlement
 
-- 単一hidden MMR、Tier、Rating Zone
-- Tier別NPC補充、server-owned NPC action
-- NPC数に応じたrating delta
-- Season、Top 20 leaderboard、直近5試合history
-- settlementの全projection
+- 15秒graceの`RECONNECTING`、同一session復帰、timeout forfeit
+- commitment boundary以後の明示forfeitとscore freeze
+- Bronze 5秒後の1〜3 human + Server-owned NPC補充（常に4枠）
+- NPCの正解・誤答・無回答、humanと同一の回答順・20 / 10 / 5 / 1・誤答-10・無回答0
+- Room AからRoom Bへの旧session/Intent混入拒否
+- ratingを伴わないcore結果の`SETTLEMENT_PENDING → SETTLED`
+- Local / Emulatorで4構成×20問、Reconnect/Forfeit、Rules、session fencingを検証する。Production deployは別Gate。
+
+### Phase D: Rating / Season / Security / Production Rollout
+
+- 単一hidden MMR、Tier、Rating Zone、NPC数別rating delta
+- Season、Top 20 leaderboard、直近5試合history、settlement全projection
 - プロダクトバランスsimulationと負荷検証
-
-### Phase D: Security / Operations / Production Rollout
 
 - App Check/App Attest enforcement
 - Rules deny-by-defaultとread scopeの最終化
