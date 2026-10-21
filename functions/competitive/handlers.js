@@ -9,7 +9,12 @@ const {
   SERVER_VERSION,
 } = require("./constants");
 const { validateClientIntent, validateReconcileIntent } = require("./contract");
-const { processClientIntent, processReconcile } = require("./core");
+const {
+  allActivePlayersAnswered,
+  intentFingerprint,
+  processClientIntent,
+  processReconcile,
+} = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
 const { releaseFinishedMatchSessions } = require("./matchmakingHandlers");
 
@@ -28,7 +33,12 @@ function beginInvocation() {
   };
 }
 
-function withDiagnostics(ack, invocation, authorityTimestampEpochMs = null) {
+function withDiagnostics(
+  ack,
+  invocation,
+  authorityTimestampEpochMs = null,
+  operation = null
+) {
   const t2MonotonicMs = performance.now();
   return {
     ...ack,
@@ -37,6 +47,7 @@ function withDiagnostics(ack, invocation, authorityTimestampEpochMs = null) {
       t2EpochMs: performance.timeOrigin + t2MonotonicMs,
       t1ToT2Ms: t2MonotonicMs - invocation.t1MonotonicMs,
       authorityTimestampEpochMs,
+      ...(operation ? { operation } : {}),
     },
     runtime: {
       instanceId: INSTANCE_ID,
@@ -49,6 +60,24 @@ function withDiagnostics(ack, invocation, authorityTimestampEpochMs = null) {
 
 function matchRef(matchId) {
   return getDatabase().ref(`${ROOT_PATH}/matches/${matchId}`);
+}
+
+function answerRef(envelope, uid) {
+  return matchRef(envelope.matchId).child(
+    `private/answerInbox/${envelope.questionId}/${uid}`
+  );
+}
+
+function answerIntentRef(envelope) {
+  return getDatabase().ref(
+    `${ROOT_PATH}/answerIntentClaims/${envelope.matchId}/${envelope.intentId}`
+  );
+}
+
+function answerCloseClaimRef(envelope) {
+  return matchRef(envelope.matchId).child(
+    `private/answerCloseClaims/${envelope.questionId}`
+  );
 }
 
 function rejection(intentId, code, state = null) {
@@ -94,10 +123,166 @@ function preflightAnswer(match, envelope, uid) {
     return "INVALID_MATCH_STATE";
   }
   if (state.currentQuestion.questionId !== envelope.questionId) return "QUESTION_MISMATCH";
+  if (!state.participants?.[uid]?.active) return "NOT_ACTIVE_PLAYER";
+  if (!Number.isSafeInteger(envelope.stateVersion)
+      || envelope.stateVersion < state.currentQuestion.openedStateVersion
+      || envelope.stateVersion > state.stateVersion) {
+    return "STALE_STATE_VERSION";
+  }
   if (!state.currentQuestion.choices.some(
     (choice) => choice.answerId === envelope.payload.answerId
   )) return "INVALID_ANSWER_ID";
   return null;
+}
+
+function answerAck(envelope, state, status, rejectionCode = null, originalStatus = null) {
+  return {
+    intentId: envelope.intentId,
+    status,
+    serverSequence: state?.private?.serverSequence ?? null,
+    publicStateVersion: state?.private?.stateVersion ?? null,
+    rejectionCode,
+    retryable: false,
+    ...(originalStatus ? { originalStatus } : {}),
+  };
+}
+
+function answerRecordMatches(record, envelope, uid) {
+  if (!record || record.uid !== uid || record.eventId !== envelope.intentId) return false;
+  const expectedFingerprint = intentFingerprint(envelope, uid);
+  if (record.fingerprint) return record.fingerprint === expectedFingerprint;
+  return record.questionId === envelope.questionId
+    && record.answerId === envelope.payload.answerId
+    && record.sessionId === envelope.sessionId
+    && record.sessionEpoch === envelope.sessionEpoch;
+}
+
+function classifyStoredAnswer(match, envelope, uid, record) {
+  if (!match?.private) return { accepted: false, code: "UNKNOWN_MATCH" };
+  if (record.status === "ACCEPTED") return { accepted: true, code: null };
+  if (record.status === "REJECTED") {
+    return { accepted: false, code: record.rejectionCode || "INVALID_MATCH_STATE" };
+  }
+  const state = match.private;
+  const question = state.currentQuestion;
+  if (question?.result?.answerEventIds?.[uid] === envelope.intentId) {
+    return { accepted: true, code: null };
+  }
+  if (state.phase !== PHASE.QUESTION_OPEN || !question) {
+    return { accepted: false, code: "INVALID_MATCH_STATE" };
+  }
+  if (question.questionId !== envelope.questionId) {
+    return { accepted: false, code: "QUESTION_MISMATCH" };
+  }
+  const participantError = preflightParticipant(match, envelope, uid);
+  if (participantError) return { accepted: false, code: participantError };
+  if (!state.participants[uid].active) return { accepted: false, code: "NOT_ACTIVE_PLAYER" };
+  if (!Number.isFinite(record.acceptedAtEpochMs)
+      || record.acceptedAtEpochMs > question.deadlineEpochMs) {
+    return { accepted: false, code: "DEADLINE_EXCEEDED" };
+  }
+  return { accepted: true, code: null };
+}
+
+async function createAnswer(envelope, uid) {
+  const reference = answerRef(envelope, uid);
+  let transactionAttempts = 0;
+  const transaction = await reference.transaction((current) => {
+    transactionAttempts += 1;
+    if (current !== null) return;
+    return {
+      uid,
+      eventId: envelope.intentId,
+      fingerprint: intentFingerprint(envelope, uid),
+      questionId: envelope.questionId,
+      answerId: envelope.payload.answerId,
+      sessionId: envelope.sessionId,
+      sessionEpoch: envelope.sessionEpoch,
+      acceptedAtEpochMs: ServerValue.TIMESTAMP,
+      status: "PENDING",
+    };
+  }, undefined, false);
+  return {
+    committed: transaction.committed,
+    record: transaction.snapshot.val(),
+    reference,
+    transactionAttempts,
+  };
+}
+
+async function claimAnswerIntent(envelope, uid) {
+  const reference = answerIntentRef(envelope);
+  const fingerprint = intentFingerprint(envelope, uid);
+  let transactionAttempts = 0;
+  const transaction = await reference.transaction((current) => {
+    transactionAttempts += 1;
+    if (current !== null) return;
+    return {
+      fingerprint,
+      uid,
+      ack: {
+        intentId: envelope.intentId,
+        status: "PENDING",
+        serverSequence: null,
+        publicStateVersion: null,
+        rejectionCode: null,
+        retryable: true,
+      },
+    };
+  }, undefined, false);
+  return {
+    committed: transaction.committed,
+    record: transaction.snapshot.val(),
+    reference,
+    transactionAttempts,
+  };
+}
+
+async function finalizeAnswerIntent(claim, ack, authorityTimestampEpochMs) {
+  await claim.reference.update({
+    ack,
+    authorityTimestampEpochMs,
+  });
+}
+
+async function markAnswerDecision(reference, decision) {
+  await reference.update({
+    status: decision.accepted ? "ACCEPTED" : "REJECTED",
+    rejectionCode: decision.code,
+  });
+}
+
+async function publishAnswered(envelope, uid) {
+  const transaction = await matchRef(envelope.matchId)
+    .child(`public/participants/${uid}`)
+    .transaction((current) => {
+      if (!current || current.answerQuestionId !== envelope.questionId) return;
+      return { ...current, answered: true };
+    }, undefined, false);
+  return transaction.committed;
+}
+
+async function claimAllAnsweredClose(envelope) {
+  const reference = answerCloseClaimRef(envelope);
+  const transaction = await reference.transaction((current) => {
+    if (current !== null) return;
+    return {
+      eventId: envelope.intentId,
+      claimedAtEpochMs: ServerValue.TIMESTAMP,
+    };
+  }, undefined, false);
+  return transaction.committed;
+}
+
+function internalCloseEnvelope(envelope) {
+  return {
+    ...envelope,
+    intentId: `close-${envelope.questionId}`,
+    type: "reconcile",
+    questionId: undefined,
+    stateVersion: undefined,
+    payload: {},
+  };
 }
 
 function preflightParticipant(match, envelope, uid) {
@@ -142,13 +327,12 @@ async function commitClientIntent(envelope, uid, nowEpochMs, staged) {
   return computation.ack;
 }
 
-async function commitReconcile(envelope, uid, nowEpochMs) {
+async function commitReconcile(envelope, uid, nowEpochMs, knownMatch = null) {
   const reference = matchRef(envelope.matchId);
-  const initial = await reference.get();
-  if (!initial.child("private").exists()) {
+  const initialValue = knownMatch || (await reference.get()).val();
+  if (!initialValue?.private) {
     return { ack: rejection(envelope.intentId, "UNKNOWN_MATCH"), phase: null };
   }
-  const initialValue = initial.val();
   let firstAttempt = true;
   let computation = null;
   const transaction = await reference.transaction((current) => {
@@ -167,6 +351,192 @@ async function commitReconcile(envelope, uid, nowEpochMs) {
   return {
     ack: computation.ack,
     phase: transaction.snapshot.child("private/phase").val(),
+  };
+}
+
+async function commitAnswerIntent(envelope, uid, initialMatch) {
+  const intentClaim = await claimAnswerIntent(envelope, uid);
+  const expectedFingerprint = intentFingerprint(envelope, uid);
+  if (!intentClaim.record || intentClaim.record.fingerprint !== expectedFingerprint) {
+    return {
+      ack: answerAck(envelope, initialMatch, "REJECTED", "INTENT_REPLAY_MISMATCH"),
+      authorityTimestampEpochMs: intentClaim.record?.authorityTimestampEpochMs ?? null,
+      answerTransactionAttempts: 0,
+      intentTransactionAttempts: intentClaim.transactionAttempts,
+    };
+  }
+  if (intentClaim.record.ack?.status !== "PENDING") {
+    const originalAck = intentClaim.record.ack;
+    return {
+      ack: answerAck(
+        envelope,
+        initialMatch,
+        "DUPLICATE",
+        originalAck.rejectionCode || null,
+        originalAck.status
+      ),
+      authorityTimestampEpochMs: intentClaim.record.authorityTimestampEpochMs ?? null,
+      answerTransactionAttempts: 0,
+      intentTransactionAttempts: intentClaim.transactionAttempts,
+    };
+  }
+
+  const existing = initialMatch.private.answerInbox?.[envelope.questionId]?.[uid];
+  let created;
+  if (existing) {
+    if (existing.eventId === envelope.intentId
+        && !answerRecordMatches(existing, envelope, uid)) {
+      const ack = answerAck(
+        envelope,
+        initialMatch,
+        "REJECTED",
+        "INTENT_REPLAY_MISMATCH"
+      );
+      await finalizeAnswerIntent(
+        intentClaim,
+        ack,
+        existing.acceptedAtEpochMs ?? null
+      );
+      return {
+        ack,
+        authorityTimestampEpochMs: existing.acceptedAtEpochMs ?? null,
+        answerTransactionAttempts: 0,
+        intentTransactionAttempts: intentClaim.transactionAttempts,
+      };
+    }
+    if (!answerRecordMatches(existing, envelope, uid)) {
+      const preflightError = preflightAnswer(initialMatch, envelope, uid);
+      const ack = answerAck(
+        envelope,
+        initialMatch,
+        "REJECTED",
+        preflightError || "ALREADY_ANSWERED"
+      );
+      await finalizeAnswerIntent(intentClaim, ack, existing.acceptedAtEpochMs ?? null);
+      return {
+        ack,
+        authorityTimestampEpochMs: existing.acceptedAtEpochMs ?? null,
+        answerTransactionAttempts: 0,
+        intentTransactionAttempts: intentClaim.transactionAttempts,
+      };
+    }
+    created = {
+      committed: false,
+      record: existing,
+      reference: answerRef(envelope, uid),
+      transactionAttempts: 0,
+    };
+  } else {
+    const preflightError = preflightAnswer(initialMatch, envelope, uid);
+    if (preflightError) {
+      const ack = answerAck(envelope, initialMatch, "REJECTED", preflightError);
+      await finalizeAnswerIntent(intentClaim, ack, null);
+      return {
+        ack,
+        authorityTimestampEpochMs: null,
+        answerTransactionAttempts: 0,
+        intentTransactionAttempts: intentClaim.transactionAttempts,
+      };
+    }
+    created = await createAnswer(envelope, uid);
+  }
+
+  const currentMatch = await readMatch(envelope.matchId);
+  if (!created.record) {
+    return {
+      ack: answerAck(envelope, currentMatch, "REJECTED", "INTERNAL_RETRYABLE"),
+      authorityTimestampEpochMs: null,
+      answerTransactionAttempts: created.transactionAttempts,
+      intentTransactionAttempts: intentClaim.transactionAttempts,
+    };
+  }
+  if (!answerRecordMatches(created.record, envelope, uid)) {
+    const code = created.record.eventId === envelope.intentId
+      ? "INTENT_REPLAY_MISMATCH"
+      : "ALREADY_ANSWERED";
+    const ack = answerAck(envelope, currentMatch, "REJECTED", code);
+    await finalizeAnswerIntent(
+      intentClaim,
+      ack,
+      created.record.acceptedAtEpochMs ?? null
+    );
+    return {
+      ack,
+      authorityTimestampEpochMs: created.record.acceptedAtEpochMs ?? null,
+      answerTransactionAttempts: created.transactionAttempts,
+      intentTransactionAttempts: intentClaim.transactionAttempts,
+    };
+  }
+
+  const decision = classifyStoredAnswer(currentMatch, envelope, uid, created.record);
+  await markAnswerDecision(created.reference, decision);
+  if (!decision.accepted) {
+    const originalAck = answerAck(envelope, currentMatch, "REJECTED", decision.code);
+    await finalizeAnswerIntent(
+      intentClaim,
+      originalAck,
+      created.record.acceptedAtEpochMs
+    );
+    return {
+      ack: answerAck(
+        envelope,
+        currentMatch,
+        created.committed ? "REJECTED" : "DUPLICATE",
+        decision.code,
+        created.committed ? null : "REJECTED"
+      ),
+      authorityTimestampEpochMs: created.record.acceptedAtEpochMs,
+      answerTransactionAttempts: created.transactionAttempts,
+      intentTransactionAttempts: intentClaim.transactionAttempts,
+    };
+  }
+
+  const isCurrentQuestion = currentMatch.private.currentQuestion?.questionId
+    === envelope.questionId;
+  if (isCurrentQuestion) await publishAnswered(envelope, uid);
+  let ackState = currentMatch;
+  if (isCurrentQuestion
+      && currentMatch.private.phase === PHASE.QUESTION_OPEN
+      && allActivePlayersAnswered(currentMatch.private)
+      && await claimAllAnsweredClose(envelope)) {
+    const acceptedTimes = Object.values(
+      currentMatch.private.answerInbox?.[envelope.questionId] || {}
+    ).map((answer) => answer.acceptedAtEpochMs).filter(Number.isFinite);
+    const closed = await commitReconcile(
+      internalCloseEnvelope(envelope),
+      uid,
+      Math.max(...acceptedTimes),
+      currentMatch
+    );
+    ackState = {
+      private: {
+        serverSequence: closed.ack.serverSequence,
+        stateVersion: closed.ack.publicStateVersion,
+      },
+    };
+  }
+  const originalAck = answerAck(
+    envelope,
+    ackState,
+    "ACCEPTED",
+    null
+  );
+  await finalizeAnswerIntent(
+    intentClaim,
+    originalAck,
+    created.record.acceptedAtEpochMs
+  );
+  return {
+    ack: answerAck(
+      envelope,
+      ackState,
+      created.committed ? "ACCEPTED" : "DUPLICATE",
+      null,
+      created.committed ? null : "ACCEPTED"
+    ),
+    authorityTimestampEpochMs: created.record.acceptedAtEpochMs,
+    answerTransactionAttempts: created.transactionAttempts,
+    intentTransactionAttempts: intentClaim.transactionAttempts,
   };
 }
 
@@ -214,27 +584,26 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
     }
-    let preflightError = null;
     if (envelope.type === "submitAnswer") {
-      preflightError = preflightAnswer(match, envelope, uid);
+      const committed = await commitAnswerIntent(envelope, uid, match);
+      const ack = withDiagnostics(
+        committed.ack,
+        invocation,
+        committed.authorityTimestampEpochMs,
+        process.env.FUNCTIONS_EMULATOR === "true"
+          ? {
+            answerWrite: "PLAYER_QUESTION_CREATE_ONLY",
+            answerTransactionAttempts: committed.answerTransactionAttempts,
+            intentTransactionAttempts: committed.intentTransactionAttempts,
+          }
+          : null
+      );
+      logOutcome("intent", envelope, uid, ack, Boolean(request.app));
+      return ack;
     }
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
-    const staged = envelope.type === "submitAnswer" && !preflightError
-      ? {
-        answer: {
-          uid,
-          eventId: envelope.intentId,
-          questionId: envelope.questionId,
-          answerId: envelope.payload.answerId,
-          sessionId: envelope.sessionId,
-          sessionEpoch: envelope.sessionEpoch,
-          acceptedAtEpochMs: now,
-        },
-        errorCode: null,
-      }
-      : { answer: null, errorCode: preflightError };
     const ack = withDiagnostics(
-      await commitClientIntent(envelope, uid, now, staged),
+      await commitClientIntent(envelope, uid, now, null),
       invocation,
       now
     );

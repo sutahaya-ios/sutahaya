@@ -46,9 +46,9 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
-| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/handlers.js`・`functions/competitive/core.js`・Competitive Core関連test・`docs/COMPETITIVE_V2_SPEC.md` | **Competitive v2 Phase B.5**。4人同時回答時のanswer hot pathを、server authority・deadline・duplicate・scoringを維持したまま局所最適化し、EmulatorでBefore/Afterを測定する。Production deployは行わない | 2026年10月19日 |
 ---
-## 最新更新(2026年8月25日〜10月10日)
+## 最新更新(2026年8月25日〜10月20日)
+- TOKIYA-YAMAMOTO(Codex, 2026年10月20日): **Competitive v2 Phase B.5をLocal / Emulatorまで実装**。4人同時回答がmatch root全体のtransactionで競合していたため、既存answer inboxのPlayer/Question別create-only transactionへ分離し、all-answered時だけ1回root reconcileする構造へ変更。Server timestamp、1人1回答、duplicate/session fencing、deadline、20/10/5/1・誤答-10・無回答0、Realtime projection、settlement scoreを維持。Core Unit 7件、Matchmaking Unit 8件、Core Emulator 4件・20問80回答が成功。Local T1→T2はBefore p50 57.205ms / p95 105.834msからAfter p50 19.402ms / p95 39.003ms、answer/intent claim retry 0件。Rules・Swift・本番環境は未変更。**Production Performance Release BlockerはCloud同条件再測定まで維持**
 - Codex(2026年10月13日): **対戦の中央フィードバックを緑の○・赤の×へ変更**。`BattleView.swift`で自分の正解確定時にも表示し、100pt・1.2秒で消去。既存レイアウト・選択肢・再回答不可の案内は維持。Simulator向けビルドと採点関連15テスト成功。**実画面での表示・タイミングは未検証**(Computer Useの操作権限なし)。
 - Codex(2026年10月13日): **対戦結果へA案の表彰台と下端固定ボタンを実装、解説画面をカード形式へ変更**。同順位・ボタン表示条件・広告と再戦処理を維持。Simulator向けビルドと同順位の既存1テスト成功。本番Viewを一時撮影アプリに組み込み、固定データで8人結果・表付き長文解説のダーク表示を確認。**本番フローでの再戦・復習・解説シート開閉とライト表示は未検証**(Computer Useの操作権限なし)。A案採用を`docs/DECISIONS.md`へ記録し、指定どおりモック依頼書を削除。
 - Codex(2026年10月13日): **一人練習に案1の常設設定カードを実装**。問題数と1問の制限時間をメニューで選択し、ランダム練習に反映。学習専用のAppStorageで問題数を共通保存、時間は教材別に保存し、対戦設定とは分離。復習は従来の一覧へ遷移する。Simulator向けビルド・QuizSessionの10テスト成功。**設定操作・再起動後の保持・練習への遷移と実表示は未検証**(Computer Useの操作権限なし)。

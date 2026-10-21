@@ -27,7 +27,7 @@ function intentFingerprint(envelope, uid) {
 }
 
 function publicParticipants(privateState) {
-  const currentAnswers = privateState.currentQuestion?.answers || {};
+  const currentAnswers = acceptedAnswersForCurrentQuestion(privateState);
   return Object.fromEntries(privateState.participantOrder.map((uid) => {
     const participant = privateState.participants[uid];
     return [uid, {
@@ -38,6 +38,7 @@ function publicParticipants(privateState) {
       ready: participant.ready,
       active: participant.active,
       forfeited: participant.forfeited,
+      answerQuestionId: privateState.currentQuestion?.questionId ?? null,
       answered: Boolean(currentAnswers[uid]),
       score: privateState.scores[uid] || 0,
     }];
@@ -107,8 +108,23 @@ function activeParticipantUIDs(privateState) {
   );
 }
 
+function acceptedAnswersForCurrentQuestion(privateState) {
+  const question = privateState.currentQuestion;
+  if (!question) return {};
+  const inboxAnswers = privateState.answerInbox?.[question.questionId];
+  const candidates = inboxAnswers || question.answers || {};
+  return Object.fromEntries(Object.entries(candidates).filter(([uid, answer]) => (
+    privateState.participants?.[uid]
+      && answer?.uid === uid
+      && answer.questionId === question.questionId
+      && answer.status !== "REJECTED"
+      && Number.isFinite(answer.acceptedAtEpochMs)
+      && answer.acceptedAtEpochMs <= question.deadlineEpochMs
+  )));
+}
+
 function allActivePlayersAnswered(privateState) {
-  const answers = privateState.currentQuestion?.answers || {};
+  const answers = acceptedAnswersForCurrentQuestion(privateState);
   return activeParticipantUIDs(privateState).every((uid) => Boolean(answers[uid]));
 }
 
@@ -239,8 +255,10 @@ function openQuestion(privateState, questionIndex, nowEpochMs, nextStateVersion)
 
 function closeQuestion(privateState, nowEpochMs, closeReason) {
   const question = privateState.currentQuestion;
+  const acceptedAnswers = acceptedAnswersForCurrentQuestion(privateState);
+  question.answers = acceptedAnswers;
   const scoring = scoreQuestion({
-    answers: question.answers,
+    answers: acceptedAnswers,
     participantOrder: privateState.participantOrder,
     deadlineEpochMs: question.deadlineEpochMs,
     correctAnswerId: question.correctAnswerId,
@@ -477,6 +495,7 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
 }
 
 module.exports = {
+  acceptedAnswersForCurrentQuestion,
   activeParticipantUIDs,
   allActivePlayersAnswered,
   existingIntentOutcome,

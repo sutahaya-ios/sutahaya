@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
+const { performance } = require("node:perf_hooks");
 const { after, before, beforeEach, describe, it } = require("node:test");
 const {
   assertFails,
@@ -260,8 +261,44 @@ async function answerCurrentQuestion(clients, matchId, selection = "correct") {
       payload: { answerId: answerIds[index] },
     }
   ));
-  const acks = await Promise.all(events.map((event, index) => callIntent(clients[index], event)));
-  return { acks, events, answerIds };
+  const measured = await Promise.all(events.map(async (event, index) => {
+    const t0EpochMs = performance.timeOrigin + performance.now();
+    const ack = await callIntent(clients[index], event);
+    const t3EpochMs = performance.timeOrigin + performance.now();
+    return {
+      ack,
+      t0ToT2Ms: ack.timing.t2EpochMs - t0EpochMs,
+      t0ToT3Ms: t3EpochMs - t0EpochMs,
+      answerTransactionAttempts: ack.timing.operation?.answerTransactionAttempts ?? 0,
+      intentTransactionAttempts: ack.timing.operation?.intentTransactionAttempts ?? 0,
+    };
+  }));
+  return {
+    acks: measured.map((entry) => entry.ack),
+    measurements: measured.map((entry) => ({
+      t1ToT2Ms: entry.ack.timing.t1ToT2Ms,
+      t0ToT2Ms: entry.t0ToT2Ms,
+      t0ToT3Ms: entry.t0ToT3Ms,
+      answerTransactionAttempts: entry.answerTransactionAttempts,
+      intentTransactionAttempts: entry.intentTransactionAttempts,
+    })),
+    events,
+    answerIds,
+  };
+}
+
+function metricSummary(values) {
+  const sorted = [...values].sort((left, right) => left - right);
+  const percentile = (ratio) => sorted[Math.min(
+    sorted.length - 1,
+    Math.ceil(sorted.length * ratio) - 1
+  )];
+  return {
+    min: sorted[0],
+    p50: percentile(0.5),
+    p95: percentile(0.95),
+    max: sorted.at(-1),
+  };
 }
 
 async function advanceFromResult(clients, matchId, questionIndex) {
@@ -307,6 +344,14 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     await assertFails(set(
       ref(member, `competitiveV2/matches/${matchId}/private/answerInbox/q/member`),
       { answerId: "spoof" }
+    ));
+    await assertFails(get(ref(
+      member,
+      `competitiveV2/answerIntentClaims/${matchId}/event-secret`
+    )));
+    await assertFails(set(
+      ref(member, `competitiveV2/answerIntentClaims/${matchId}/event-spoof`),
+      { fingerprint: "spoof" }
     ));
   });
 
@@ -500,8 +545,16 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     await waitForTrackers(trackers, (value) => value.phase === PHASE.QUESTION_OPEN, "first question");
 
     const questionResults = [];
+    const hotPathMeasurements = [];
+    let firstQuestionRetryEvent = null;
     for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
-      const { acks } = await answerCurrentQuestion(clients, matchId, "correct");
+      const { acks, events, measurements } = await answerCurrentQuestion(
+        clients,
+        matchId,
+        "correct"
+      );
+      hotPathMeasurements.push(...measurements);
+      if (questionIndex === 0) firstQuestionRetryEvent = events[0];
       assert.ok(acks.every((ack) => ack.status === "ACCEPTED"));
       await waitForTrackers(
         trackers,
@@ -528,6 +581,17 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
             && Object.values(value.participants).every((participant) => !participant.answered),
           `clean QUESTION_OPEN ${questionIndex + 1}`
         );
+        if (questionIndex === 0) {
+          const delayedRetry = await callIntent(clients[0], firstQuestionRetryEvent);
+          assert.equal(delayedRetry.status, "DUPLICATE");
+          const changedReplay = await callIntent(clients[0], {
+            ...firstQuestionRetryEvent,
+            payload: { answerId: "changed-replay-answer" },
+          });
+          assert.equal(changedReplay.rejectionCode, "INTENT_REPLAY_MISMATCH");
+          const afterRetry = await readPublic(clients[0], matchId);
+          assert.equal(afterRetry.participants[clients[0].uid].answered, false);
+        }
       }
     }
 
@@ -564,5 +628,32 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     assert.equal(privateState.phase, PHASE.MATCH_FINISHED);
     assert.equal(privateState.questionInstances.length, 20);
     assert.equal(Object.keys(privateState.currentQuestion.answers).length, 4);
+    const finalScores = { ...privateState.scores };
+    assert.equal((await callReconcile(
+      clients[0],
+      matchId,
+      "settlement"
+    )).status, "ACCEPTED");
+    const settlementPending = await readPrivate(matchId);
+    assert.equal(settlementPending.phase, PHASE.SETTLEMENT_PENDING);
+    assert.deepEqual(settlementPending.scores, finalScores);
+    console.info("COMPETITIVE_HOT_PATH_METRICS", JSON.stringify({
+      sampleCount: hotPathMeasurements.length,
+      t1ToT2Ms: metricSummary(hotPathMeasurements.map((entry) => entry.t1ToT2Ms)),
+      t0ToT2Ms: metricSummary(hotPathMeasurements.map((entry) => entry.t0ToT2Ms)),
+      t0ToT3Ms: metricSummary(hotPathMeasurements.map((entry) => entry.t0ToT3Ms)),
+      answerTransactionAttempts: metricSummary(hotPathMeasurements.map(
+        (entry) => entry.answerTransactionAttempts
+      )),
+      intentTransactionAttempts: metricSummary(hotPathMeasurements.map(
+        (entry) => entry.intentTransactionAttempts
+      )),
+      contentionRetryCount: hotPathMeasurements.reduce(
+        (sum, entry) => sum
+          + Math.max(0, entry.answerTransactionAttempts - 1)
+          + Math.max(0, entry.intentTransactionAttempts - 1),
+        0
+      ),
+    }));
   });
 });

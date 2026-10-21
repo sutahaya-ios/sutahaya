@@ -6,6 +6,7 @@ const { describe, it } = require("node:test");
 const { PROTOCOL_VERSION, PHASE } = require("../functions/competitive/constants");
 const { validateClientIntent } = require("../functions/competitive/contract");
 const {
+  acceptedAnswersForCurrentQuestion,
   processClientIntent,
   processReconcile,
   syncPublic,
@@ -220,6 +221,57 @@ describe("Competitive Core unit", () => {
     });
     assert.equal(result.ack.rejectionCode, "DEADLINE_EXCEEDED");
     assert.equal(result.match.private.scores.p1, 0);
+  });
+
+  it("scores only accepted create-only inbox records at deadline close", () => {
+    let match = openMatch();
+    const question = match.private.currentQuestion;
+    match.private.answerInbox = {
+      [question.questionId]: {
+        p1: {
+          uid: "p1",
+          eventId: "accepted-p1",
+          questionId: question.questionId,
+          answerId: question.correctAnswerId,
+          acceptedAtEpochMs: question.openedAtEpochMs + 10,
+          status: "ACCEPTED",
+        },
+        p2: {
+          uid: "p2",
+          eventId: "rejected-p2",
+          questionId: question.questionId,
+          answerId: question.correctAnswerId,
+          acceptedAtEpochMs: question.openedAtEpochMs + 20,
+          status: "REJECTED",
+          rejectionCode: "INVALID_MATCH_STATE",
+        },
+        p3: {
+          uid: "p3",
+          eventId: "late-p3",
+          questionId: question.questionId,
+          answerId: question.correctAnswerId,
+          acceptedAtEpochMs: question.deadlineEpochMs + 1,
+          status: "REJECTED",
+          rejectionCode: "DEADLINE_EXCEEDED",
+        },
+      },
+    };
+
+    assert.deepEqual(Object.keys(acceptedAnswersForCurrentQuestion(match.private)), ["p1"]);
+    const result = applyReconcile(
+      match,
+      players[0],
+      "deadline-with-inbox",
+      question.deadlineEpochMs + 1
+    );
+    match = result.match;
+
+    assert.equal(match.private.phase, PHASE.QUESTION_RESULT);
+    assert.deepEqual(match.private.currentQuestion.result.correctUIDs, ["p1"]);
+    assert.deepEqual(match.private.currentQuestion.result.unansweredUIDs, ["p2", "p3", "p4"]);
+    assert.deepEqual(match.private.currentQuestion.result.scoreDeltas, {
+      p1: 20, p2: 0, p3: 0, p4: 0,
+    });
   });
 
   it("keeps the answer key private while a question is open", () => {

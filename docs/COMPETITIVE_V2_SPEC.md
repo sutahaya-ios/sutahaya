@@ -1035,6 +1035,17 @@ Phase A-2完了条件:
 
 **Production Performance Release Blocker:** 4人同時answer時、match root transactionの競合/retryによりT1→T2がp50約702ms、p95約1,143msとなった。ordering fidelityは40/40 round、pair 240/240一致、inversion 0である。Architecture Decision Gateではないが、一般公開前にtransaction範囲の局所最適化と同条件の再測定を必須とする。Matchmaking処理は別root/callableに分離し、answer hot pathへ混ぜない。
 
+#### Phase B.5: Answer Hot Path Local Optimization
+
+Phase B.5ではProduct ruleとServer authorityを変えず、`submitAnswer`だけをmatch root transactionから分離する。回答は既存の`private/answerInbox/{questionId}/{uid}`へPlayer/Question単位のcreate-only transactionで保存し、受付時刻はRTDB `ServerValue.TIMESTAMP`を使用する。intentIdのグローバルなduplicate/replay検証は、match-root closeと競合しないdeny-by-defaultの`answerIntentClaims/{matchId}/{intentId}`で維持する。session fencing、deadline、正誤、canonical ordering、scoreは引き続きServerが判定し、Client指定時刻・score・順位を信用しない。
+
+- 個別回答ではmatch全体を書き換えず、回答leaf、同Playerのpublic answered projectionだけを更新する。public participantには対象問題を照合する`answerQuestionId`を付け、次問題への遷移と競合した古いanswered書込みを拒否する。
+- 全active Player回答時は`private/answerCloseClaims/{questionId}`をcreate-onlyでclaimし、1回だけ既存のmatch root reconcileを実行する。deadline reconcileも同じidempotent close/scoringを使用する。
+- close時にacceptedかつdeadline内のanswer inboxをcanonical snapshotとして`currentQuestion.answers`へ確定し、Server timestamp昇順・同一timestamp時participant orderで採点する。REJECTED/late recordは得点・answered判定へ含めない。
+- private metadataの`fingerprint` / `status` / `rejectionCode` / `answerCloseClaims`、deny-by-defaultの`answerIntentClaims`、publicの`answerQuestionId`は加算的な内部項目であり、既存Client契約・Rules・既存data migrationを必要としない。
+
+Local Emulator（4人同時回答×20問、80 answer）のBeforeはT1→T2 p50 57.205ms / p95 105.834ms、T0→T3 p50 61.060ms / p95 118.282ms。AfterはT1→T2 p50 19.402ms / p95 39.003ms、T0→T3 p50 23.580ms / p95 45.014msで、Player/Question answer transactionとintent claim transactionは全80件1 attempt、contention retry 0件だった。これはLocal比較証拠であり、上記Production Performance Release Blockerを解除しない。Productionへ`competitiveIntent`と`competitiveReconcileMatch`をdeployした後、同条件の4 Player Cloud測定とordering/correctness確認に成功して初めて解除を判断する。
+
 Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、LeaderboardはPhase A-2へ含めない。
 
 ### Phase B: Identity / Matchmaking Foundation
