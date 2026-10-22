@@ -16,6 +16,7 @@ const {
   getDatabase,
   goOffline,
   ref,
+  remove,
   serverTimestamp,
   set,
 } = require("firebase/database");
@@ -140,6 +141,18 @@ function matchEnvelope(session, type, suffix, overrides = {}) {
     payload: {},
     ...overrides,
   };
+}
+
+function presencePayload(session, connected) {
+  const value = {
+    connected,
+    matchId: session.matchId,
+    sessionId: session.sessionId,
+    sessionEpoch: session.sessionEpoch,
+    updatedAtEpochMs: serverTimestamp(),
+  };
+  if (!connected) value.disconnectedAtEpochMs = serverTimestamp();
+  return value;
 }
 
 async function projection(client) {
@@ -325,12 +338,11 @@ describe("Competitive Phase C Emulator", () => {
     const client = roomA.clients[0];
     const sessionA = roomA.sessions[0];
     const presencePath = `competitiveV2/presence/${roomA.matchId}/${client.uid}`;
-    const disconnected = {
-      status: "DISCONNECTED",
-      sessionId: sessionA.sessionId,
-      sessionEpoch: sessionA.sessionEpoch,
-      updatedAtEpochMs: serverTimestamp(),
-    };
+    const connected = presencePayload(sessionA, true);
+    const disconnected = presencePayload(sessionA, false);
+
+    await assertSucceeds(set(ref(client.database, presencePath), connected));
+    assert.equal((await adminRequest(presencePath)).connected, true);
     await assertSucceeds(set(ref(client.database, presencePath), disconnected));
     await assertFails(get(ref(client.database, presencePath)));
     await waitFor(async () => {
@@ -339,6 +351,19 @@ describe("Competitive Phase C Emulator", () => {
       );
       return participant?.status === "RECONNECTING";
     }, "RECONNECTING projection");
+
+    await assertFails(set(ref(client.database, presencePath), {
+      ...disconnected,
+      sessionId: `${sessionA.sessionId}-stale`,
+    }));
+    await assertFails(set(ref(client.database, presencePath), {
+      ...disconnected,
+      sessionEpoch: sessionA.sessionEpoch + 1,
+    }));
+    const attacker = await createClient();
+    await assertFails(set(ref(attacker.database, presencePath), disconnected));
+    await assertFails(remove(ref(client.database, presencePath)));
+    assert.equal((await adminRequest(presencePath)).connected, false);
 
     const open = await adminRequest(`competitiveV2/matches/${roomA.matchId}/private`);
     const blockedAnswer = await coreIntent(client, matchEnvelope(sessionA, "submitAnswer", "offline", {
@@ -366,11 +391,7 @@ describe("Competitive Phase C Emulator", () => {
     await reconcile(client, sessionA, "advance-while-disconnected");
     await reconcile(client, sessionA, "open-after-disconnected-question");
 
-    await assertSucceeds(set(ref(client.database, presencePath), {
-      ...disconnected,
-      status: "CONNECTED",
-      updatedAtEpochMs: serverTimestamp(),
-    }));
+    await assertSucceeds(set(ref(client.database, presencePath), connected));
     await waitFor(async () => {
       const participant = await adminRequest(
         `competitiveV2/matches/${roomA.matchId}/public/participants/${client.uid}`
@@ -402,8 +423,6 @@ describe("Competitive Phase C Emulator", () => {
     assert.equal(forfeited.status, "FORFEITED");
     assert.equal(forfeited.forfeitReason, "RECONNECT_TIMEOUT");
 
-    const attacker = await createClient();
-    await assertFails(set(ref(attacker.database, presencePath), disconnected));
     assert.equal(
       (await finishMatchFromCurrentState(client, sessionA, roomA.matchId)).phase,
       PHASE.SETTLED
@@ -437,6 +456,18 @@ describe("Competitive Phase C Emulator", () => {
         : null;
     }, "Room B");
 
+    const roomBPresencePath = `competitiveV2/presence/${sessionB.matchId}/${client.uid}`;
+    await assertSucceeds(set(
+      ref(client.database, roomBPresencePath),
+      presencePayload(sessionB, true)
+    ));
+    const roomBPresenceBefore = await adminRequest(roomBPresencePath);
+    await assertFails(set(
+      ref(client.database, presencePath),
+      presencePayload(sessionA, false)
+    ));
+    assert.deepEqual(await adminRequest(roomBPresencePath), roomBPresenceBefore);
+
     const roomBBefore = await adminRequest(`competitiveV2/matches/${sessionB.matchId}/private`);
     const projectionBefore = await projection(client);
     const staleRoomAIntents = [
@@ -469,6 +500,18 @@ describe("Competitive Phase C Emulator", () => {
       },
     });
     await joinReadyOpen([client], [sessionB]);
+    await assertSucceeds(set(
+      ref(client.database, roomBPresencePath),
+      presencePayload(sessionB, false)
+    ));
+    await waitFor(async () => {
+      const participant = await adminRequest(
+        `competitiveV2/matches/${sessionB.matchId}/private/participants/${client.uid}`
+      );
+      return participant?.status === "RECONNECTING";
+    }, "Room B legitimate disconnect");
+    await adminRequest(roomBPresencePath, "DELETE");
+    assert.equal(await adminRequest(roomBPresencePath), null);
     const scoreBefore = (await adminRequest(
       `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
     )) || 0;

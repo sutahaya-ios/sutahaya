@@ -755,15 +755,19 @@ const competitivePresenceChanged = onValueWritten({
   maxInstances: FUNCTION_OPTIONS.maxInstances,
 }, async (event) => {
   const signal = event.data.after.val();
-  if (!signal || !["CONNECTED", "DISCONNECTED"].includes(signal.status)) return;
+  if (!signal || typeof signal.connected !== "boolean") return;
+  const normalizedSignal = {
+    ...signal,
+    status: signal.connected ? "CONNECTED" : "DISCONNECTED",
+  };
   const { matchId, uid } = event.params;
   const reference = matchRef(matchId);
   const initial = await reference.get();
   const initialValue = initial.val();
   if (!initialValue?.private) return;
   const envelope = {
-    sessionId: signal.sessionId,
-    sessionEpoch: signal.sessionEpoch,
+    sessionId: normalizedSignal.sessionId,
+    sessionEpoch: normalizedSignal.sessionEpoch,
     matchId,
   };
   const participantError = preflightParticipant(initialValue, envelope, uid);
@@ -784,7 +788,7 @@ const competitivePresenceChanged = onValueWritten({
     if (current === null && firstAttempt) current = initialValue;
     firstAttempt = false;
     if (!current?.private) return;
-    computation = processPresenceSignal(current, signal, uid, nowEpochMs);
+    computation = processPresenceSignal(current, normalizedSignal, uid, nowEpochMs);
     return computation.rejectionCode === null ? computation.match : undefined;
   }, undefined, false);
   if (!transaction.committed) {

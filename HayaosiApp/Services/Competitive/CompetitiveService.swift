@@ -178,7 +178,7 @@ final class CompetitiveService {
 
     /// Background移行など、通信切断を確定できる場合にgrace開始をServerへ通知する。
     func markDisconnected() async throws {
-        try await presence().setValue(presencePayload(status: "DISCONNECTED"))
+        try await presence().setValue(presencePayload(connected: false))
     }
 
     /// 同じUID / session fenceで15秒以内に復帰する。新しいmatch sessionは作らない。
@@ -204,19 +204,36 @@ final class CompetitiveService {
         return reference
     }
 
-    private func presencePayload(status: String) -> [String: Any] {
-        [
-            "status": status,
+    nonisolated static func presencePayload(
+        session: CompetitiveSession,
+        connected: Bool,
+        timestamp: Any
+    ) -> [String: Any] {
+        var payload: [String: Any] = [
+            "connected": connected,
+            "matchId": session.matchId,
             "sessionId": session.sessionId,
             "sessionEpoch": session.sessionEpoch,
-            "updatedAtEpochMs": ServerValue.timestamp()
+            "updatedAtEpochMs": timestamp
         ]
+        if !connected {
+            payload["disconnectedAtEpochMs"] = timestamp
+        }
+        return payload
+    }
+
+    private func presencePayload(connected: Bool) -> [String: Any] {
+        Self.presencePayload(
+            session: session,
+            connected: connected,
+            timestamp: ServerValue.timestamp()
+        )
     }
 
     private func registerConnectedPresence() async throws {
         let reference = presence()
-        try await reference.onDisconnectSetValue(presencePayload(status: "DISCONNECTED"))
-        try await reference.setValue(presencePayload(status: "CONNECTED"))
+        try await reference.onDisconnectSetValue(presencePayload(connected: false))
+        try await reference.setValue(presencePayload(connected: true))
     }
 
     private func observeAppLifecycle() {

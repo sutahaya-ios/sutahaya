@@ -69,6 +69,33 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertEqual(result.ratingDelta, 18)
     }
 
+    func test_PresenceはSessionFenceを保ったOfflineTombstoneを生成する() {
+        let session = session()
+        let online = CompetitiveService.presencePayload(
+            session: session,
+            connected: true,
+            timestamp: 123
+        )
+        XCTAssertEqual(online["connected"] as? Bool, true)
+        XCTAssertEqual(online["matchId"] as? String, session.matchId)
+        XCTAssertEqual(online["sessionId"] as? String, session.sessionId)
+        XCTAssertEqual(online["sessionEpoch"] as? Int, session.sessionEpoch)
+        XCTAssertEqual(online["updatedAtEpochMs"] as? Int, 123)
+        XCTAssertNil(online["disconnectedAtEpochMs"])
+
+        let offline = CompetitiveService.presencePayload(
+            session: session,
+            connected: false,
+            timestamp: 456
+        )
+        XCTAssertEqual(offline["connected"] as? Bool, false)
+        XCTAssertEqual(offline["matchId"] as? String, session.matchId)
+        XCTAssertEqual(offline["sessionId"] as? String, session.sessionId)
+        XCTAssertEqual(offline["sessionEpoch"] as? Int, session.sessionEpoch)
+        XCTAssertEqual(offline["updatedAtEpochMs"] as? Int, 456)
+        XCTAssertEqual(offline["disconnectedAtEpochMs"] as? Int, 456)
+    }
+
     private func profile(
         tier: CompetitiveTier,
         ratingBattle: Bool,
