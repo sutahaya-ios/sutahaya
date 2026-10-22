@@ -133,6 +133,23 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
     };
   }
 
+  const publicPlayerResults = Object.fromEntries(participants.flatMap((participant) => {
+    if (participant.kind === PARTICIPANT_KIND.NPC) return [];
+    const result = playerResults[participant.uid];
+    const isRatingBattle = result.currentTier === TIER.RATING_BATTLE;
+    return [[participant.uid, {
+      rank: result.rank,
+      forfeited: result.forfeited,
+      previousTier: participant.preMatchTier,
+      currentTier: result.currentTier,
+      ratingBattle: isRatingBattle,
+      ...(isRatingBattle ? {
+        displayRating: result.mmrAfter,
+        ratingDelta: result.ratingDelta,
+      } : {}),
+    }]];
+  }));
+
   const settlement = {
     settlementId: `${matchId}:${SETTLEMENT_VERSION}`,
     settlementVersion: SETTLEMENT_VERSION,
@@ -153,6 +170,7 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
     status: settlement.status,
     settledAtEpochMs: settlement.settledAtEpochMs,
     seasonId: settlement.seasonId,
+    publicPlayerResults,
   };
   match.private.stateVersion += 1;
   match.private.serverSequence += 1;
@@ -177,6 +195,7 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
   match.public.settlement = {
     status: settlement.status,
     settlementId: settlement.settlementId,
+    playerResults: publicPlayerResults,
   };
   if (root.presence) delete root.presence[matchId];
   return { root, changed: true, status: "SETTLED", settlement };

@@ -203,6 +203,10 @@ describe("Competitive Phase B matchmaking unit", () => {
   it("waits five seconds before filling Bronze vacancies with server-owned NPCs", () => {
     const joined = addPlayer({}, "p1", 0);
     assert.equal(joined.ack.nextCheckAfterMs, RATING_CONFIG.npcFillWaitMs.BRONZE);
+    assert.equal(
+      joined.state.public.p1.nextCheckAfterMs,
+      RATING_CONFIG.npcFillWaitMs.BRONZE
+    );
     let queued = joined.state;
     queued = addPlayer(queued, "p2", 1).state;
     queued = addPlayer(queued, "p3", 2).state;

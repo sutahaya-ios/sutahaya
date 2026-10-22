@@ -28,6 +28,7 @@ struct BattleHubView: View {
 
     @State private var onlineSession: OnlineBattleSession?
     @State private var showOnlineRoom = false
+    @State private var showCompetitive = false
     @State private var showFriendMenu = false
     @State private var showSettings = false
     @State private var showTutorial = false
@@ -111,6 +112,9 @@ struct BattleHubView: View {
                 joiningInviteID: joiningInviteID,
                 onAcceptInvite: { accept($0, isPreview: !isOnlineReady) }
             )
+        }
+        .navigationDestination(isPresented: $showCompetitive) {
+            CompetitiveFlowView()
         }
         .navigationDestination(isPresented: $showOnlineRoom) {
             if let onlineSession {
@@ -299,10 +303,16 @@ struct BattleHubView: View {
     private var modeButtons: some View {
         HStack(spacing: 12) {
             BattleModeButton(
-                title: "オンライン対戦",
+                title: "ランク戦",
                 systemImage: "globe",
-                isEnabled: false,
-                action: {}
+                isEnabled: isOnlineReady,
+                action: {
+                    if isOnlineReady {
+                        showCompetitive = true
+                    } else {
+                        showPreviewAlert = true
+                    }
+                }
             )
 
             BattleModeButton(

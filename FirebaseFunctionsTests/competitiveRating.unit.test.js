@@ -358,6 +358,16 @@ describe("Competitive Phase D-2 settlement", () => {
       result.root.matchmaking.private.settlements["match-rating"].playerResults,
       result.settlement.playerResults
     );
+    const publicResult = result.root.matches["match-rating"].public.settlement.playerResults.p1;
+    assert.deepEqual(publicResult, {
+      rank: 1,
+      forfeited: false,
+      previousTier: TIER.BRONZE,
+      currentTier: TIER.SILVER,
+      ratingBattle: false,
+    });
+    assert.equal(JSON.stringify(publicResult).includes("mmr"), false);
+    assert.equal(JSON.stringify(publicResult).includes("Multiplier"), false);
   });
 
   it("does not double-apply duplicate or retry settlement", () => {
@@ -438,6 +448,14 @@ describe("Competitive Phase D-2 settlement", () => {
       RATING_CONFIG.seasonEpochStartMs + 2
     );
     assert.equal(promoted.settlement.playerResults.p1.currentTier, TIER.RATING_BATTLE);
+    assert.equal(
+      promoted.root.matches["match-rating"].public.settlement.playerResults.p1.displayRating,
+      promoted.settlement.playerResults.p1.mmrAfter
+    );
+    assert.equal(
+      promoted.root.matches["match-rating"].public.settlement.playerResults.p1.ratingDelta,
+      promoted.settlement.playerResults.p1.ratingDelta
+    );
 
     const ratingBattle = settlementRoot({
       ratings: [1_800, 1_800, 1_800, 1_800],
@@ -452,5 +470,9 @@ describe("Competitive Phase D-2 settlement", () => {
     );
     assert.equal(demoted.settlement.playerResults.p1.mmrAfter, 1_780);
     assert.equal(demoted.settlement.playerResults.p1.currentTier, TIER.PLATINUM);
+    const publicDemoted = demoted.root.matches["match-rating"].public.settlement.playerResults.p1;
+    assert.equal(publicDemoted.currentTier, TIER.PLATINUM);
+    assert.equal(Object.hasOwn(publicDemoted, "displayRating"), false);
+    assert.equal(Object.hasOwn(publicDemoted, "ratingDelta"), false);
   });
 });

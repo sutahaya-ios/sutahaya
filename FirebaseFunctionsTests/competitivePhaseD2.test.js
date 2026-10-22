@@ -333,6 +333,19 @@ async function assertFullScenario({
   for (const result of Object.values(settlement.playerResults)) {
     assert.equal(result.humanWeight, expectedHumanWeight, name);
   }
+  const publicSettlement = await adminRequest(
+    `competitiveV2/matches/${context.matchId}/public/settlement/playerResults`
+  );
+  assert.deepEqual(
+    Object.keys(publicSettlement).sort(),
+    Object.keys(settlement.playerResults).sort(),
+    name
+  );
+  const serializedPublicSettlement = JSON.stringify(publicSettlement);
+  assert.equal(serializedPublicSettlement.includes("mmrBefore"), false, name);
+  assert.equal(serializedPublicSettlement.includes("rawDelta"), false, name);
+  assert.equal(serializedPublicSettlement.includes("lossMultiplier"), false, name);
+  assert.equal(serializedPublicSettlement.includes("humanWeight"), false, name);
   return context;
 }
 

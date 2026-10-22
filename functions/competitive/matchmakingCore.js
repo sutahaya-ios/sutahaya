@@ -156,6 +156,9 @@ function processJoinQueue(input, intent, uid, {
   };
   state.public[uid] = publicProjection(uid, session, nowEpochMs, {
     queuedAtEpochMs: nowEpochMs,
+    ...(npcFillWaitMsForTiers([competitive.currentTier]) !== null
+      ? { nextCheckAfterMs: npcFillWaitMsForTiers([competitive.currentTier]) }
+      : {}),
   }, profile);
   const result = ack(intent, "ACCEPTED", {
     sessionId: session.sessionId,

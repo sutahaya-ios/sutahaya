@@ -80,6 +80,22 @@ struct CompetitiveFinalResult: Equatable, Sendable {
     let finishedAtEpochMS: Double
 }
 
+struct CompetitiveSettlementPlayerResult: Equatable, Sendable {
+    let rank: Int
+    let forfeited: Bool
+    let previousTier: CompetitiveTier
+    let currentTier: CompetitiveTier
+    let ratingBattle: Bool
+    let displayRating: Int?
+    let ratingDelta: Int?
+}
+
+struct CompetitiveSettlementProjection: Equatable, Sendable {
+    let status: String
+    let settlementId: String
+    let playerResults: [String: CompetitiveSettlementPlayerResult]
+}
+
 struct CompetitivePublicState: Equatable, Sendable {
     let matchId: String
     let protocolVersion: String
@@ -94,6 +110,7 @@ struct CompetitivePublicState: Equatable, Sendable {
     let countdownEndsAtEpochMS: Double?
     let resultEndsAtEpochMS: Double?
     let finalResult: CompetitiveFinalResult?
+    let settlement: CompetitiveSettlementProjection?
 
     init?(databaseValue value: Any?) {
         guard let value = CompetitiveValue.dictionary(value),
@@ -154,6 +171,7 @@ struct CompetitivePublicState: Equatable, Sendable {
         self.countdownEndsAtEpochMS = CompetitiveValue.double(value["countdownEndsAtEpochMs"])
         self.resultEndsAtEpochMS = CompetitiveValue.double(value["resultEndsAtEpochMs"])
         self.finalResult = Self.finalResult(value["finalResult"])
+        self.settlement = Self.settlement(value["settlement"])
     }
 
     private static func question(_ rawValue: Any?) -> CompetitiveQuestion? {
@@ -221,6 +239,42 @@ struct CompetitivePublicState: Equatable, Sendable {
             finishedAtEpochMS: finishedAtEpochMS
         )
     }
+
+    private static func settlement(_ rawValue: Any?) -> CompetitiveSettlementProjection? {
+        guard let value = CompetitiveValue.dictionary(rawValue),
+              let status = CompetitiveValue.string(value["status"]),
+              let settlementId = CompetitiveValue.string(value["settlementId"])
+        else { return nil }
+        let resultValues = CompetitiveValue.dictionary(value["playerResults"]) ?? [:]
+        let playerResults = resultValues.reduce(
+            into: [String: CompetitiveSettlementPlayerResult]()
+        ) { result, entry in
+            guard let player = CompetitiveValue.dictionary(entry.value),
+                  let rank = CompetitiveValue.int(player["rank"]),
+                  let forfeited = CompetitiveValue.bool(player["forfeited"]),
+                  let previousTierValue = CompetitiveValue.string(player["previousTier"]),
+                  let previousTier = CompetitiveTier(rawValue: previousTierValue),
+                  let currentTierValue = CompetitiveValue.string(player["currentTier"]),
+                  let currentTier = CompetitiveTier(rawValue: currentTierValue),
+                  let ratingBattle = CompetitiveValue.bool(player["ratingBattle"])
+            else { return }
+            result[entry.key] = CompetitiveSettlementPlayerResult(
+                rank: rank,
+                forfeited: forfeited,
+                previousTier: previousTier,
+                currentTier: currentTier,
+                ratingBattle: ratingBattle,
+                displayRating: CompetitiveValue.int(player["displayRating"]),
+                ratingDelta: CompetitiveValue.int(player["ratingDelta"])
+            )
+        }
+        guard playerResults.count == resultValues.count else { return nil }
+        return CompetitiveSettlementProjection(
+            status: status,
+            settlementId: settlementId,
+            playerResults: playerResults
+        )
+    }
 }
 
 struct CompetitiveSession: Equatable, Sendable {
@@ -275,6 +329,7 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
     let matchId: String?
     let assignmentTicket: String?
     let queuedAtEpochMS: Double?
+    let nextCheckAfterMS: Int?
     let updatedAtEpochMS: Double
     let competitive: CompetitiveProfileProjection?
 
@@ -310,6 +365,7 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
         self.matchId = CompetitiveValue.string(value["matchId"])
         self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
         self.queuedAtEpochMS = CompetitiveValue.double(value["queuedAtEpochMs"])
+        self.nextCheckAfterMS = CompetitiveValue.int(value["nextCheckAfterMs"])
         self.updatedAtEpochMS = updatedAtEpochMS
         self.competitive = Self.competitiveProfile(value["competitive"])
     }

@@ -10,6 +10,7 @@ enum CompetitiveServiceError: LocalizedError {
     case invalidAck
     case noOpenQuestion
     case noActiveQueueSession
+    case staleDisplayedQuestion
 
     var errorDescription: String? {
         switch self {
@@ -23,6 +24,8 @@ enum CompetitiveServiceError: LocalizedError {
             "回答受付中の問題がありません"
         case .noActiveQueueSession:
             "キャンセルできる待機状態がありません"
+        case .staleDisplayedQuestion:
+            "表示中の問題が更新されました"
         }
     }
 }
@@ -76,6 +79,11 @@ final class CompetitiveService {
                     self.listeningError = CompetitiveServiceError.invalidPublicProjection
                     return
                 }
+                guard CompetitiveProjectionPolicy.shouldAccept(
+                    state,
+                    for: self.session,
+                    after: self.state
+                ) else { return }
                 self.state = state
                 self.listeningError = nil
             }
@@ -131,6 +139,35 @@ final class CompetitiveService {
         )
     }
 
+    func displayedQuestionContext() -> CompetitiveDisplayedQuestionContext? {
+        guard let state,
+              state.phase == .questionOpen,
+              let question = state.currentQuestion else { return nil }
+        return CompetitiveDisplayedQuestionContext(
+            sessionKey: CompetitiveSessionKey(session: session),
+            questionId: question.questionId,
+            questionIndex: question.questionIndex,
+            stateVersion: state.stateVersion
+        )
+    }
+
+    func submitAnswer(
+        answerId: String,
+        displayedQuestion: CompetitiveDisplayedQuestionContext,
+        eventId: String = UUID().uuidString
+    ) async throws -> CompetitiveIntentAck {
+        guard displayedQuestion.matches(session: session, state: state) else {
+            throw CompetitiveServiceError.staleDisplayedQuestion
+        }
+        return try await send(
+            type: "submitAnswer",
+            eventId: eventId,
+            questionId: displayedQuestion.questionId,
+            stateVersion: displayedQuestion.stateVersion,
+            payload: ["answerId": answerId]
+        )
+    }
+
     func leave(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
         try await send(type: "leave", eventId: eventId)
     }
@@ -148,6 +185,14 @@ final class CompetitiveService {
     func reconnect(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
         try await registerConnectedPresence()
         return try await send(type: "reconnect", eventId: eventId)
+    }
+
+    func reconcile(eventId: String = UUID().uuidString) async throws -> CompetitiveIntentAck {
+        try await send(
+            type: "reconcile",
+            eventId: eventId,
+            functionName: "competitiveReconcileMatch"
+        )
     }
 
     private func presence() -> DatabaseReference {
@@ -213,7 +258,8 @@ final class CompetitiveService {
         eventId: String,
         questionId: String? = nil,
         stateVersion: Int? = nil,
-        payload: [String: Any] = [:]
+        payload: [String: Any] = [:],
+        functionName: String = "competitiveIntent"
     ) async throws -> CompetitiveIntentAck {
         var envelope: [String: Any] = [
             "intentId": eventId,
@@ -229,7 +275,7 @@ final class CompetitiveService {
         if let questionId { envelope["questionId"] = questionId }
         if let stateVersion { envelope["stateVersion"] = stateVersion }
 
-        let response = try await functions.httpsCallable("competitiveIntent").call(envelope)
+        let response = try await functions.httpsCallable(functionName).call(envelope)
         guard let ack = CompetitiveIntentAck(value: response.data) else {
             throw CompetitiveServiceError.invalidAck
         }
@@ -295,9 +341,27 @@ final class CompetitiveMatchmakingService {
                     self.listeningError = CompetitiveServiceError.invalidMatchmakingProjection
                     return
                 }
+                if let current = self.state,
+                   state.sessionEpoch < current.sessionEpoch
+                    || (state.sessionEpoch == current.sessionEpoch
+                        && state.updatedAtEpochMS < current.updatedAtEpochMS) {
+                    return
+                }
                 self.state = state
                 self.listeningError = nil
-                if state.state != .queued {
+                if state.state == .queued,
+                   let nextCheckAfterMS = state.nextCheckAfterMS,
+                   let queuedAtEpochMS = state.queuedAtEpochMS {
+                    let nowEpochMS = Date().timeIntervalSince1970 * 1_000
+                    self.scheduleNPCFillCheck(
+                        afterMilliseconds: max(
+                            0,
+                            Int(queuedAtEpochMS) + nextCheckAfterMS - Int(nowEpochMS)
+                        ),
+                        sessionId: state.sessionId,
+                        sessionEpoch: state.sessionEpoch
+                    )
+                } else {
                     self.npcFillTask?.cancel()
                     self.npcFillTask = nil
                 }
@@ -349,6 +413,12 @@ final class CompetitiveMatchmakingService {
         sessionId: String,
         sessionEpoch: Int
     ) {
+        if let state,
+           state.sessionId == sessionId,
+           state.sessionEpoch == sessionEpoch,
+           npcFillTask != nil {
+            return
+        }
         npcFillTask?.cancel()
         npcFillTask = Task { [weak self] in
             do {

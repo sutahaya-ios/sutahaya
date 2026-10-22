@@ -103,7 +103,11 @@ function syncPublic(match) {
     resultEndsAtEpochMs: state.resultEndsAtEpochMs ?? null,
     finalResult: state.matchResult || null,
     settlement: state.settlement
-      ? { status: state.settlement.status, settlementId: state.settlement.settlementId }
+      ? {
+        status: state.settlement.status,
+        settlementId: state.settlement.settlementId,
+        playerResults: state.settlement.publicPlayerResults || {},
+      }
       : null,
   };
 }

@@ -52,10 +52,12 @@ final class CompetitiveMatchmakingModelsTests: XCTestCase {
             "sessionEpoch": 1,
             "protocolVersion": CompetitiveService.protocolVersion,
             "queuedAtEpochMs": 900,
+            "nextCheckAfterMs": 5_000,
             "updatedAtEpochMs": 1_000
         ]))
 
         XCTAssertNil(projection.competitiveSession)
+        XCTAssertEqual(projection.nextCheckAfterMS, 5_000)
     }
 
     func test_MatchmakingAckを型付きで復元する() throws {
