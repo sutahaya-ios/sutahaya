@@ -45,6 +45,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `database.rules.json`・`HayaosiApp/Services/Competitive/CompetitiveService.swift`・`functions/competitive/handlers.js`・Competitive Phase C/Rules関連テスト | **Production Gateで判明したpresence deleteのsession fence迂回を最小修正**。Client deleteを拒否し、online/offline tombstoneを現行session fenceで検証する。Production deployは行わない | 2026年10月23日 |
 ---
 ## 最新更新(2026年8月25日〜10月22日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase E Client/UI MVPをLocal実装**。対戦ホームのランク戦入口、Server projection由来のTier/Rating・公開Stats、Queue/NPC補充check、4人20問画面、表示問題に固定した回答送信、Reconnect/Forfeit、結果・昇降格・再戦、Room A/B stale guardを追加。通常Tierのhidden MMRと回答受付中の正解は非公開。Backend Unit 49件、Swift XCTest 10件、Phase D-2 Emulator 2件、Simulator Debug Build/起動が成功。**ユーザー操作E2E・Production deploy/E2Eは別Gate**
@@ -92,7 +93,6 @@
 - Codex(たける側): **問題0件のカテゴリ・難易度を選んだ際の案内を追加**。共通カードにカテゴリ名・星と「この範囲の問題は順次追加しています」「他の難易度を選んでください」を表示し、CPU対戦・ルーム作成では開始ボタン自体を出さず、ルーム作成処理にも0件ガードを追加。学習ヒートマップでは0件セルをタップ不可のまま、該当難易度をまとめてグリッド下へ表示する。収録データテストは各難易度の存在を必須とせず、カテゴリごとの1語以上・ID/単語重複なしだけを維持。Simulator向けビルド成功、全75テスト成功。iPhone 17 SimulatorでCPU対戦・ルーム作成のTOEIC ★2に案内が表示され、開始ボタンが存在しないことを確認
 - TOKIYA-YAMAMOTO(Codex): **Codex開発フローをFAST/NORMAL/STRICTの3段階へ整理**。`docs/MODULE_MAP.md`を最小探索の起点として追加し、`scripts/preflight.sh`でorigin/mainとの差・未commit変更・作業中宣言・競合可能性、`scripts/verify.sh`でリスク別のbuild・関連テスト・Rulesテスト、`scripts/finish-task.sh`で差分確認と人間向けGitコマンド表示を自動化。スクリプトはcommit・pushを実行しない。`CLAUDE.md`と`docs/CODING.md`を最小探索・変更リスクに応じた検証へ更新。Bash構文、help、fetchを省略したpreflight、FAST/NORMAL/STRICTのdry-runに成功。GitHub ActionsはPrivateリポジトリのmacOS実行時間を消費し得るため未追加
 - TOKIYA-YAMAMOTO(Codex): **実機2台PvPで2問目以降の回答権が相手の回答まで復帰しない不具合、端末間の進行差、同時押し反復時の誤ったホスト退出判定を修正**。Firebaseサーバーの共有開始時刻を端末のローカル時計で比較していたため、時計差が回答可否・文字送り・残り時間・ホストタイマーの差として現れていた。RTDBの`.info/serverTimeOffset`を観測し、開始合図を含む全時間判定をFirebase補正時刻に統一。回答権は短周期に再評価し、問題切替時に送信中・送信エラー・前問の誤答演出を解除。さらに、一時的な接続断でも`onDisconnect`が即座に`closed`を書き込むため、生存中のホストは再接続時に監視を再登録して直前状態を復元し、参加者は3秒後も`closed`のままの場合だけ退出として扱うようにした。明示退出は復元対象外。`failed`・`answers`の問題番号による前問除外と問題送り時の削除、得点・回答順、Firebase構造・ルールは維持。PvPリザルトでは「間違えた問題を復習」を非表示にしたが、学習履歴・復習リストへの保存は維持。Simulator向けbuildと`HostDisconnectPolicyTests`・`BattleStartTimingTests`・`BattleScoringTests`・`CPUBattleSessionTests`の計34件に成功。**修正版の実機2台で1〜3問目を双方が回答できること、表示進行が揃うこと、同時押し反復時にルームが維持されること、実際のホスト切断時だけルームが終了すること、PvP終了後に一人学習の復習リストへ誤答が残ることは未検証**
-
 ---
 
 ## 次のタスク(優先順)
