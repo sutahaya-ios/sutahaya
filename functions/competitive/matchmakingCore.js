@@ -1,14 +1,13 @@
 const { createHash } = require("node:crypto");
 const {
-  BRONZE_NPC_FILL_WAIT_MS,
   PARTICIPANT_KIND,
   PLAYER_COUNT,
   PROTOCOL_VERSION,
 } = require("./constants");
 const {
-  TIER,
   competitiveProjection,
   ensureCompetitiveProfile,
+  npcFillWaitMsForTiers,
   npcSkillInputForRating,
   questionSelectionBoundary,
   seasonForEpoch,
@@ -143,7 +142,7 @@ function processJoinQueue(input, intent, uid, {
   profile.protocolVersion = PROTOCOL_VERSION;
   profile.lastSessionEpoch = nextEpoch;
   profile.currentSession = session;
-  profile.matchmaking = { bucket: QUEUE_BUCKET, source: "HIDDEN_MMR_PHASE_D1" };
+  profile.matchmaking = { bucket: QUEUE_BUCKET, source: "HIDDEN_MMR_PHASE_D2" };
   profile.updatedAtEpochMs = nowEpochMs;
   state.private.profiles[uid] = profile;
   state.private.queue[uid] = {
@@ -162,8 +161,8 @@ function processJoinQueue(input, intent, uid, {
     sessionId: session.sessionId,
     sessionEpoch: session.sessionEpoch,
     matchmakingState: SESSION_STATE.QUEUED,
-    ...(competitive.currentTier === TIER.BRONZE
-      ? { nextCheckAfterMs: BRONZE_NPC_FILL_WAIT_MS }
+    ...(npcFillWaitMsForTiers([competitive.currentTier]) !== null
+      ? { nextCheckAfterMs: npcFillWaitMsForTiers([competitive.currentTier]) }
       : {}),
   });
   saveResult(profile, intent, uid, result, nowEpochMs);
@@ -280,9 +279,13 @@ function claimNextMatch(input, {
     .sort((left, right) => left.queuedAtEpochMs - right.queuedAtEpochMs
       || left.uid.localeCompare(right.uid));
   if (candidates.length === 0) return { state, claimed: null, changed };
-  const oldestProfile = state.private.profiles[candidates[0].uid];
-  const npcFillEligible = oldestProfile?.competitive?.currentTier === TIER.BRONZE
-    && nowEpochMs - candidates[0].queuedAtEpochMs >= BRONZE_NPC_FILL_WAIT_MS;
+  const candidateTiers = candidates.map((entry) => {
+    const profile = state.private.profiles[entry.uid];
+    return ensureCompetitiveProfile(profile, nowEpochMs).currentTier;
+  });
+  const npcFillWaitMs = npcFillWaitMsForTiers(candidateTiers);
+  const npcFillEligible = npcFillWaitMs !== null
+    && nowEpochMs - candidates[0].queuedAtEpochMs >= npcFillWaitMs;
   if (candidates.length < PLAYER_COUNT && !npcFillEligible) {
     return { state, claimed: null, changed };
   }
@@ -340,9 +343,7 @@ function claimNextMatch(input, {
     ratingContext: {
       averageHumanRating: Math.round(averageHumanRating),
       npcSkillInput,
-      questionSelection: questionSelectionBoundary(
-        selected.map((entry) => state.private.profiles[entry.uid].competitive.currentTier)
-      ),
+      questionSelection: questionSelectionBoundary(averageHumanRating),
       season: seasonForEpoch(nowEpochMs),
     },
   };

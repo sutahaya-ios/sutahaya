@@ -247,7 +247,6 @@ enum CompetitiveTier: String, Equatable, Sendable {
 }
 
 struct CompetitiveStatsProjection: Equatable, Sendable {
-    let matchesPlayed: Int
     let totalWins: Int
     let maxWinStreak: Int
     let winRate: Double
@@ -321,7 +320,6 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
               let tier = CompetitiveTier(rawValue: tierValue),
               let ratingBattle = CompetitiveValue.bool(value["ratingBattle"]),
               let statsValue = CompetitiveValue.dictionary(value["stats"]),
-              let matchesPlayed = CompetitiveValue.int(statsValue["matchesPlayed"]),
               let totalWins = CompetitiveValue.int(statsValue["totalWins"]),
               let maxWinStreak = CompetitiveValue.int(statsValue["maxWinStreak"]),
               let winRate = CompetitiveValue.double(statsValue["winRate"]),
@@ -335,7 +333,6 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
             ratingBattle: ratingBattle,
             displayRating: CompetitiveValue.int(value["displayRating"]),
             stats: CompetitiveStatsProjection(
-                matchesPlayed: matchesPlayed,
                 totalWins: totalWins,
                 maxWinStreak: maxWinStreak,
                 winRate: winRate

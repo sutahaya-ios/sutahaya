@@ -1,10 +1,14 @@
 const { PARTICIPANT_KIND, PHASE, SETTLEMENT_VERSION } = require("./constants");
 const {
   RATING_CONFIG,
+  TIER,
+  applyPlatinumSeasonStats,
   applyStats,
   calculatePairwiseRatingChanges,
   competitiveProjection,
   ensureCompetitiveProfile,
+  tierForCompetitiveProfile,
+  tierForRating,
 } = require("./rating");
 
 function clone(value) {
@@ -35,8 +39,9 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
     const participant = match.private.participants[uid];
     const isHuman = participant.kind !== PARTICIPANT_KIND.NPC;
     let rating = participant.preMatchRating;
+    let profile = null;
     if (isHuman) {
-      let profile = root.matchmaking.private.profiles[uid];
+      profile = root.matchmaking.private.profiles[uid];
       if (!profile && !match.private.requiresActiveSessionFence) {
         profile = {
           uid,
@@ -67,6 +72,8 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
       uid,
       kind: participant.kind || PARTICIPANT_KIND.HUMAN,
       rating,
+      preMatchTier: participant.preMatchTier
+        || (isHuman ? profile.competitive.currentTier : tierForRating(rating, config)),
       rank: match.private.matchResult.ranks[uid],
       forfeited: Boolean(participant.forfeited),
     };
@@ -80,10 +87,13 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
     const competitive = profile.competitive;
     const ratingChange = changes[participant.uid];
     competitive.hiddenRating = ratingChange.newRating;
-    competitive.currentTier = ratingChange.currentTier;
-    competitive.ratingBattle = ratingChange.ratingBattle;
-    competitive.updatedAtEpochMs = nowEpochMs;
     const won = applyStats(competitive, participant);
+    applyPlatinumSeasonStats(competitive, participant);
+    competitive.currentTier = tierForCompetitiveProfile(competitive, config, {
+      preserveCurrentRatingBattle: participant.preMatchTier === TIER.RATING_BATTLE,
+    });
+    competitive.ratingBattle = competitive.currentTier === TIER.RATING_BATTLE;
+    competitive.updatedAtEpochMs = nowEpochMs;
 
     const session = profile.currentSession;
     session.state = "FINISHED";
@@ -108,12 +118,18 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
       forfeited: participant.forfeited,
       won,
       mmrBefore: ratingChange.preMatchRating,
-      ratingDelta: ratingChange.delta,
+      rawDelta: ratingChange.rawDelta,
+      lossMultiplier: ratingChange.lossMultiplier,
+      humanWeight: ratingChange.humanWeight,
+      finalDelta: ratingChange.finalDelta,
+      ratingDelta: ratingChange.finalDelta,
       mmrAfter: ratingChange.newRating,
-      currentTier: ratingChange.currentTier,
-      ratingBattle: ratingChange.ratingBattle,
+      currentTier: competitive.currentTier,
+      ratingBattle: competitive.ratingBattle,
       stats: { ...competitive.stats },
       seasonId: competitive.season.seasonId,
+      platinumSeasonMatches: competitive.season.platinumSeasonMatches,
+      platinumSeasonWins: competitive.season.platinumSeasonWins,
     };
   }
 

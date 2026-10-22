@@ -1,21 +1,47 @@
 const RATING_CONFIG = Object.freeze({
-  // Phase D-1の暫定値。Product調整はこのconfigだけで行う。
-  configVersion: "competitive-rating-d1-provisional-1",
-  formulaVersion: "pairwise-elo-average-v1",
+  configVersion: "competitive-rating-d2-1",
+  formulaVersion: "pairwise-elo-tier-weighted-v2",
   initialRating: 1_000,
   minimumRating: 0,
-  kFactor: 32,
+  kFactor: 40,
   eloScale: 400,
   tierThresholds: Object.freeze({
-    SILVER: 1_100,
-    GOLD: 1_250,
-    PLATINUM: 1_400,
+    SILVER: 1_200,
+    GOLD: 1_400,
+    PLATINUM: 1_600,
   }),
-  ratingBattleThreshold: 1_600,
+  ratingBattleThreshold: 1_800,
+  lossMultipliers: Object.freeze({
+    BRONZE: 0.35,
+    SILVER: 0.55,
+    GOLD: 0.75,
+    PLATINUM: 1,
+    RATING_BATTLE: 1,
+  }),
+  humanWeights: Object.freeze({
+    1: 0.5,
+    2: 2 / 3,
+    3: 5 / 6,
+    4: 1,
+  }),
+  npcFillWaitMs: Object.freeze({
+    BRONZE: 5_000,
+    SILVER: 10_000,
+    GOLD: null,
+    PLATINUM: null,
+    RATING_BATTLE: null,
+  }),
+  difficultyRanges: Object.freeze({
+    BRONZE: Object.freeze({ minimum: 1, maximum: 2 }),
+    SILVER: Object.freeze({ minimum: 2, maximum: 3 }),
+    GOLD: Object.freeze({ minimum: 3, maximum: 4 }),
+    PLATINUM: Object.freeze({ minimum: 4, maximum: 5 }),
+    RATING_BATTLE: Object.freeze({ minimum: 5, maximum: 5 }),
+  }),
   seasonSoftResetFactor: 0.75,
   seasonDurationMs: 28 * 24 * 60 * 60 * 1_000,
   seasonEpochStartMs: Date.UTC(2026, 0, 5),
-  seasonSettlementVersion: "competitive-season-d1-1",
+  seasonSettlementVersion: "competitive-season-d2-1",
   npcSkill: Object.freeze({
     attemptPermille: 920,
     accuracyBasePermille: 620,
@@ -47,6 +73,28 @@ function tierForRating(rating, config = RATING_CONFIG) {
   if (rating >= config.tierThresholds.GOLD) return TIER.GOLD;
   if (rating >= config.tierThresholds.SILVER) return TIER.SILVER;
   return TIER.BRONZE;
+}
+
+function platinumPromotionEligible(competitive, config = RATING_CONFIG) {
+  const matches = competitive.season?.platinumSeasonMatches || 0;
+  const wins = competitive.season?.platinumSeasonWins || 0;
+  return competitive.hiddenRating >= config.ratingBattleThreshold
+    && matches > 0
+    && wins / matches > 0.5;
+}
+
+function tierForCompetitiveProfile(competitive, config = RATING_CONFIG, {
+  preserveCurrentRatingBattle = false,
+} = {}) {
+  if (competitive.hiddenRating < config.ratingBattleThreshold) {
+    return tierForRating(competitive.hiddenRating, config);
+  }
+  if (preserveCurrentRatingBattle && competitive.currentTier === TIER.RATING_BATTLE) {
+    return TIER.RATING_BATTLE;
+  }
+  return platinumPromotionEligible(competitive, config)
+    ? TIER.RATING_BATTLE
+    : TIER.PLATINUM;
 }
 
 function seasonForEpoch(nowEpochMs, config = RATING_CONFIG) {
@@ -89,6 +137,8 @@ function initialCompetitiveProfile(nowEpochMs, config = RATING_CONFIG) {
       ...season,
       ratingAtSeasonStart: config.initialRating,
       previousSeasonEndRating: null,
+      platinumSeasonMatches: 0,
+      platinumSeasonWins: 0,
       settlementVersion: config.seasonSettlementVersion,
     },
     ratingConfigVersion: config.configVersion,
@@ -116,10 +166,18 @@ function ensureCompetitiveProfile(profile, nowEpochMs, config = RATING_CONFIG) {
       ...currentSeason,
       ratingAtSeasonStart: competitive.hiddenRating,
       previousSeasonEndRating,
+      platinumSeasonMatches: 0,
+      platinumSeasonWins: 0,
       settlementVersion: config.seasonSettlementVersion,
     };
+  } else {
+    competitive.season.platinumSeasonMatches ||= 0;
+    competitive.season.platinumSeasonWins ||= 0;
   }
-  competitive.currentTier = tierForRating(competitive.hiddenRating, config);
+  const preserveCurrentRatingBattle = competitive.ratingConfigVersion === config.configVersion;
+  competitive.currentTier = tierForCompetitiveProfile(competitive, config, {
+    preserveCurrentRatingBattle,
+  });
   competitive.ratingBattle = competitive.currentTier === TIER.RATING_BATTLE;
   competitive.ratingConfigVersion = config.configVersion;
   competitive.updatedAtEpochMs = nowEpochMs;
@@ -138,7 +196,23 @@ function pairwiseActual(player, opponent) {
   return player.rank < opponent.rank ? 1 : 0;
 }
 
+function deterministicRound(value) {
+  return value < 0 ? Math.ceil(value - 0.5) : Math.floor(value + 0.5);
+}
+
+function humanWeightForCount(humanCount, config = RATING_CONFIG) {
+  return config.humanWeights[humanCount] ?? 1;
+}
+
+function lossMultiplierForTier(tier, config = RATING_CONFIG) {
+  return config.lossMultipliers[tier] ?? 1;
+}
+
 function calculatePairwiseRatingChanges(players, config = RATING_CONFIG) {
+  const humanCount = players.filter(
+    (player) => player.kind !== "NPC"
+  ).length;
+  const humanWeight = humanWeightForCount(humanCount, config);
   return Object.fromEntries(players.map((player) => {
     const opponents = players.filter((candidate) => candidate.uid !== player.uid);
     const pairwise = opponents.map((opponent) => ({
@@ -150,11 +224,24 @@ function calculatePairwiseRatingChanges(players, config = RATING_CONFIG) {
       ? 0
       : pairwise.reduce((sum, result) => sum + result.actual - result.expected, 0)
         / pairwise.length;
-    const delta = Math.round(config.kFactor * averageDifference);
-    const newRating = Math.max(config.minimumRating, player.rating + delta);
+    const rawDelta = config.kFactor * averageDifference;
+    const preMatchTier = player.preMatchTier || tierForRating(player.rating, config);
+    const lossMultiplier = rawDelta < 0
+      ? lossMultiplierForTier(preMatchTier, config)
+      : 1;
+    const weightedDelta = rawDelta * lossMultiplier * humanWeight;
+    const roundedDelta = deterministicRound(weightedDelta);
+    const newRating = Math.max(config.minimumRating, player.rating + roundedDelta);
+    const finalDelta = newRating - player.rating;
     return [player.uid, {
       preMatchRating: player.rating,
-      delta: newRating - player.rating,
+      preMatchTier,
+      rawDelta,
+      lossMultiplier,
+      humanWeight,
+      weightedDelta,
+      finalDelta,
+      delta: finalDelta,
       newRating,
       currentTier: tierForRating(newRating, config),
       ratingBattle: newRating >= config.ratingBattleThreshold,
@@ -177,6 +264,12 @@ function applyStats(competitive, { rank, forfeited }) {
   return won;
 }
 
+function applyPlatinumSeasonStats(competitive, { preMatchTier, rank, forfeited }) {
+  if (preMatchTier !== TIER.PLATINUM) return;
+  competitive.season.platinumSeasonMatches += 1;
+  if (rank === 1 && !forfeited) competitive.season.platinumSeasonWins += 1;
+}
+
 function competitiveProjection(profile) {
   const competitive = profile.competitive;
   if (!competitive) return null;
@@ -186,7 +279,6 @@ function competitiveProjection(profile) {
     ratingBattle: competitive.ratingBattle,
     ...(competitive.ratingBattle ? { displayRating: competitive.hiddenRating } : {}),
     stats: {
-      matchesPlayed: stats.matchesPlayed,
       totalWins: stats.totalWins,
       maxWinStreak: stats.maxWinStreak,
       winRate: stats.matchesPlayed === 0 ? 0 : stats.totalWins / stats.matchesPlayed,
@@ -203,7 +295,7 @@ function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
   const offset = averageHiddenRating - config.initialRating;
   const npc = config.npcSkill;
   return {
-    profileVersion: "phase-d1-rating-derived-1",
+    profileVersion: "phase-d2-rating-derived-1",
     sourceAverageHiddenRating: Math.round(averageHiddenRating),
     attemptPermille: npc.attemptPermille,
     accuracyPermille: Math.round(clamp(
@@ -219,26 +311,54 @@ function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
   };
 }
 
-function questionSelectionBoundary(tiers) {
+function highestTier(tiers) {
+  const order = [
+    TIER.BRONZE,
+    TIER.SILVER,
+    TIER.GOLD,
+    TIER.PLATINUM,
+    TIER.RATING_BATTLE,
+  ];
+  return tiers.reduce((highest, tier) => (
+    order.indexOf(tier) > order.indexOf(highest) ? tier : highest
+  ), TIER.BRONZE);
+}
+
+function npcFillWaitMsForTiers(tiers, config = RATING_CONFIG) {
+  return config.npcFillWaitMs[highestTier(tiers)] ?? null;
+}
+
+function questionSelectionBoundary(averageHiddenRating, config = RATING_CONFIG) {
+  const matchTier = tierForRating(averageHiddenRating, config);
+  const difficultyBand = config.difficultyRanges[matchTier];
   return {
     subject: "ENGLISH",
-    currentTiers: [...new Set(tiers)].sort(),
-    difficultyBand: null,
-    mappingStatus: "PRODUCT_MAPPING_UNDECIDED",
+    source: "BUNDLED_ENGLISH_WORDS_V1",
+    matchTier,
+    sourceAverageHiddenRating: Math.round(averageHiddenRating),
+    difficultyBand: { ...difficultyBand },
+    mappingStatus: "PRODUCT_MAPPING_CONFIRMED",
   };
 }
 
 module.exports = {
   RATING_CONFIG,
   TIER,
+  applyPlatinumSeasonStats,
   applyStats,
   calculatePairwiseRatingChanges,
   competitiveProjection,
+  deterministicRound,
   ensureCompetitiveProfile,
+  humanWeightForCount,
   initialCompetitiveProfile,
+  lossMultiplierForTier,
+  npcFillWaitMsForTiers,
   npcSkillInputForRating,
+  platinumPromotionEligible,
   questionSelectionBoundary,
   seasonForEpoch,
   softResetRating,
+  tierForCompetitiveProfile,
   tierForRating,
 };

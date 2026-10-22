@@ -2,11 +2,10 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 
 const {
-  BRONZE_NPC_FILL_WAIT_MS,
   PROTOCOL_VERSION,
 } = require("../functions/competitive/constants");
 const { validateMatchmakingIntent } = require("../functions/competitive/matchmakingContract");
-const { TIER } = require("../functions/competitive/rating");
+const { RATING_CONFIG, TIER } = require("../functions/competitive/rating");
 const {
   SESSION_STATE,
   claimNextMatch,
@@ -203,7 +202,7 @@ describe("Competitive Phase B matchmaking unit", () => {
 
   it("waits five seconds before filling Bronze vacancies with server-owned NPCs", () => {
     const joined = addPlayer({}, "p1", 0);
-    assert.equal(joined.ack.nextCheckAfterMs, BRONZE_NPC_FILL_WAIT_MS);
+    assert.equal(joined.ack.nextCheckAfterMs, RATING_CONFIG.npcFillWaitMs.BRONZE);
     let queued = joined.state;
     queued = addPlayer(queued, "p2", 1).state;
     queued = addPlayer(queued, "p3", 2).state;
@@ -220,33 +219,53 @@ describe("Competitive Phase B matchmaking unit", () => {
     assert.equal(JSON.stringify(result.state.public.p1).includes("hiddenRating"), false);
   });
 
-  it("derives NPC skill from human average MMR and leaves difficulty mapping undecided", () => {
+  it("derives NPC skill and one difficulty band from the human-only average MMR", () => {
     let state = addPlayers(2);
-    state.private.profiles.p1.competitive.hiddenRating = 800;
-    state.private.profiles.p1.competitive.currentTier = TIER.BRONZE;
-    state.private.profiles.p2.competitive.hiddenRating = 1_200;
-    state.private.profiles.p2.competitive.currentTier = TIER.SILVER;
-    const result = claim(state, "rating-npc", 6_100);
-    assert.equal(result.claimed.ratingContext.averageHumanRating, 1_000);
-    assert.equal(result.claimed.ratingContext.npcSkillInput.sourceAverageHiddenRating, 1_000);
+    state.private.profiles.p1.competitive.hiddenRating = 1_100;
+    state.private.profiles.p2.competitive.hiddenRating = 1_300;
+    const result = claim(state, "rating-npc", 11_100);
+    assert.equal(result.claimed.ratingContext.averageHumanRating, 1_200);
+    assert.equal(result.claimed.ratingContext.npcSkillInput.sourceAverageHiddenRating, 1_200);
     assert.ok(result.claimed.ratingContext.npcSkillInput.accuracyPermille > 0);
     assert.ok(result.claimed.ratingContext.npcSkillInput.reactionBaseMs > 0);
     assert.ok(result.claimed.participants
       .filter((participant) => participant.kind === "NPC")
-      .every((participant) => participant.preMatchRating === 1_000));
+      .every((participant) => participant.preMatchRating === 1_200));
     assert.equal(result.claimed.ratingContext.questionSelection.subject, "ENGLISH");
-    assert.equal(result.claimed.ratingContext.questionSelection.difficultyBand, null);
+    assert.equal(result.claimed.ratingContext.questionSelection.matchTier, TIER.SILVER);
+    assert.deepEqual(result.claimed.ratingContext.questionSelection.difficultyBand, {
+      minimum: 2,
+      maximum: 3,
+    });
     assert.equal(
       result.claimed.ratingContext.questionSelection.mappingStatus,
-      "PRODUCT_MAPPING_UNDECIDED"
+      "PRODUCT_MAPPING_CONFIRMED"
     );
   });
 
-  it("does not invent a Silver-or-higher NPC wait policy", () => {
+  it("waits ten seconds for Silver and never fills Gold-or-higher with NPCs", () => {
     const state = addPlayers(1);
     state.private.profiles.p1.competitive.hiddenRating = 1_200;
-    state.private.profiles.p1.competitive.currentTier = TIER.SILVER;
-    assert.equal(claim(state, "silver-wait", 60_000).claimed, null);
+    assert.equal(claim(state, "silver-early", 10_999).claimed, null);
+    const silver = claim(state, "silver-fill", 11_000);
+    assert.equal(silver.claimed.participants.filter((player) => player.kind === "HUMAN").length, 1);
+
+    const gold = addPlayers(1);
+    gold.private.profiles.p1.competitive.hiddenRating = 1_400;
+    assert.equal(claim(gold, "gold-human-only", 60_000).claimed, null);
+  });
+
+  it("uses the highest human tier for mixed NPC fill policy", () => {
+    let bronzeSilver = addPlayers(2);
+    bronzeSilver.private.profiles.p1.competitive.hiddenRating = 1_100;
+    bronzeSilver.private.profiles.p2.competitive.hiddenRating = 1_200;
+    assert.equal(claim(bronzeSilver, "mixed-early", 6_100).claimed, null);
+    assert.ok(claim(bronzeSilver, "mixed-silver", 11_100).claimed);
+
+    let bronzeGold = addPlayers(2);
+    bronzeGold.private.profiles.p1.competitive.hiddenRating = 1_100;
+    bronzeGold.private.profiles.p2.competitive.hiddenRating = 1_400;
+    assert.equal(claim(bronzeGold, "mixed-gold", 60_000).claimed, null);
   });
 
   it("fills one to three human rosters but never adds NPC to an immediate four-human match", () => {

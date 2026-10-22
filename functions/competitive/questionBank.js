@@ -1,32 +1,97 @@
+const { createHash } = require("node:crypto");
 const { QUESTION_COUNT } = require("./constants");
+const ENGLISH_QUESTION_BANK = require("./data/englishQuestions.json");
 
-// Phase A-2だけで20問完走を検証するServer-only fixture。
-// Client bundleやpublic projectionへcorrectChoiceIndex/canonicalIdを配信しない。
-const TEST_QUESTION_BANK = Object.freeze([
-  { canonicalId: "core-001", prompt: "apple の意味は？", choices: ["りんご", "机", "雲", "走る"], correctChoiceIndex: 0 },
-  { canonicalId: "core-002", prompt: "book の意味は？", choices: ["川", "本", "鳥", "青い"], correctChoiceIndex: 1 },
-  { canonicalId: "core-003", prompt: "cat の意味は？", choices: ["犬", "魚", "猫", "山"], correctChoiceIndex: 2 },
-  { canonicalId: "core-004", prompt: "run の意味は？", choices: ["読む", "眠る", "作る", "走る"], correctChoiceIndex: 3 },
-  { canonicalId: "core-005", prompt: "water の意味は？", choices: ["水", "火", "土", "風"], correctChoiceIndex: 0 },
-  { canonicalId: "core-006", prompt: "school の意味は？", choices: ["駅", "学校", "病院", "店"], correctChoiceIndex: 1 },
-  { canonicalId: "core-007", prompt: "green の意味は？", choices: ["赤", "白", "緑", "黒"], correctChoiceIndex: 2 },
-  { canonicalId: "core-008", prompt: "speak の意味は？", choices: ["聞く", "書く", "見る", "話す"], correctChoiceIndex: 3 },
-  { canonicalId: "core-009", prompt: "morning の意味は？", choices: ["朝", "昼", "夕方", "夜"], correctChoiceIndex: 0 },
-  { canonicalId: "core-010", prompt: "friend の意味は？", choices: ["先生", "友達", "家族", "客"], correctChoiceIndex: 1 },
-  { canonicalId: "core-011", prompt: "large の意味は？", choices: ["速い", "短い", "大きい", "軽い"], correctChoiceIndex: 2 },
-  { canonicalId: "core-012", prompt: "write の意味は？", choices: ["話す", "泳ぐ", "歌う", "書く"], correctChoiceIndex: 3 },
-  { canonicalId: "core-013", prompt: "music の意味は？", choices: ["音楽", "絵", "映画", "写真"], correctChoiceIndex: 0 },
-  { canonicalId: "core-014", prompt: "window の意味は？", choices: ["床", "窓", "壁", "屋根"], correctChoiceIndex: 1 },
-  { canonicalId: "core-015", prompt: "happy の意味は？", choices: ["眠い", "悲しい", "幸せな", "静かな"], correctChoiceIndex: 2 },
-  { canonicalId: "core-016", prompt: "eat の意味は？", choices: ["飲む", "歩く", "買う", "食べる"], correctChoiceIndex: 3 },
-  { canonicalId: "core-017", prompt: "river の意味は？", choices: ["川", "海", "湖", "池"], correctChoiceIndex: 0 },
-  { canonicalId: "core-018", prompt: "teacher の意味は？", choices: ["生徒", "先生", "医師", "店員"], correctChoiceIndex: 1 },
-  { canonicalId: "core-019", prompt: "fast の意味は？", choices: ["遅い", "高い", "速い", "遠い"], correctChoiceIndex: 2 },
-  { canonicalId: "core-020", prompt: "sleep の意味は？", choices: ["起きる", "働く", "遊ぶ", "眠る"], correctChoiceIndex: 3 },
-]);
+const DISTRACTOR_STRIDE = 11;
+const MINOR_FUNCTION_WORDS = new Set(["代名詞", "接続詞", "前置詞", "助動詞"]);
 
-if (TEST_QUESTION_BANK.length !== QUESTION_COUNT) {
-  throw new Error("Competitive test question bank must contain exactly 20 questions");
+function distractorGroup(question) {
+  return MINOR_FUNCTION_WORDS.has(question.pos) ? "MINOR_FUNCTION_WORDS" : question.pos;
 }
 
-module.exports = { TEST_QUESTION_BANK };
+function meaningElements(meaning) {
+  const elements = new Set();
+  let current = "";
+  let depth = 0;
+  for (const character of meaning) {
+    if (["（", "("].includes(character)) {
+      depth += 1;
+      current += character;
+    } else if (["）", ")"].includes(character)) {
+      depth = Math.max(0, depth - 1);
+      current += character;
+    } else if (["、", "・"].includes(character) && depth === 0) {
+      if (current) elements.add(current);
+      current = "";
+    } else if (![" ", "　"].includes(character)) {
+      current += character;
+    }
+  }
+  if (current) elements.add(current);
+  return elements;
+}
+
+function disjoint(left, right) {
+  return [...left].every((value) => !right.has(value));
+}
+
+const groups = Object.fromEntries(Object.entries(Object.groupBy(
+  ENGLISH_QUESTION_BANK,
+  distractorGroup
+)));
+
+function distractorsFor(question) {
+  const group = groups[distractorGroup(question)] || [];
+  const base = group.findIndex((candidate) => candidate.id === question.id);
+  const correctElements = meaningElements(question.meaning);
+  const result = [];
+  for (let step = 1; step < group.length && result.length < 3; step += 1) {
+    const candidate = group[(base + step * DISTRACTOR_STRIDE) % group.length].meaning;
+    if (candidate !== question.meaning
+        && disjoint(correctElements, meaningElements(candidate))
+        && !result.includes(candidate)) {
+      result.push(candidate);
+    }
+  }
+  if (result.length !== 3) {
+    throw new Error(`Competitive question ${question.id} has insufficient distractors`);
+  }
+  return result;
+}
+
+function digest(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function selectCompetitiveQuestions({ matchId, difficultyBand }) {
+  const minimum = difficultyBand?.minimum;
+  const maximum = difficultyBand?.maximum;
+  if (!Number.isInteger(minimum) || !Number.isInteger(maximum)
+      || minimum < 1 || maximum > 5 || minimum > maximum) {
+    throw new Error("Competitive difficulty band must be within 1...5");
+  }
+  const eligible = ENGLISH_QUESTION_BANK
+    .filter((question) => question.difficulty >= minimum && question.difficulty <= maximum)
+    .sort((left, right) => digest(`${matchId}:${left.id}`)
+      .localeCompare(digest(`${matchId}:${right.id}`)));
+  if (eligible.length < QUESTION_COUNT) {
+    throw new Error(`Only ${eligible.length} Competitive questions are eligible`);
+  }
+  return eligible.slice(0, QUESTION_COUNT).map((question) => {
+    const choices = [question.meaning, ...distractorsFor(question)]
+      .sort((left, right) => digest(`${matchId}:${question.id}:${left}`)
+        .localeCompare(digest(`${matchId}:${question.id}:${right}`)));
+    return {
+      canonicalId: question.id,
+      difficulty: question.difficulty,
+      prompt: question.word,
+      choices,
+      correctChoiceIndex: choices.indexOf(question.meaning),
+    };
+  });
+}
+
+module.exports = {
+  ENGLISH_QUESTION_BANK,
+  selectCompetitiveQuestions,
+};

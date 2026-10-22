@@ -1,9 +1,9 @@
 # Competitive Mode v2.0 Specification
 
-- Status: Phase D-1 Rating / Season / Stats Local implementation
+- Status: Phase D-2 Rating / Difficulty / NPC Policy Local + Emulator verified
 - Last updated: 2026-10-22
 - Scope: Competitive Mode v2.0 only
-- Implementation status: Phase A-1 complete / Phase A-2 Production Cloud verification pending
+- Implementation status: Phase D-2 Local / Emulator verified / Production not deployed
 
 ## この文書の位置づけ
 
@@ -37,7 +37,7 @@ Competitive Modeは、以下を満たす4人制オンライン対戦として実
 5. 低ランク帯では不足枠をNPCで補い、上位帯では人間のみで対戦する。
 6. プレイヤー評価値は1種類の非公開MMRに統一する。
 7. 通常帯ではMMRから導出したTierを表示し、Rating Battleでは数値Ratingを表示する。
-8. Season、Top 20 leaderboard、直近5試合の履歴を提供する。
+8. 4週間Seasonと、勝率・最高連勝・累計勝利数の公開Statsを提供する。LeaderboardとMatch Historyは作らない。
 9. 再送、重複実行、一時切断、サーバー再起動があっても、試合とsettlementを安全に収束させる。
 10. 現行フレンドバトルを壊さず、Competitive固有の信頼境界を維持する。
 11. 各Playerが同じ問題へ独立して1回回答し、正解者の回答受付順に得点する現行フレンドバトルのProduct ruleを維持する。
@@ -52,7 +52,7 @@ Phase 0および初期Competitive実装では、以下を目的にしない。
 - 全世界・全リージョン対応を前提にした分散合意
 - 観戦、リプレイ、トーナメント、チーム戦
 - 端末間の完全に同一なアニメーション時刻の保証
-- Phase 0での本番deploy、Matchmaking、Rating、Rank UI、Leaderboard、Season、Production NPCの実装
+- Phase 0での本番deploy、Matchmaking、Rating、Rank UI、Season、Production NPCの実装
 - 無関係なリファクタリングやFirebase pathの全面共通化
 
 ### 1.3 現行モードとの分離
@@ -112,7 +112,7 @@ Competitive Modeでは、iOSアプリ、Simulator、改造client、通信内容�
 - score、score delta、rank、winner
 - correctness、correct answer、failed判定
 - answerOrder、acceptedAt、responseTime
-- MMR、ratingDelta、Tier、leaderboard順位
+- MMR、ratingDelta、Tier、Rating Battle昇格条件
 - NPCの行動、得点、正誤、強さ
 - session state、lease期限、serverSequence
 - match state、question deadline、settlement status
@@ -233,10 +233,10 @@ clientが読む状態は、Server内部状態から生成したsanitized project
 最終結果は、match内のcanonical resultとsettlement resultを分ける。
 
 - `MatchResult`: matchId、roster snapshot、outcome（COMPLETED / ABORTED）、final scores、ranks、winner、forfeit/abort reason、finishedAt、configVersion。ABORTEDではrank/winnerを確定しない。
-- `SettlementResult`: settlementId、settlementVersion、MMR before/delta/after、season、history/leaderboard反映状態。
+- `SettlementResult`: settlementId、settlementVersion、MMR before/raw/final delta/after、適用したloss multiplier・human weight、season、Stats反映状態。
 - MatchResultは一度確定したら変更しない。
 - SettlementResultの適用処理は再実行可能だが、同じsettlementを二重加算しない。
-- Server faultによるABORTED matchはMMR、敗北数、leaderboardへ競技結果として適用しない。
+- Server faultによるABORTED matchはMMR、敗北数、Statsへ競技結果として適用しない。
 
 ---
 
@@ -330,14 +330,14 @@ CREATED
 - **Server保持**: canonical SettlementResult、各projectionの適用状況、retry count、last error。
 - **公開**: 結果と「Rating反映中」。内部error詳細は公開しない。
 - **許可Intent**: 結果read、session終了確認、reconnect。gameplay Intentは不可。
-- **拒否**: clientによるMMR/履歴/leaderboard更新。
+- **拒否**: clientによるMMR/Tier/Stats/difficulty更新。
 - **Timeout**: retry policyに従い未完了componentを再実行する。人手調査が必要な状態はdead-letter相当へ記録するが、二重加算しない。
 - **遷移**: 必須componentがすべて同じsettlementId/versionを適用したら `SETTLED`。
 
 ### 5.10 SETTLED
 
 - **Server保持**: 完了settlement、適用証跡、保持期限。
-- **公開**: final rank、rating delta、表示TierまたはRating、直近履歴への反映結果。
+- **公開**: final rank、rating delta、表示TierまたはRating、公開Statsへの反映結果。
 - **許可Intent**: readのみ。新しいqueue参加は新しいsessionとして扱う。
 - **拒否**: このmatchへの全mutation。
 - **Timeout**: retention policyに従ってhot stateをcleanupする。監査記録は別policyで保持する。
@@ -389,7 +389,7 @@ CREATED
 - dedup用 `intentId` 結果
 - event recordまたは確実に再送できるoutbox marker
 
-副作用（通知、analytics、履歴、leaderboard）はtransaction callback内で実行しない。commit後にoutbox/eventを冪等処理する。
+副作用（通知、analytics、audit projection）はtransaction callback内で実行しない。commit後にoutbox/eventを冪等処理する。
 
 ### 6.4 同時回答
 
@@ -424,7 +424,7 @@ Phase 0では、次の4層を確定し、Firebase/Google Cloud製品の最終選
 1. **Intent Ingress**: Auth/App Check/protocol/inputを検証する。
 2. **Per-match Ordering Authority**: Server側のatomic boundaryで回答受付、deadline/close競合、canonical orderを一意に確定する。全回答を1つのCASへ直列化するかは未決定。
 3. **Public Projection**: participant clientがread/listenするsanitized状態。client writeは禁止。
-4. **Durable Settlement Store**: MMR、Season、history、leaderboard、auditを冪等反映する。
+4. **Durable Settlement Store**: MMR、Season、公開Stats、auditを冪等反映する。
 
 ### 7.2 Candidate比較
 
@@ -529,8 +529,11 @@ Candidate Cは否定・削除せずfallbackとして保持する。Firebase方�
 
 ### 8.1 Server-only Question Bank
 
-- Competitiveは専用のServer-side Question Bankを使用する。端末同梱データを試合判定の権威sourceとして読まない。
-- 既存の英単語・SPIコンテンツ自体は、権利と品質を確認したうえで可能な限り変換・再利用する。ただし、Competitive用のcanonical ID、version、選択肢対応、correct answerはServer-side Question Bankへ取り込む。
+- Competitiveは専用のServer-side Question Bankを使用する。端末同梱データを実行時の試合判定の権威sourceとして読まない。
+- Phase D-2では既存の英単語JSON 3種をbuild-time同期scriptで検証・変換し、Functions配下の生成済みQuestion Bankへ接続する。既存`difficulty` 1〜5、word、meaning、part of speech、canonical IDを再利用し、1〜10への変換や推測による再分類は行わない。
+- 生成Bankは5951問（difficulty 1: 1399 / 2: 1353 / 3: 1515 / 4: 878 / 5: 806）。各matchはmatch固有seedで対象rangeから20問を重複なしで選択し、選択肢順とopaque IDを決定する。
+- Tier別rangeは Bronze 1〜2（2752問）、Silver 2〜3（2868問）、Gold 3〜4（2393問）、Platinum 4〜5（1684問）、Rating Battle 5（806問）とする。Queueはdifficultyで分割しない。
+- Mixed Tier matchではhuman参加者だけのhidden MMR平均をServerで計算し、その平均から導出したmatch tierのrangeを使う。NPCは平均計算へ含めない。
 - Rulesでclient readを拒否し、server credentialだけが読む。
 - 問題中のclientへcanonical ID、正解index、正解文字列、seedを送らない。
 - serverは出題時にmatch固有のopaque `questionId`（内部ではquestion instanceを表す）とopaque `answerId` を生成する。
@@ -572,7 +575,7 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 
 ### 8.5 未決定事項
 
-- 既存英単語/SPIからCompetitive bankへ変換・再利用する具体範囲と権利確認
+- SPIを将来Competitive bankへ追加する場合の変換・権利・品質確認
 - Server-side Question Bankの更新・review・rollback方法
 - 問題の重複回避期間
 - content version更新中のactive match取り扱い
@@ -585,7 +588,7 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 
 - player/seasonごとにserver-ownedのMMRを1つだけ持つ。
 - Rank PointとRatingを別々に増減させる二重評価は作らない。
-- Tier、Rating Battle、leaderboard順位は同じMMRから導出する表示またはprojectionである。
+- TierとRating Battleは同じMMRから導出する表示またはprojectionである。
 - clientからMMRをwriteできない。
 
 ### 9.2 表示
@@ -593,7 +596,7 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - Rating Battle未満: exact MMRを隠し、configVersionに固定された閾値から表示Tierを導出する。
 - Rating Battle: exact MMRを数値Ratingとして表示する。
 - APIは権限とzoneに応じたsanitized displayを返す。通常帯のclientへhidden MMRを送らない。
-- Top 20 leaderboardはRating Battleを基本対象とし、seasonとtie-break ruleを固定する。
+- LeaderboardとMatch Historyは作らない。公開Statsは勝率・最高連勝・累計勝利数だけとする。
 
 ### 9.3 更新
 
@@ -602,21 +605,24 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - reconnect、画面再表示、履歴取得で再計算しない。
 - 同じsettlementIdをplayerへ再適用してもMMRは1回分しか変化しない。
 - Phase D-1では4人の各組合せを仮想1対1として扱うpairwise Elo-styleを採用し、同順位は0.5、forfeitは非forfeit全員への敗北、複数forfeit同士はdrawとする。各Playerの3組分の差分平均へK-factorを掛ける。
-- `initialRating`、`kFactor`、Tier境界、Rating Battle境界、下限はServer側の単一versioned configへ集約する。Phase D-1の値はLocal検証用の暫定値であり正式なProduct tuningではない。
+- Phase D-2の正式configは初期MMR 1000、K-factor 40、Bronze `<1200`、Silver `<1400`、Gold `<1600`、Platinum `<1800`、Rating Battle候補 `>=1800`、MMR下限0とする。
+- 計算順は `pairwise raw delta → negative deltaだけTier loss multiplier → human数weight → deterministic rounding → MMR下限`。監査にはraw delta、loss multiplier、human weight、final deltaを保存する。
+- negative deltaのloss multiplierはBronze 0.35、Silver 0.55、Gold 0.75、Platinum/Rating Battle 1.0。positive deltaには適用しない。
+- human数weightは1人0.50、2人2/3、3人5/6、4人1.00で、positive/negative両方へ適用する。
+- Rating Battle昇格は `hidden MMR >= 1800` かつ当該SeasonのPlatinum開始戦で勝率 `> 50%`。50%ちょうどは不可。Rating Battle中にMMRが1800未満ならPlatinumへ降格し、再昇格時も同条件を再確認する。
 
-### 9.4 未決定事項
+### 9.4 残る調整事項
 
-- 初期MMR、K-factor、Tier境界、Rating Battle境界の正式Product値とprovisional match数
-- NPC人数別rating delta減衰
-- leaderboardの同率順位規則
+- 正式値は1つのversioned configとしてServer側で固定し、active match途中に変更しない。
+- 一般公開前にpairwise Elo-style、loss multiplier、human数weightを実トラフィック想定でsimulationし、必要なら別config versionとして調整する。
+- provisional match期間は未決定。
 
-これらは1つのversioned configとしてserver側で固定し、active match途中に変更しない。
-
-### 9.5 Season / Stats（Phase D-1）
+### 9.5 Season / Stats（Phase D-2）
 
 - 1 Seasonは4週間。`seasonId / startsAt / endsAt / ratingAtSeasonStart / previousSeasonEndRating / settlementVersion`をServer profileへ保持する。
 - 大規模schedulerは追加せず、queue参加またはsettlement時のServer clockで必要なPlayerだけlazy rolloverする。同じSeasonへのretryでは再resetしない。
-- rollover時は `base + (old - base) * seasonSoftResetFactor` で基準rating方向へsoft resetする。factorはversioned configの暫定値で、完全resetはしない。
+- rollover時は `1000 + (old - 1000) * 0.75` で基準rating方向へsoft resetする。完全resetはしない。
+- `platinumSeasonMatches / platinumSeasonWins`は「試合開始時にPlatinumだったhuman」の当該Season成績だけをServer保持し、Rating Battle昇格gateに使う。Season rolloverでresetする。
 - 初期Statsは`matchesPlayed / totalWins / currentWinStreak / maxWinStreak`だけをServer保持し、公開値は勝率・最高連勝・累計勝利数に限定する。
 - `final rank == 1`の非forfeit Playerを勝利とし、同率1位は全員勝利。表示順位1位でもforfeit済みなら勝利・連勝へ含めない。
 
@@ -631,23 +637,22 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - 中間帯はhumanを優先し、設定された待機時間後にのみNPCを補充する。
 - 境界、待機時間、許容NPC数はversioned matchmaking configで管理する。
 
-Phase Cの確定範囲では、Bronzeのqueue先頭humanがServer clockで5秒待っても4 human未満なら、1〜3 humanの不足枠をNPCで補って必ず4枠にする。5秒以内に4 humanが揃った場合はNPCを入れない。Silver以上でNPCを投入するか、投入まで何秒待つか、bucket境界・search rangeは未決定であり、Phase D-1実装へ推測で追加しない。
+Phase D-2ではBronzeは5秒後、Silverは10秒後にhumanで埋まらない枠をNPCで補い、Gold / Platinum / Rating Battleはhuman-onlyとする。Mixed Tier候補ではhumanのうち最も高いTierのNPC policyを使う。MMR bucketのsearch range拡大とqueue shardingは引き続き別判断とする。
 
 ### 10.2 Server ownership
 
 - NPCのprofile、strength、擬似MMR、反応時間、answer、correctness、scoreはserverが生成する。
 - NPC eventは人間Intentと同じOrdering Authorityを通し、未来の行動をclientへ送らない。
 - NPCも各問1回だけ独立回答し、人間と同じauthoritative orderingと20 / 10 / 5 / 1、誤答-10、無回答0の得点規則を使う。
-- NPCは実UID、client session、leaderboard entry、player history、永続MMRを持たない。
+- NPCは実UID、client session、永続MMRを持たない。
 - public projectionではNPCであることを明示する。
-- Phase D-1ではmatch claim時のhuman平均hidden MMRを`npcSkillInput`へ固定し、Server側でaccuracyとanswer delayへ変換する。NPC自身には永続profile/MMRを作らない。
-- 問題選択へ`currentTier / difficultyBand`を渡す境界を設けるが、具体的なTier→難易度mappingは未決定のため`difficultyBand`は未設定とする。Queueは分割しない。
+- match claim時のhuman平均hidden MMRを`npcSkillInput`へ固定し、Server側でaccuracyとanswer delayへ変換する。NPC自身には永続profile/MMRを作らない。
+- 問題選択も同じhuman平均MMRからmatch tierを導出し、§8.1のdifficulty rangeを使用する。NPCは平均へ含めず、Queueは分割しない。
 
 ### 10.3 MMRへの影響
 
-- Phase D-1ではhuman平均hidden MMRをNPCの仮想ratingとしてpairwise計算へ使い、human profileだけを更新する。
-- NPC数に応じたrating delta減衰は未決定であり、Phase D-1では推測で導入しない。
-- 将来減衰を導入する場合はsettlement configへversion固定し、client計算にしない。
+- human平均hidden MMRをNPCの仮想ratingとしてpairwise計算へ使い、human profileだけを更新する。
+- human数weightは§9.3の正式値をpositive/negative delta双方へ適用する。
 - NPC自身にはsettlementを作らない。
 
 ### 10.4 再利用境界
@@ -706,7 +711,7 @@ CompetitiveSession
 
 ### 11.5 Phase B Identity / Matchmaking実装契約
 
-Competitiveのcanonical identityはFirebase Auth UIDとする。Anonymous Authも同じUIDで利用でき、将来Sign in with Apple等へ**linkしてUIDを維持する**限り、match、rating、historyのownership移行は不要である。別UIDの既存accountへsign-inする場合の統合policyは後続Identity Gateとし、Phase B schemaはUID以外をownership keyにしない。
+Competitiveのcanonical identityはFirebase Auth UIDとする。Anonymous Authも同じUIDで利用でき、将来Sign in with Apple等へ**linkしてUIDを維持する**限り、match、rating、Statsのownership移行は不要である。別UIDの既存accountへsign-inする場合の統合policyは後続Identity Gateとし、Phase B schemaはUID以外をownership keyにしない。
 
 Phase Bの物理pathは次を基準とする。
 
@@ -720,7 +725,7 @@ competitiveV2/matches/{matchId}
 
 - `private`全体はAdmin SDK専用で、client read/writeを許可しない。
 - `public/{uid}`は認証済み本人だけがreadでき、queue全体、他UID、hidden matchmaking値、session auditは公開しない。
-- profileはaccount type/status、最新epoch、current session、protocol、server-owned matchmaking bucketだけを持つ。MMR、visible rank、season/historyはまだ持たせない。
+- Phase B時点のprofileはaccount type/status、最新epoch、current session、protocol、server-owned matchmaking bucketだけを持つ。MMR、visible rank、Season/StatsはPhase Dで追加する。
 - Phase B暫定queue leaseは5分とする。これはProduct保証値ではなく、heartbeat/reconnect実装時にversioned configへ移す。
 - `joinQueue`の同一`intentId`再送は同じsessionへ収束する。新しいjoin IntentはQueue中だけepochを増やして旧sessionをfenceし、`MATCH_FOUND`以後は`ACTIVE_MATCH_EXISTS`で拒否する。
 - `cancelQueue`は同じsessionId/epochの`QUEUED`だけを終了できる。match claim後は`MATCH_ALREADY_ASSIGNED`とし、commitment boundary以後のforfeitには読み替えない。
@@ -787,13 +792,13 @@ Phase Cではgraceを15秒に固定する。`competitiveV2/presence/{matchId}/{u
 
 分散storage全体での「厳密に1回だけ実行」を前提にしない。canonical settlementを1件作り、各反映先へ**少なくとも1回retryしても、結果は1回分だけ適用される**設計にする。
 
-Phase Cではrating/historyを実装せずcore結果だけを確定した。Phase D-1ではdeterministic settlementIdをkeyに、Match Result、human profileのMMR/Tier/Stats/Season、session解放、matchの`SETTLED`化をServer transactionで一度だけ反映する。Leaderboardと履歴はまだ対象外で、Phase D後続へ残す。
+Phase Cではratingを実装せずcore結果だけを確定した。Phase D-2ではdeterministic settlementIdをkeyに、Match Result、human profileのMMR/Tier/Stats/Season、session解放、matchの`SETTLED`化をServer transactionで一度だけ反映する。LeaderboardとMatch Historyは作らない。
 
 ### 13.2 Identity
 
 - `settlementId`: `matchId` と `settlementVersion` から決まるdeterministic ID。
 - `settlementVersion`: settlement schema/計算契約のversion。
-- `configVersion`: MMR、NPC減衰、forfeit等の計算設定。
+- `configVersion`: MMR、loss multiplier、human数weight、forfeit等の計算設定。
 - MatchResultから同じSettlementResultを再構築できる。
 
 ### 13.3 適用対象
@@ -805,18 +810,16 @@ COMPLETED matchでは次を適用する。
 - season stats
 - audit / anomaly data
 
-Phase D-1で適用するのはMMR、Tier/Rating Battle、Season、最小Stats、settlement auditまで。直近historyとTop 20 leaderboardは後続Phaseで追加する。
+Phase D-2で適用するのはMMR、Tier/Rating Battle、Season、公開Stats、settlement auditまで。
 
-NPCにはMMR、history、leaderboardを適用しない。
+NPCにはMMR、Season Stats、settlementを適用しない。
 
-Server faultによるABORTED matchは、監査と障害記録だけを残し、MMR、敗北数、通常の対戦history、leaderboardへ適用しない。
+Server faultによるABORTED matchは、監査と障害記録だけを残し、MMR、敗北数、Statsへ適用しない。
 
 ### 13.4 冪等適用
 
 - 各player recordは最後に適用したsettlement、または適用済みsettlement markerを持つ。
 - 更新transactionで `settlementId/version` を比較し、適用済みなら成功扱いで終了する。
-- history itemはsettlementIdをdocument/item IDとして重複を防ぐ。
-- leaderboardはMMR/season recordから再構築できるderived projectionとする。
 - audit eventもdeterministic IDで重複を防ぐ。
 
 ### 13.5 Status
@@ -825,8 +828,7 @@ Server faultによるABORTED matchは、監査と障害記録だけを残し、M
 SettlementStatus
   CREATED
   PLAYER_RATINGS_APPLIED
-  HISTORY_APPLIED
-  LEADERBOARD_APPLIED
+  STATS_APPLIED
   AUDIT_RECORDED
   COMPLETED
   RETRYABLE_ERROR
@@ -835,11 +837,9 @@ SettlementStatus
 
 実装ではcomponent別statusを持ち、順番が前後しても最終的に全必須componentが完了すればよい。clientへは内部errorではなく、pending/completedと確定済み結果だけを返す。
 
-### 13.6 Last 5 history
+### 13.6 非対象
 
-- UIは直近5試合を表示する。
-- 保存件数を5件に切り詰めるか、より長く保持してqueryで5件返すかはretention/privacy方針と合わせて決める。
-- historyはserver-createdで、clientから追加・順位変更できない。
+LeaderboardとMatch Historyは作らない。監査・冪等性・障害解析に必要なServer-only settlement auditは、ユーザー向けMatch Historyとは分離して保持する。
 
 ---
 
@@ -979,19 +979,17 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 13. hidden MMR導入時のbucket数、search range拡大、global matchmaking transactionのshard単位。
 14. Anonymous UIDを既存linked accountへ統合する場合のProduct policy。credential linkでUIDを維持する通常経路はschema変更不要。
 
-### 17.3 Phase D-1後もプロダクト判断が必要
+### 17.3 Phase D-2後もプロダクト判断が必要
 
-1. 初期MMR、K-factor、Tier境界、Rating Battle境界の正式Product tuningとprovisional期間。Phase D-1の値は暫定config。
-2. pairwise Elo-styleの本番simulation結果に基づくdelta調整。
-3. Bronzeは5秒後に最大3 NPCで確定済み。Silver以上のNPC投入待機時間、search range拡大、最大NPC数。
-4. NPC数別のMMR減衰式。
-5. Seasonは4週間、基準rating方向へのsoft resetまで確定。factorの正式値とSeason報酬/carry-over表示。
-6. Top 20 leaderboardの同率順位規則。
-7. last 5以外のhistory保持件数。
+1. provisional match期間。
+2. pairwise Elo-style、loss multiplier、human数weightの本番simulation結果に基づく将来config調整。
+3. MMR search range拡大、queue population増加時のsharding。
+4. Season報酬とcarry-over表示。
+5. Server-side Question Bankの更新・review・rollback、問題重複回避期間。
 
 ### 17.4 Phase D前に運用判断が必要
 
-1. audit/raw trace/historyの保持日数と削除policy。
+1. audit/raw traceの保持日数と削除policy。
 2. 不正疑いのmanual reviewとappeal手順。
 3. alert閾値、on-call/障害時のCompetitive停止方法。
 4. minimum protocol versionを上げるrollout手順。
@@ -1060,7 +1058,7 @@ Phase B.5ではProduct ruleとServer authorityを変えず、`submitAnswer`だ�
 
 Local Emulator（4人同時回答×20問、80 answer）のBeforeはT1→T2 p50 57.205ms / p95 105.834ms、T0→T3 p50 61.060ms / p95 118.282ms。AfterはT1→T2 p50 19.402ms / p95 39.003ms、T0→T3 p50 23.580ms / p95 45.014msで、Player/Question answer transactionとintent claim transactionは全80件1 attempt、contention retry 0件だった。これはLocal比較証拠であり、上記Production Performance Release Blockerを解除しない。Productionへ`competitiveIntent`と`competitiveReconcileMatch`をdeployした後、同条件の4 Player Cloud測定とordering/correctness確認に成功して初めて解除を判断する。
 
-Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、LeaderboardはPhase A-2へ含めない。
+Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、StatsはPhase A-2へ含めない。
 
 ### Phase B: Identity / Matchmaking Foundation
 
@@ -1074,7 +1072,7 @@ Matchmaking、Hidden MMR、Rank、Production NPC、Settlement、Season、Leaderb
 - clientは`joinQueue` / `cancelQueue` Intentと本人用projectionだけを使用し、UID/MMR/rank/matchId/participantsを指定しない
 - reconnect grace、forfeit詳細、NPC、core-only settlementはPhase C、heartbeat運用とMMR/Rankは後続Phaseへ残す
 
-Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化しない。
+Phase Bでは本格MMR、Season、Stats、Production NPCをまだ有効化しない。
 
 ### Phase C: Reconnect / Forfeit / Bronze NPC / Core Settlement
 
@@ -1088,8 +1086,9 @@ Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化
 
 ### Phase D: Rating / Season / Security / Production Rollout
 
-- **Phase D-1 Local対象**: 単一hidden MMR、pairwise Elo-style、Tier/Rating Battle、forfeit最下位、4週間Season/soft reset、勝率・最高連勝・累計勝利、human平均MMR由来のNPC skill、冪等settlement
-- **Phase D後続**: NPC数別rating delta、Top 20 leaderboard、直近5試合history、settlement全projection
+- **Phase D-1 Local完了**: 単一hidden MMR、pairwise Elo-style、Tier/Rating Battle、forfeit最下位、4週間Season/soft reset、勝率・最高連勝・累計勝利、human平均MMR由来のNPC skill、冪等settlement
+- **Phase D-2 Local / Emulator完了**: 正式MMR設定、loss multiplier、human数weight、Rating Battle昇降格gate、Tier別NPC待機、human平均MMR由来difficulty 1〜5、既存英単語から生成するServer Question Bank、correct answer非公開契約
+- LeaderboardとMatch Historyは作らない。Phase D-2のProduction deploy / Cloud E2Eは別Gateとする。
 - プロダクトバランスsimulationと負荷検証
 
 - App Check/App Attest enforcement

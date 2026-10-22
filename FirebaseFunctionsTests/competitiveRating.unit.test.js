@@ -5,18 +5,31 @@ const { PARTICIPANT_KIND, PHASE, PROTOCOL_VERSION } = require("../functions/comp
 const {
   RATING_CONFIG,
   TIER,
+  applyPlatinumSeasonStats,
   applyStats,
   calculatePairwiseRatingChanges,
   ensureCompetitiveProfile,
+  humanWeightForCount,
   initialCompetitiveProfile,
+  lossMultiplierForTier,
+  platinumPromotionEligible,
   seasonForEpoch,
   softResetRating,
+  tierForCompetitiveProfile,
   tierForRating,
 } = require("../functions/competitive/rating");
 const { settleCompetitiveRoot } = require("../functions/competitive/settlement");
 
 function ratingPlayer(uid, rating, rank, overrides = {}) {
-  return { uid, rating, rank, forfeited: false, ...overrides };
+  return {
+    uid,
+    rating,
+    rank,
+    kind: PARTICIPANT_KIND.HUMAN,
+    preMatchTier: tierForRating(rating),
+    forfeited: false,
+    ...overrides,
+  };
 }
 
 function profile(uid, matchId, rating, nowEpochMs, stats = {}) {
@@ -60,6 +73,7 @@ function settlementRoot({
       sessionId: isNPC ? undefined : `session-${uid}`,
       sessionEpoch: isNPC ? undefined : 1,
       preMatchRating: ratings[slot],
+      preMatchTier: tierForRating(ratings[slot]),
       forfeited: forfeited.includes(uid),
     };
     if (!isNPC) {
@@ -98,7 +112,7 @@ function settlementRoot({
   };
 }
 
-describe("Competitive Phase D-1 rating", () => {
+describe("Competitive Phase D-2 rating", () => {
   it("uses opponent MMR in four-player pairwise Elo and rewards an upset more", () => {
     const expected = calculatePairwiseRatingChanges([
       ratingPlayer("p1", 1_400, 1),
@@ -167,9 +181,72 @@ describe("Competitive Phase D-1 rating", () => {
     assert.equal(promoted.currentTier, TIER.SILVER);
     assert.equal(demoted.currentTier, TIER.BRONZE);
   });
+
+  it("applies loss multipliers only to negative deltas", () => {
+    const expectedLosses = new Map([
+      [TIER.BRONZE, -7],
+      [TIER.SILVER, -11],
+      [TIER.GOLD, -15],
+      [TIER.PLATINUM, -20],
+      [TIER.RATING_BATTLE, -20],
+    ]);
+    for (const [tier, expectedDelta] of expectedLosses) {
+      const players = [1, 2, 3, 4].map((rank) => ratingPlayer(
+        `p${rank}`,
+        1_000,
+        rank,
+        { preMatchTier: rank === 4 ? tier : TIER.BRONZE }
+      ));
+      const changes = calculatePairwiseRatingChanges(players);
+      assert.equal(changes.p4.rawDelta, -20);
+      assert.equal(changes.p4.lossMultiplier, lossMultiplierForTier(tier));
+      assert.equal(changes.p4.finalDelta, expectedDelta);
+      assert.equal(changes.p1.rawDelta, 20);
+      assert.equal(changes.p1.lossMultiplier, 1);
+      assert.equal(changes.p1.finalDelta, 20);
+    }
+  });
+
+  it("weights positive and negative deltas by the human count", () => {
+    const expected = new Map([
+      [1, 10],
+      [2, 13],
+      [3, 17],
+      [4, 20],
+    ]);
+    for (const [humanCount, expectedMagnitude] of expected) {
+      const players = [1, 2, 3, 4].map((rank) => ratingPlayer(
+        `p${rank}`,
+        1_000,
+        rank,
+        {
+          kind: rank <= humanCount ? PARTICIPANT_KIND.HUMAN : PARTICIPANT_KIND.NPC,
+          preMatchTier: TIER.PLATINUM,
+        }
+      ));
+      const changes = calculatePairwiseRatingChanges(players);
+      assert.equal(changes.p1.humanWeight, humanWeightForCount(humanCount));
+      assert.equal(changes.p1.finalDelta, expectedMagnitude);
+      assert.equal(changes.p4.finalDelta, -expectedMagnitude);
+    }
+  });
+
+  it("keeps the approximately ten first-place Bronze progression target", () => {
+    let rating = RATING_CONFIG.initialRating;
+    for (let match = 0; match < 10; match += 1) {
+      const changes = calculatePairwiseRatingChanges([
+        ratingPlayer("target", rating, 1),
+        ratingPlayer("p2", rating, 2),
+        ratingPlayer("p3", rating, 3),
+        ratingPlayer("p4", rating, 4),
+      ]);
+      rating = changes.target.newRating;
+    }
+    assert.equal(rating, RATING_CONFIG.tierThresholds.SILVER);
+  });
 });
 
-describe("Competitive Phase D-1 stats and season", () => {
+describe("Competitive Phase D-2 stats, promotion and season", () => {
   it("counts sole/tied first as wins, loss as streak reset, and forfeit as no win", () => {
     const competitive = initialCompetitiveProfile(RATING_CONFIG.seasonEpochStartMs + 1);
     assert.equal(applyStats(competitive, { rank: 1, forfeited: false }), true);
@@ -202,17 +279,74 @@ describe("Competitive Phase D-1 stats and season", () => {
     ensureCompetitiveProfile(profileValue, firstSeason.endsAtEpochMs + 1);
     assert.equal(profileValue.competitive.hiddenRating, expected);
   });
+
+  it("requires strictly more than 50 percent Platinum wins for Rating Battle", () => {
+    const competitive = initialCompetitiveProfile(RATING_CONFIG.seasonEpochStartMs + 1);
+    competitive.hiddenRating = RATING_CONFIG.ratingBattleThreshold;
+    competitive.currentTier = TIER.PLATINUM;
+    competitive.season.platinumSeasonMatches = 2;
+    competitive.season.platinumSeasonWins = 1;
+    assert.equal(platinumPromotionEligible(competitive), false);
+    assert.equal(tierForCompetitiveProfile(competitive), TIER.PLATINUM);
+
+    competitive.season.platinumSeasonMatches = 3;
+    competitive.season.platinumSeasonWins = 2;
+    assert.equal(platinumPromotionEligible(competitive), true);
+    assert.equal(tierForCompetitiveProfile(competitive), TIER.RATING_BATTLE);
+  });
+
+  it("counts tied first as a Platinum win, counts forfeit as a match, and demotes below 1800", () => {
+    const competitive = initialCompetitiveProfile(RATING_CONFIG.seasonEpochStartMs + 1);
+    competitive.hiddenRating = 1_800;
+    competitive.currentTier = TIER.PLATINUM;
+    applyPlatinumSeasonStats(competitive, {
+      preMatchTier: TIER.PLATINUM,
+      rank: 1,
+      forfeited: false,
+    });
+    applyPlatinumSeasonStats(competitive, {
+      preMatchTier: TIER.PLATINUM,
+      rank: 1,
+      forfeited: true,
+    });
+    assert.equal(competitive.season.platinumSeasonMatches, 2);
+    assert.equal(competitive.season.platinumSeasonWins, 1);
+    assert.equal(tierForCompetitiveProfile(competitive), TIER.PLATINUM);
+
+    competitive.hiddenRating = 1_799;
+    competitive.currentTier = TIER.RATING_BATTLE;
+    assert.equal(tierForCompetitiveProfile(competitive, RATING_CONFIG, {
+      preserveCurrentRatingBattle: true,
+    }), TIER.PLATINUM);
+  });
+
+  it("resets Platinum promotion counters on a four-week rollover", () => {
+    const firstSeason = seasonForEpoch(RATING_CONFIG.seasonEpochStartMs + 1);
+    const profileValue = { competitive: initialCompetitiveProfile(firstSeason.startsAtEpochMs + 1) };
+    profileValue.competitive.hiddenRating = 1_800;
+    profileValue.competitive.currentTier = TIER.PLATINUM;
+    profileValue.competitive.season.platinumSeasonMatches = 3;
+    profileValue.competitive.season.platinumSeasonWins = 2;
+    ensureCompetitiveProfile(profileValue, firstSeason.endsAtEpochMs);
+    assert.equal(profileValue.competitive.season.platinumSeasonMatches, 0);
+    assert.equal(profileValue.competitive.season.platinumSeasonWins, 0);
+    assert.equal(profileValue.competitive.currentTier, TIER.PLATINUM);
+  });
 });
 
-describe("Competitive Phase D-1 settlement", () => {
+describe("Competitive Phase D-2 settlement", () => {
   it("settles rating, tiers, stats, session release and presence atomically", () => {
-    const root = settlementRoot({ ratings: [1_095, 1_000, 1_000, 1_000] });
+    const root = settlementRoot({ ratings: [1_195, 1_195, 1_195, 1_195] });
     const result = settleCompetitiveRoot(root, "match-rating", RATING_CONFIG.seasonEpochStartMs + 2);
     assert.equal(result.status, "SETTLED");
     assert.equal(result.root.matches["match-rating"].private.phase, PHASE.SETTLED);
     assert.equal(result.root.matchmaking.private.profiles.p1.competitive.currentTier, TIER.SILVER);
     assert.equal(result.root.matchmaking.private.profiles.p1.competitive.stats.totalWins, 1);
     assert.equal(result.root.matchmaking.private.profiles.p2.competitive.stats.currentWinStreak, 0);
+    assert.equal(result.settlement.playerResults.p1.rawDelta, 20);
+    assert.equal(result.settlement.playerResults.p1.lossMultiplier, 1);
+    assert.equal(result.settlement.playerResults.p1.humanWeight, 1);
+    assert.equal(result.settlement.playerResults.p1.finalDelta, 20);
     assert.equal(result.root.matchmaking.public.p1.state, "NOT_QUEUED");
     assert.equal(result.root.matchmaking.public.p1.matchId, undefined);
     assert.equal(result.root.presence["match-rating"], undefined);
@@ -275,5 +409,48 @@ describe("Competitive Phase D-1 settlement", () => {
     assert.deepEqual(Object.keys(result.settlement.playerResults).sort(), ["p1", "p2"]);
     assert.equal(result.root.matchmaking.private.profiles.p3, undefined);
     assert.equal(result.root.matchmaking.private.profiles.p4, undefined);
+    assert.equal(result.settlement.playerResults.p1.humanWeight, 2 / 3);
+  });
+
+  it("promotes only above the Platinum win-rate gate and demotes below 1800", () => {
+    const exactHalf = settlementRoot({ ratings: [1_800, 1_800, 1_800, 1_800] });
+    exactHalf.matchmaking.private.profiles.p1.competitive.currentTier = TIER.PLATINUM;
+    exactHalf.matchmaking.private.profiles.p1.competitive.season.platinumSeasonMatches = 1;
+    exactHalf.matchmaking.private.profiles.p1.competitive.season.platinumSeasonWins = 0;
+    exactHalf.matches["match-rating"].private.participants.p1.preMatchTier = TIER.PLATINUM;
+    const halfResult = settleCompetitiveRoot(
+      exactHalf,
+      "match-rating",
+      RATING_CONFIG.seasonEpochStartMs + 2
+    );
+    assert.equal(halfResult.settlement.playerResults.p1.currentTier, TIER.PLATINUM);
+    assert.equal(halfResult.settlement.playerResults.p1.platinumSeasonWins, 1);
+    assert.equal(halfResult.settlement.playerResults.p1.platinumSeasonMatches, 2);
+
+    const aboveHalf = settlementRoot({ ratings: [1_800, 1_800, 1_800, 1_800] });
+    aboveHalf.matchmaking.private.profiles.p1.competitive.currentTier = TIER.PLATINUM;
+    aboveHalf.matchmaking.private.profiles.p1.competitive.season.platinumSeasonMatches = 2;
+    aboveHalf.matchmaking.private.profiles.p1.competitive.season.platinumSeasonWins = 1;
+    aboveHalf.matches["match-rating"].private.participants.p1.preMatchTier = TIER.PLATINUM;
+    const promoted = settleCompetitiveRoot(
+      aboveHalf,
+      "match-rating",
+      RATING_CONFIG.seasonEpochStartMs + 2
+    );
+    assert.equal(promoted.settlement.playerResults.p1.currentTier, TIER.RATING_BATTLE);
+
+    const ratingBattle = settlementRoot({
+      ratings: [1_800, 1_800, 1_800, 1_800],
+      ranks: [4, 1, 2, 3],
+    });
+    ratingBattle.matchmaking.private.profiles.p1.competitive.currentTier = TIER.RATING_BATTLE;
+    ratingBattle.matches["match-rating"].private.participants.p1.preMatchTier = TIER.RATING_BATTLE;
+    const demoted = settleCompetitiveRoot(
+      ratingBattle,
+      "match-rating",
+      RATING_CONFIG.seasonEpochStartMs + 2
+    );
+    assert.equal(demoted.settlement.playerResults.p1.mmrAfter, 1_780);
+    assert.equal(demoted.settlement.playerResults.p1.currentTier, TIER.PLATINUM);
   });
 });

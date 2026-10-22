@@ -258,7 +258,10 @@ describe("Competitive Phase D-1 Emulator", () => {
     assert.equal(participants.filter((value) => value.kind === "HUMAN").length, 2);
     assert.equal(participants.filter((value) => value.kind === "NPC").length, 2);
     assert.equal(matchBefore.config.npcSkillInput.sourceAverageHiddenRating, 1_000);
-    assert.equal(matchBefore.config.questionSelection.difficultyBand ?? null, null);
+    assert.deepEqual(matchBefore.config.questionSelection.difficultyBand, {
+      minimum: 1,
+      maximum: 2,
+    });
 
     await joinReadyOpen(context);
     await playTwentyQuestions(context);
@@ -286,7 +289,8 @@ describe("Competitive Phase D-1 Emulator", () => {
       const publicValue = await projection(client);
       assert.equal(publicValue.state, "NOT_QUEUED");
       assert.ok(publicValue.competitive.currentTier);
-      assert.equal(publicValue.competitive.stats.matchesPlayed, 1);
+      assert.equal(publicValue.competitive.stats.totalWins >= 0, true);
+      assert.equal(Object.hasOwn(publicValue.competitive.stats, "matchesPlayed"), false);
       assert.equal(Object.hasOwn(publicValue.competitive, "hiddenRating"), false);
     }
     assert.equal(profiles[context.clients[0].uid].competitive.stats.totalWins, 1);

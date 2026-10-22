@@ -5,6 +5,12 @@
 
 ---
 
+## 過去の更新(2026年10月22日・Competitive v2)
+
+- TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase D-1をLocal / Emulatorまで実装**。単一hidden MMRのpairwise Elo-style、Bronze/Silver/Gold/Platinum/Rating Battle、冪等かつatomicなsettlement、勝率・最高連勝・累計勝利、4週間Seasonとsoft reset、human平均MMR由来のNPC強度、未確定difficultyBand境界を追加。暫定tuning値はServer configへ集約。Rating Unit 13件、Matchmaking Unit 13件、Core Unit 11件、Swift XCTest 3件、Phase D-1 Emulator 1件(2 human+2 NPC・20問)、Phase C Emulator 2件、Core Emulator 4件が成功。**Production deploy・commit・pushは未実施。正式tuning・Silver以上のNPC待機・difficulty mappingは未決定**
+
+---
+
 ## 過去の更新(2026年9月6日・整理分)
 
 - Codex(たける側): **単語データから未使用の`definition`フィールドを完全に削除**。`WordEntry`のプロパティ、`junior_high.json` 17件、`high_school.json` 183件、`docs/CODING.md`の保持指示、決定事項メモを削除。JSONは構文・必須6キー・件数を検証し、削除後ファイルのSHA-256が事前に算出した`definition`行除外版と一致したため、他フィールドは変更なし。`QuestionSeeder.dataVersion`は6のまま。xcodegen実行、Simulator向けビルド成功、全66テスト成功(「収録データは2カテゴリ各難易度を含みIDと単語が重複しない」を含む)。検証専用iPhone 17 Simulatorで中学英単語★1の一人練習4問を流し、各問の4択・正解表示と4/4問正解のリザルトを確認。スクリーンショットなし。本作業では`STATUS_ARCHIVE.md`・Firebase関連ファイルを変更していない

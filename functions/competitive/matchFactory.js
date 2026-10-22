@@ -9,10 +9,14 @@ const {
   SERVER_VERSION,
   RECONNECT_GRACE_MS,
 } = require("./constants");
-const { TEST_QUESTION_BANK } = require("./questionBank");
+const { RATING_CONFIG, questionSelectionBoundary } = require("./rating");
+const { selectCompetitiveQuestions } = require("./questionBank");
 
-function buildQuestionInstances(matchId) {
-  return TEST_QUESTION_BANK.map((question, index) => {
+function buildQuestionInstances(matchId, questionSelection) {
+  return selectCompetitiveQuestions({
+    matchId,
+    difficultyBand: questionSelection.difficultyBand,
+  }).map((question, index) => {
     const choices = question.choices.map((text) => ({
       answerId: `a-${index + 1}-${randomUUID()}`,
       text,
@@ -23,6 +27,7 @@ function buildQuestionInstances(matchId) {
       prompt: question.prompt,
       choices,
       correctAnswerId: choices[question.correctChoiceIndex].answerId,
+      difficulty: question.difficulty,
       matchId,
     };
   });
@@ -45,6 +50,8 @@ function buildCompetitiveMatch({
     throw new Error("Competitive match requires exactly four players");
   }
   const participantOrder = players.map((player) => player.uid);
+  const questionSelection = questionSelectionInput
+    || questionSelectionBoundary(RATING_CONFIG.initialRating);
   const participants = Object.fromEntries(players.map((player, slot) => {
     const kind = player.kind === PARTICIPANT_KIND.NPC
       ? PARTICIPANT_KIND.NPC
@@ -85,7 +92,7 @@ function buildCompetitiveMatch({
       participantOrder,
       participants,
       scores: Object.fromEntries(participantOrder.map((uid) => [uid, 0])),
-      questionInstances: buildQuestionInstances(matchId),
+      questionInstances: buildQuestionInstances(matchId, questionSelection),
       currentQuestionIndex: -1,
       currentQuestion: null,
       requiresActiveSessionFence,
@@ -100,12 +107,7 @@ function buildCompetitiveMatch({
           profileVersion: "phase-c-fixed-test-1",
           reactionBaseMs: 250,
         },
-        questionSelection: questionSelectionInput || {
-          subject: "ENGLISH",
-          currentTiers: [],
-          difficultyBand: null,
-          mappingStatus: "PRODUCT_MAPPING_UNDECIDED",
-        },
+        questionSelection,
         season,
       },
     },
