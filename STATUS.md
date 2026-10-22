@@ -1,5 +1,4 @@
 # HayaosiApp 開発ステータス
-
 > 運用ルール:
 > - 更新日は各見出しに書く(冒頭に最終更新日を置くと必ず本文とズレるため置かない)
 > - **このファイルの上限は150行**(超えるとフックが警告する)。超えたら「最新更新」の古い日付の項目から `STATUS_ARCHIVE.md` へ移す。現在フェーズ・作業中宣言・次のタスク・決定事項メモは移動対象外
@@ -46,6 +45,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `HayaosiApp/Views/Battle/BattleHubView.swift`・`BattleView.swift`、`HayaosiApp/Views/Competitive/*`、`HayaosiApp/Services/Competitive/*`、関連Swift Tests | **Competitive v2 Phase E Client/UI MVP**。今回のユーザー許可により、たける側宣言範囲は既存変更を保持した最小差分に限り優先して編集する | 2026年10月22日 |
 ---
 ## 最新更新(2026年8月25日〜10月22日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase D-2をLocal / Emulatorまで実装**。正式difficulty 1〜5とTier別range、既存英単語5951問から生成するServer Question Bank、human平均MMR由来の20問重複なし出題、correct answer非公開、正式MMR/tier・loss multiplier・human数weight・Rating Battle昇降格gate、Bronze 5秒/Silver 10秒NPC fill・Gold以上human-onlyを追加。Backend Unit 49件、Swift XCTest 3件、Phase D-2 Emulator 2件(4構成×20問、Security/冪等性含む)、Simulator Debug Buildが成功。**Production deploy・commit・pushは未実施。Production Cloud E2Eとbalance simulationは別Gate**
