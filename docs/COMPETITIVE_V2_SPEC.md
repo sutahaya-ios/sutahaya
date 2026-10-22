@@ -1,7 +1,7 @@
 # Competitive Mode v2.0 Specification
 
-- Status: Phase A-2 Competitive Core Local / Emulator complete candidate
-- Last updated: 2026-10-06
+- Status: Phase D-1 Rating / Season / Stats Local implementation
+- Last updated: 2026-10-22
 - Scope: Competitive Mode v2.0 only
 - Implementation status: Phase A-1 complete / Phase A-2 Production Cloud verification pending
 
@@ -36,7 +36,7 @@ Competitive Modeは、以下を満たす4人制オンライン対戦として実
 4. 1試合内の全イベントに、再現可能な単一の論理順序を与える。
 5. 低ランク帯では不足枠をNPCで補い、上位帯では人間のみで対戦する。
 6. プレイヤー評価値は1種類の非公開MMRに統一する。
-7. 通常帯ではMMRから導出したTierを表示し、Rating Zoneでは数値Ratingを表示する。
+7. 通常帯ではMMRから導出したTierを表示し、Rating Battleでは数値Ratingを表示する。
 8. Season、Top 20 leaderboard、直近5試合の履歴を提供する。
 9. 再送、重複実行、一時切断、サーバー再起動があっても、試合とsettlementを安全に収束させる。
 10. 現行フレンドバトルを壊さず、Competitive固有の信頼境界を維持する。
@@ -585,15 +585,15 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 
 - player/seasonごとにserver-ownedのMMRを1つだけ持つ。
 - Rank PointとRatingを別々に増減させる二重評価は作らない。
-- Tier、Rating Zone、leaderboard順位は同じMMRから導出する表示またはprojectionである。
+- Tier、Rating Battle、leaderboard順位は同じMMRから導出する表示またはprojectionである。
 - clientからMMRをwriteできない。
 
 ### 9.2 表示
 
-- Rating Zone未満: exact MMRを隠し、configVersionに固定された閾値から表示Tierを導出する。
-- Rating Zone: exact MMRを数値Ratingとして表示する。
+- Rating Battle未満: exact MMRを隠し、configVersionに固定された閾値から表示Tierを導出する。
+- Rating Battle: exact MMRを数値Ratingとして表示する。
 - APIは権限とzoneに応じたsanitized displayを返す。通常帯のclientへhidden MMRを送らない。
-- Top 20 leaderboardはRating Zoneを基本対象とし、seasonとtie-break ruleを固定する。
+- Top 20 leaderboardはRating Battleを基本対象とし、seasonとtie-break ruleを固定する。
 
 ### 9.3 更新
 
@@ -601,17 +601,24 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - SettlementResultに `mmrBefore`、`ratingDelta`、`mmrAfter`、formula/configVersionを固定する。
 - reconnect、画面再表示、履歴取得で再計算しない。
 - 同じsettlementIdをplayerへ再適用してもMMRは1回分しか変化しない。
+- Phase D-1では4人の各組合せを仮想1対1として扱うpairwise Elo-styleを採用し、同順位は0.5、forfeitは非forfeit全員への敗北、複数forfeit同士はdrawとする。各Playerの3組分の差分平均へK-factorを掛ける。
+- `initialRating`、`kFactor`、Tier境界、Rating Battle境界、下限はServer側の単一versioned configへ集約する。Phase D-1の値はLocal検証用の暫定値であり正式なProduct tuningではない。
 
 ### 9.4 未決定事項
 
-- 初期MMR、provisional match数
-- Tier境界とRating Zone境界
-- 4人順位からdeltaを求める式
-- forfeit penalty
-- Season reset/carry-over
+- 初期MMR、K-factor、Tier境界、Rating Battle境界の正式Product値とprovisional match数
+- NPC人数別rating delta減衰
 - leaderboardの同率順位規則
 
 これらは1つのversioned configとしてserver側で固定し、active match途中に変更しない。
+
+### 9.5 Season / Stats（Phase D-1）
+
+- 1 Seasonは4週間。`seasonId / startsAt / endsAt / ratingAtSeasonStart / previousSeasonEndRating / settlementVersion`をServer profileへ保持する。
+- 大規模schedulerは追加せず、queue参加またはsettlement時のServer clockで必要なPlayerだけlazy rolloverする。同じSeasonへのretryでは再resetしない。
+- rollover時は `base + (old - base) * seasonSoftResetFactor` で基準rating方向へsoft resetする。factorはversioned configの暫定値で、完全resetはしない。
+- 初期Statsは`matchesPlayed / totalWins / currentWinStreak / maxWinStreak`だけをServer保持し、公開値は勝率・最高連勝・累計勝利数に限定する。
+- `final rank == 1`の非forfeit Playerを勝利とし、同率1位は全員勝利。表示順位1位でもforfeit済みなら勝利・連勝へ含めない。
 
 ---
 
@@ -622,10 +629,9 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - 4枠に満たない低ランク帯ではserver-owned NPCを投入できる。
 - 最下位帯は短い待ち時間または即時補充を許可する。
 - 中間帯はhumanを優先し、設定された待機時間後にのみNPCを補充する。
-- 上位TierとRating Zoneはhuman 4人のみとし、NPCを投入しない。
 - 境界、待機時間、許容NPC数はversioned matchmaking configで管理する。
 
-Phase Cの確定範囲では、現行の単一bucketをBronze相当として扱い、queue先頭humanの待機開始からServer clockで5秒経過しても4 human未満なら、1〜3 humanの不足枠をNPCで補って必ず4枠にする。5秒以内に4 humanが揃った場合はNPCを入れない。Silver以上の待機時間・bucket境界・search rangeは未決定であり、Phase C実装へ推測で追加しない。
+Phase Cの確定範囲では、Bronzeのqueue先頭humanがServer clockで5秒待っても4 human未満なら、1〜3 humanの不足枠をNPCで補って必ず4枠にする。5秒以内に4 humanが揃った場合はNPCを入れない。Silver以上でNPCを投入するか、投入まで何秒待つか、bucket境界・search rangeは未決定であり、Phase D-1実装へ推測で追加しない。
 
 ### 10.2 Server ownership
 
@@ -634,13 +640,14 @@ Phase Cの確定範囲では、現行の単一bucketをBronze相当として扱�
 - NPCも各問1回だけ独立回答し、人間と同じauthoritative orderingと20 / 10 / 5 / 1、誤答-10、無回答0の得点規則を使う。
 - NPCは実UID、client session、leaderboard entry、player history、永続MMRを持たない。
 - public projectionではNPCであることを明示する。
-- Phase Cではversion付き固定test skill inputをServerへ渡せる境界だけを設け、将来human平均hidden MMRから強さを導く余地を残す。MMRそのものはまだ実装しない。
+- Phase D-1ではmatch claim時のhuman平均hidden MMRを`npcSkillInput`へ固定し、Server側でaccuracyとanswer delayへ変換する。NPC自身には永続profile/MMRを作らない。
+- 問題選択へ`currentTier / difficultyBand`を渡す境界を設けるが、具体的なTier→難易度mappingは未決定のため`difficultyBand`は未設定とする。Queueは分割しない。
 
 ### 10.3 MMRへの影響
 
-- humanの結果はNPC数に応じてrating deltaを減衰できる。
-- NPC入り試合を通常の4-human試合より高い価値にしない。
-- 減衰式はsettlement configへversion固定し、client計算にしない。
+- Phase D-1ではhuman平均hidden MMRをNPCの仮想ratingとしてpairwise計算へ使い、human profileだけを更新する。
+- NPC数に応じたrating delta減衰は未決定であり、Phase D-1では推測で導入しない。
+- 将来減衰を導入する場合はsettlement configへversion固定し、client計算にしない。
 - NPC自身にはsettlementを作らない。
 
 ### 10.4 再利用境界
@@ -780,7 +787,7 @@ Phase Cではgraceを15秒に固定する。`competitiveV2/presence/{matchId}/{u
 
 分散storage全体での「厳密に1回だけ実行」を前提にしない。canonical settlementを1件作り、各反映先へ**少なくとも1回retryしても、結果は1回分だけ適用される**設計にする。
 
-Phase Cではrating/historyを実装せず、deterministic settlementIdでcore結果だけを`SETTLEMENT_PENDING → SETTLED`へ冪等確定する。MMR、Tier、Season、Leaderboard、履歴への反映はPhase Dで追加し、Phase Cの`SETTLED_NO_RATING_PHASE_C`を「rating反映済み」と解釈しない。
+Phase Cではrating/historyを実装せずcore結果だけを確定した。Phase D-1ではdeterministic settlementIdをkeyに、Match Result、human profileのMMR/Tier/Stats/Season、session解放、matchの`SETTLED`化をServer transactionで一度だけ反映する。Leaderboardと履歴はまだ対象外で、Phase D後続へ残す。
 
 ### 13.2 Identity
 
@@ -794,11 +801,11 @@ Phase Cではrating/historyを実装せず、deterministic settlementIdでcore�
 COMPLETED matchでは次を適用する。
 
 - 各human playerのMMR
-- 表示Tier / Rating Zone projection
+- 表示Tier / Rating Battle projection
 - season stats
-- 直近試合history
-- Top 20 leaderboard projection
 - audit / anomaly data
+
+Phase D-1で適用するのはMMR、Tier/Rating Battle、Season、最小Stats、settlement auditまで。直近historyとTop 20 leaderboardは後続Phaseで追加する。
 
 NPCにはMMR、history、leaderboardを適用しない。
 
@@ -972,13 +979,13 @@ UIDはpseudonymous identifierとしてもアクセス制御・保持期限の対
 13. hidden MMR導入時のbucket数、search range拡大、global matchmaking transactionのshard単位。
 14. Anonymous UIDを既存linked accountへ統合する場合のProduct policy。credential linkでUIDを維持する通常経路はschema変更不要。
 
-### 17.3 Phase D前にプロダクト判断が必要
+### 17.3 Phase D-1後もプロダクト判断が必要
 
-1. Hidden MMR計算式、初期MMR、provisional期間。
-2. Tier境界とRating Zone境界。
+1. 初期MMR、K-factor、Tier境界、Rating Battle境界の正式Product tuningとprovisional期間。Phase D-1の値は暫定config。
+2. pairwise Elo-styleの本番simulation結果に基づくdelta調整。
 3. Bronzeは5秒後に最大3 NPCで確定済み。Silver以上のNPC投入待機時間、search range拡大、最大NPC数。
 4. NPC数別のMMR減衰式。
-5. Season期間とSoft reset方式/carry-over。
+5. Seasonは4週間、基準rating方向へのsoft resetまで確定。factorの正式値とSeason報酬/carry-over表示。
 6. Top 20 leaderboardの同率順位規則。
 7. last 5以外のhistory保持件数。
 
@@ -1081,8 +1088,8 @@ Phase Bでは本格MMR、Season、Leaderboard、Production NPCをまだ有効化
 
 ### Phase D: Rating / Season / Security / Production Rollout
 
-- 単一hidden MMR、Tier、Rating Zone、NPC数別rating delta
-- Season、Top 20 leaderboard、直近5試合history、settlement全projection
+- **Phase D-1 Local対象**: 単一hidden MMR、pairwise Elo-style、Tier/Rating Battle、forfeit最下位、4週間Season/soft reset、勝率・最高連勝・累計勝利、human平均MMR由来のNPC skill、冪等settlement
+- **Phase D後続**: NPC数別rating delta、Top 20 leaderboard、直近5試合history、settlement全projection
 - プロダクトバランスsimulationと負荷検証
 
 - App Check/App Attest enforcement

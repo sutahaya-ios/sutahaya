@@ -238,6 +238,35 @@ enum CompetitiveMatchmakingState: String, Equatable, Sendable {
     case waitingPlayers = "WAITING_PLAYERS"
 }
 
+enum CompetitiveTier: String, Equatable, Sendable {
+    case bronze = "BRONZE"
+    case silver = "SILVER"
+    case gold = "GOLD"
+    case platinum = "PLATINUM"
+    case ratingBattle = "RATING_BATTLE"
+}
+
+struct CompetitiveStatsProjection: Equatable, Sendable {
+    let matchesPlayed: Int
+    let totalWins: Int
+    let maxWinStreak: Int
+    let winRate: Double
+}
+
+struct CompetitiveSeasonProjection: Equatable, Sendable {
+    let seasonId: String
+    let startsAtEpochMS: Double
+    let endsAtEpochMS: Double
+}
+
+struct CompetitiveProfileProjection: Equatable, Sendable {
+    let currentTier: CompetitiveTier
+    let ratingBattle: Bool
+    let displayRating: Int?
+    let stats: CompetitiveStatsProjection
+    let season: CompetitiveSeasonProjection
+}
+
 struct CompetitiveMatchmakingProjection: Equatable, Sendable {
     let uid: String
     let state: CompetitiveMatchmakingState
@@ -248,6 +277,7 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
     let assignmentTicket: String?
     let queuedAtEpochMS: Double?
     let updatedAtEpochMS: Double
+    let competitive: CompetitiveProfileProjection?
 
     var competitiveSession: CompetitiveSession? {
         guard state == .waitingPlayers,
@@ -282,6 +312,40 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
         self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
         self.queuedAtEpochMS = CompetitiveValue.double(value["queuedAtEpochMs"])
         self.updatedAtEpochMS = updatedAtEpochMS
+        self.competitive = Self.competitiveProfile(value["competitive"])
+    }
+
+    private static func competitiveProfile(_ rawValue: Any?) -> CompetitiveProfileProjection? {
+        guard let value = CompetitiveValue.dictionary(rawValue),
+              let tierValue = CompetitiveValue.string(value["currentTier"]),
+              let tier = CompetitiveTier(rawValue: tierValue),
+              let ratingBattle = CompetitiveValue.bool(value["ratingBattle"]),
+              let statsValue = CompetitiveValue.dictionary(value["stats"]),
+              let matchesPlayed = CompetitiveValue.int(statsValue["matchesPlayed"]),
+              let totalWins = CompetitiveValue.int(statsValue["totalWins"]),
+              let maxWinStreak = CompetitiveValue.int(statsValue["maxWinStreak"]),
+              let winRate = CompetitiveValue.double(statsValue["winRate"]),
+              let seasonValue = CompetitiveValue.dictionary(value["season"]),
+              let seasonId = CompetitiveValue.string(seasonValue["seasonId"]),
+              let startsAtEpochMS = CompetitiveValue.double(seasonValue["startsAtEpochMs"]),
+              let endsAtEpochMS = CompetitiveValue.double(seasonValue["endsAtEpochMs"])
+        else { return nil }
+        return CompetitiveProfileProjection(
+            currentTier: tier,
+            ratingBattle: ratingBattle,
+            displayRating: CompetitiveValue.int(value["displayRating"]),
+            stats: CompetitiveStatsProjection(
+                matchesPlayed: matchesPlayed,
+                totalWins: totalWins,
+                maxWinStreak: maxWinStreak,
+                winRate: winRate
+            ),
+            season: CompetitiveSeasonProjection(
+                seasonId: seasonId,
+                startsAtEpochMS: startsAtEpochMS,
+                endsAtEpochMS: endsAtEpochMS
+            )
+        )
     }
 }
 

@@ -6,6 +6,7 @@ const { processReconcile } = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
 const { buildCompetitiveMatch } = require("./matchFactory");
 const { validateMatchmakingIntent } = require("./matchmakingContract");
+const { settleCompetitiveRoot } = require("./settlement");
 const {
   claimNextMatch,
   finalizeClaim,
@@ -19,6 +20,10 @@ const MAX_MATCHES_PER_ATTEMPT = 3;
 
 function matchmakingRef() {
   return getDatabase().ref(`${ROOT_PATH}/matchmaking`);
+}
+
+function competitiveRootRef() {
+  return getDatabase().ref(ROOT_PATH);
 }
 
 function matchRef(matchId) {
@@ -76,9 +81,15 @@ function waitingMatch(claim, nowEpochMs) {
       sessionId: participant.sessionId,
       sessionEpoch: participant.sessionEpoch,
       assignmentTicket: participant.assignmentTicket,
+      preMatchRating: participant.preMatchRating,
+      currentTier: participant.currentTier,
+      seasonId: participant.seasonId,
     })),
     createdAtEpochMs: nowEpochMs,
     requiresActiveSessionFence: true,
+    npcSkillInput: claim.ratingContext?.npcSkillInput,
+    questionSelectionInput: claim.ratingContext?.questionSelection,
+    season: claim.ratingContext?.season,
   });
   const first = claim.participants[0];
   const envelope = {
@@ -228,9 +239,30 @@ async function releaseFinishedMatchSessions(matchId) {
   await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}`).remove();
 }
 
+async function settleFinishedMatch(matchId, nowEpochMs) {
+  const reference = competitiveRootRef();
+  const initial = await reference.get();
+  const initialValue = initial.exists() ? initial.val() : {};
+  let firstAttempt = true;
+  let computation = null;
+  const transaction = await reference.transaction((current) => {
+    if (current === null && firstAttempt) current = initialValue;
+    firstAttempt = false;
+    computation = settleCompetitiveRoot(current, matchId, nowEpochMs);
+    return computation.changed ? computation.root : undefined;
+  }, undefined, false);
+  if (!computation) throw new Error("SETTLEMENT_TRANSACTION_NOT_EVALUATED");
+  if (!transaction.committed
+      && !["ALREADY_SETTLED", "SETTLED"].includes(computation.status)) {
+    throw new Error(`SETTLEMENT_NOT_COMMITTED:${computation.status}`);
+  }
+  return computation;
+}
+
 module.exports = {
   attemptMatchmaking,
   competitiveMatchmaking,
   finalizeMatch,
   releaseFinishedMatchSessions,
+  settleFinishedMatch,
 };

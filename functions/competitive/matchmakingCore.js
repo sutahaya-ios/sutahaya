@@ -5,6 +5,15 @@ const {
   PLAYER_COUNT,
   PROTOCOL_VERSION,
 } = require("./constants");
+const {
+  TIER,
+  competitiveProjection,
+  ensureCompetitiveProfile,
+  npcSkillInputForRating,
+  questionSelectionBoundary,
+  seasonForEpoch,
+  tierForRating,
+} = require("./rating");
 
 const QUEUE_BUCKET = "phase-b-open";
 const QUEUE_LEASE_MS = 5 * 60 * 1000;
@@ -76,7 +85,7 @@ function saveResult(profile, intent, uid, result, nowEpochMs) {
   profile.intentResults = Object.fromEntries(ordered.slice(0, MAX_INTENT_RESULTS));
 }
 
-function publicProjection(uid, session, nowEpochMs, extra = {}) {
+function publicProjection(uid, session, nowEpochMs, extra = {}, profile = null) {
   return {
     uid,
     state: session.state,
@@ -84,6 +93,7 @@ function publicProjection(uid, session, nowEpochMs, extra = {}) {
     sessionEpoch: session.sessionEpoch,
     protocolVersion: session.protocolVersion,
     updatedAtEpochMs: nowEpochMs,
+    ...(profile?.competitive ? { competitive: competitiveProjection(profile) } : {}),
     ...extra,
   };
 }
@@ -111,7 +121,14 @@ function processJoinQueue(input, intent, uid, {
     return { state, ack: result, changed: true };
   }
 
-  const nextEpoch = (profile?.lastSessionEpoch || 0) + 1;
+  profile ||= {
+    uid,
+    createdAtEpochMs: nowEpochMs,
+    accountStatus: "ACTIVE",
+    intentResults: {},
+  };
+  const competitive = ensureCompetitiveProfile(profile, nowEpochMs);
+  const nextEpoch = (profile.lastSessionEpoch || 0) + 1;
   const session = {
     sessionId: generatedSessionId,
     sessionEpoch: nextEpoch,
@@ -122,17 +139,11 @@ function processJoinQueue(input, intent, uid, {
     leaseExpiresAtEpochMs: nowEpochMs + QUEUE_LEASE_MS,
     updatedAtEpochMs: nowEpochMs,
   };
-  profile ||= {
-    uid,
-    createdAtEpochMs: nowEpochMs,
-    accountStatus: "ACTIVE",
-    intentResults: {},
-  };
   profile.accountType = accountType;
   profile.protocolVersion = PROTOCOL_VERSION;
   profile.lastSessionEpoch = nextEpoch;
   profile.currentSession = session;
-  profile.matchmaking = { bucket: QUEUE_BUCKET, source: "UNRATED_PHASE_B" };
+  profile.matchmaking = { bucket: QUEUE_BUCKET, source: "HIDDEN_MMR_PHASE_D1" };
   profile.updatedAtEpochMs = nowEpochMs;
   state.private.profiles[uid] = profile;
   state.private.queue[uid] = {
@@ -146,12 +157,14 @@ function processJoinQueue(input, intent, uid, {
   };
   state.public[uid] = publicProjection(uid, session, nowEpochMs, {
     queuedAtEpochMs: nowEpochMs,
-  });
+  }, profile);
   const result = ack(intent, "ACCEPTED", {
     sessionId: session.sessionId,
     sessionEpoch: session.sessionEpoch,
     matchmakingState: SESSION_STATE.QUEUED,
-    nextCheckAfterMs: BRONZE_NPC_FILL_WAIT_MS,
+    ...(competitive.currentTier === TIER.BRONZE
+      ? { nextCheckAfterMs: BRONZE_NPC_FILL_WAIT_MS }
+      : {}),
   });
   saveResult(profile, intent, uid, result, nowEpochMs);
   return { state, ack: result, changed: true };
@@ -189,7 +202,7 @@ function processCancelQueue(input, intent, uid, nowEpochMs) {
   profile.updatedAtEpochMs = nowEpochMs;
   state.public[uid] = publicProjection(uid, session, nowEpochMs, {
     state: "NOT_QUEUED",
-  });
+  }, profile);
   const result = ack(intent, "ACCEPTED", {
     sessionId: session.sessionId,
     sessionEpoch: session.sessionEpoch,
@@ -240,7 +253,7 @@ function expireStaleQueue(state, nowEpochMs) {
       profile.updatedAtEpochMs = nowEpochMs;
       state.public[uid] = publicProjection(uid, session, nowEpochMs, {
         state: "NOT_QUEUED",
-      });
+      }, profile);
     }
     changed = true;
   }
@@ -267,8 +280,9 @@ function claimNextMatch(input, {
     .sort((left, right) => left.queuedAtEpochMs - right.queuedAtEpochMs
       || left.uid.localeCompare(right.uid));
   if (candidates.length === 0) return { state, claimed: null, changed };
-  const npcFillEligible = nowEpochMs - candidates[0].queuedAtEpochMs
-    >= BRONZE_NPC_FILL_WAIT_MS;
+  const oldestProfile = state.private.profiles[candidates[0].uid];
+  const npcFillEligible = oldestProfile?.competitive?.currentTier === TIER.BRONZE
+    && nowEpochMs - candidates[0].queuedAtEpochMs >= BRONZE_NPC_FILL_WAIT_MS;
   if (candidates.length < PLAYER_COUNT && !npcFillEligible) {
     return { state, claimed: null, changed };
   }
@@ -276,6 +290,7 @@ function claimNextMatch(input, {
   const selected = candidates.slice(0, PLAYER_COUNT);
   const participants = selected.map((entry, slot) => {
     const profile = state.private.profiles[entry.uid];
+    const competitive = ensureCompetitiveProfile(profile, nowEpochMs);
     const session = profile.currentSession;
     session.state = SESSION_STATE.MATCH_FOUND;
     session.matchId = matchId;
@@ -286,7 +301,7 @@ function claimNextMatch(input, {
     state.public[entry.uid] = publicProjection(entry.uid, session, nowEpochMs, {
       matchId,
       assignmentTicket: assignmentTickets[slot],
-    });
+    }, profile);
     return {
       uid: entry.uid,
       slot,
@@ -294,8 +309,16 @@ function claimNextMatch(input, {
       sessionId: session.sessionId,
       sessionEpoch: session.sessionEpoch,
       assignmentTicket: assignmentTickets[slot],
+      preMatchRating: competitive.hiddenRating,
+      currentTier: competitive.currentTier,
+      seasonId: competitive.season.seasonId,
     };
   });
+  const averageHumanRating = participants.reduce(
+    (sum, participant) => sum + participant.preMatchRating,
+    0
+  ) / participants.length;
+  const npcSkillInput = npcSkillInputForRating(averageHumanRating);
   while (participants.length < PLAYER_COUNT) {
     const slot = participants.length;
     participants.push({
@@ -303,6 +326,8 @@ function claimNextMatch(input, {
       slot,
       kind: PARTICIPANT_KIND.NPC,
       displayName: `NPC ${slot + 1}`,
+      preMatchRating: Math.round(averageHumanRating),
+      currentTier: tierForRating(averageHumanRating),
     });
   }
   const claimed = {
@@ -312,6 +337,14 @@ function claimNextMatch(input, {
     matchmakingBucket: QUEUE_BUCKET,
     claimedAtEpochMs: nowEpochMs,
     participants,
+    ratingContext: {
+      averageHumanRating: Math.round(averageHumanRating),
+      npcSkillInput,
+      questionSelection: questionSelectionBoundary(
+        selected.map((entry) => state.private.profiles[entry.uid].competitive.currentTier)
+      ),
+      season: seasonForEpoch(nowEpochMs),
+    },
   };
   state.private.pendingMatches[matchId] = claimed;
   changed = true;
@@ -338,7 +371,7 @@ function finalizeClaim(input, matchId, nowEpochMs) {
     state.public[participant.uid] = publicProjection(participant.uid, session, nowEpochMs, {
       matchId,
       assignmentTicket: participant.assignmentTicket,
-    });
+    }, profile);
   }
   delete state.private.pendingMatches[matchId];
   return { state, finalized: true, changed: true };
@@ -356,7 +389,7 @@ function releaseFinishedMatch(input, matchId, nowEpochMs) {
     profile.updatedAtEpochMs = nowEpochMs;
     state.public[uid] = publicProjection(uid, session, nowEpochMs, {
       state: "NOT_QUEUED",
-    });
+    }, profile);
     changed = true;
   }
   return { state, changed };

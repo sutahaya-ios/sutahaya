@@ -19,7 +19,10 @@ const {
   processReconcile,
 } = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
-const { releaseFinishedMatchSessions } = require("./matchmakingHandlers");
+const {
+  releaseFinishedMatchSessions,
+  settleFinishedMatch,
+} = require("./matchmakingHandlers");
 
 const INSTANCE_ID = randomUUID();
 const INSTANCE_STARTED_MONOTONIC_MS = performance.now();
@@ -700,6 +703,9 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
     }
     const duplicate = existingIntentOutcome(match, envelope, uid);
     if (duplicate) {
+      if (match.private.phase === PHASE.SETTLEMENT_PENDING) {
+        await settleFinishedMatch(envelope.matchId, Date.now());
+      }
       const ack = withDiagnostics(duplicate, invocation);
       logOutcome("reconcile", envelope, uid, ack, Boolean(request.app));
       return ack;
@@ -713,12 +719,10 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
       }, uid, now);
     }
     if (committed.phase === PHASE.SETTLEMENT_PENDING) {
-      committed = await commitReconcile({
-        ...envelope,
-        intentId: `settle-${envelope.matchId}`,
-      }, uid, now);
+      await settleFinishedMatch(envelope.matchId, now);
+      committed.phase = PHASE.SETTLED;
     }
-    if ([PHASE.MATCH_FINISHED, PHASE.SETTLED].includes(committed.phase)) {
+    if (committed.phase === PHASE.MATCH_FINISHED) {
       await releaseFinishedMatchSessions(envelope.matchId);
     }
     const ack = withDiagnostics(

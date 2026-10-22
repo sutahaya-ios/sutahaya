@@ -6,6 +6,7 @@ const {
   PROTOCOL_VERSION,
 } = require("../functions/competitive/constants");
 const { validateMatchmakingIntent } = require("../functions/competitive/matchmakingContract");
+const { TIER } = require("../functions/competitive/rating");
 const {
   SESSION_STATE,
   claimNextMatch,
@@ -214,6 +215,38 @@ describe("Competitive Phase B matchmaking unit", () => {
     assert.equal(result.claimed.participants.filter((player) => player.kind === "NPC").length, 1);
     const finalized = finalizeClaim(result.state, "npc-match", 6_100);
     assert.equal(finalized.finalized, true);
+    assert.equal(result.state.public.p1.competitive.currentTier, TIER.BRONZE);
+    assert.equal(result.state.public.p1.competitive.displayRating, undefined);
+    assert.equal(JSON.stringify(result.state.public.p1).includes("hiddenRating"), false);
+  });
+
+  it("derives NPC skill from human average MMR and leaves difficulty mapping undecided", () => {
+    let state = addPlayers(2);
+    state.private.profiles.p1.competitive.hiddenRating = 800;
+    state.private.profiles.p1.competitive.currentTier = TIER.BRONZE;
+    state.private.profiles.p2.competitive.hiddenRating = 1_200;
+    state.private.profiles.p2.competitive.currentTier = TIER.SILVER;
+    const result = claim(state, "rating-npc", 6_100);
+    assert.equal(result.claimed.ratingContext.averageHumanRating, 1_000);
+    assert.equal(result.claimed.ratingContext.npcSkillInput.sourceAverageHiddenRating, 1_000);
+    assert.ok(result.claimed.ratingContext.npcSkillInput.accuracyPermille > 0);
+    assert.ok(result.claimed.ratingContext.npcSkillInput.reactionBaseMs > 0);
+    assert.ok(result.claimed.participants
+      .filter((participant) => participant.kind === "NPC")
+      .every((participant) => participant.preMatchRating === 1_000));
+    assert.equal(result.claimed.ratingContext.questionSelection.subject, "ENGLISH");
+    assert.equal(result.claimed.ratingContext.questionSelection.difficultyBand, null);
+    assert.equal(
+      result.claimed.ratingContext.questionSelection.mappingStatus,
+      "PRODUCT_MAPPING_UNDECIDED"
+    );
+  });
+
+  it("does not invent a Silver-or-higher NPC wait policy", () => {
+    const state = addPlayers(1);
+    state.private.profiles.p1.competitive.hiddenRating = 1_200;
+    state.private.profiles.p1.competitive.currentTier = TIER.SILVER;
+    assert.equal(claim(state, "silver-wait", 60_000).claimed, null);
   });
 
   it("fills one to three human rosters but never adds NPC to an immediate four-human match", () => {

@@ -38,6 +38,8 @@ function buildCompetitiveMatch({
   reconnectGraceMs = RECONNECT_GRACE_MS,
   requiresActiveSessionFence = false,
   npcSkillInput = null,
+  questionSelectionInput = null,
+  season = null,
 }) {
   if (!Array.isArray(players) || players.length !== PLAYER_COUNT) {
     throw new Error("Competitive match requires exactly four players");
@@ -58,6 +60,9 @@ function buildCompetitiveMatch({
         sessionEpoch: player.sessionEpoch,
         assignmentTicket: player.assignmentTicket,
       }),
+      preMatchRating: player.preMatchRating,
+      preMatchTier: player.currentTier,
+      ...(player.seasonId ? { seasonId: player.seasonId } : {}),
       joined: isNPC,
       ready: isNPC,
       active: true,
@@ -95,6 +100,13 @@ function buildCompetitiveMatch({
           profileVersion: "phase-c-fixed-test-1",
           reactionBaseMs: 250,
         },
+        questionSelection: questionSelectionInput || {
+          subject: "ENGLISH",
+          currentTiers: [],
+          difficultyBand: null,
+          mappingStatus: "PRODUCT_MAPPING_UNDECIDED",
+        },
+        season,
       },
     },
   };

@@ -247,11 +247,23 @@ function npcPlans(privateState, questionIndex, question) {
   return Object.fromEntries(privateState.participantOrder.flatMap((uid) => {
     const participant = privateState.participants[uid];
     if (participant?.kind !== PARTICIPANT_KIND.NPC || !participant.active) return [];
-    const behavior = (questionIndex + participant.slot) % 3;
-    if (behavior === 2) return [];
-    const answerId = behavior === 0
-      ? question.correctAnswerId
-      : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
+    const configuredAccuracy = privateState.config?.npcSkillInput?.accuracyPermille;
+    let answerId;
+    if (Number.isFinite(configuredAccuracy)) {
+      const attemptRoll = (questionIndex * 173 + participant.slot * 271) % 1_000;
+      const attemptPermille = privateState.config?.npcSkillInput?.attemptPermille ?? 920;
+      if (attemptRoll >= attemptPermille) return [];
+      answerId = attemptRoll < configuredAccuracy
+        ? question.correctAnswerId
+        : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
+    } else {
+      // Phase Cの固定test inputとの後方互換。
+      const behavior = (questionIndex + participant.slot) % 3;
+      if (behavior === 2) return [];
+      answerId = behavior === 0
+        ? question.correctAnswerId
+        : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
+    }
     return [[uid, {
       uid,
       eventId: `npc-answer-${question.questionId}-${uid}`,
@@ -629,11 +641,6 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
       settlementVersion: SETTLEMENT_VERSION,
       status: "CORE_RESULT_READY",
     };
-    changed = true;
-  } else if (state.phase === PHASE.SETTLEMENT_PENDING) {
-    state.phase = PHASE.SETTLED;
-    state.settlement.status = "SETTLED_NO_RATING_PHASE_C";
-    state.settlement.settledAtEpochMs = nowEpochMs;
     changed = true;
   }
 
