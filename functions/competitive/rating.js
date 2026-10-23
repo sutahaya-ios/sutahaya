@@ -31,6 +31,20 @@ const RATING_CONFIG = Object.freeze({
     PLATINUM: null,
     RATING_BATTLE: null,
   }),
+  questionDurationMs: Object.freeze({
+    BRONZE: 8_000,
+    SILVER: 5_000,
+    GOLD: 5_000,
+    PLATINUM: 5_000,
+    RATING_BATTLE: 5_000,
+  }),
+  npcAnswerRemainingMs: Object.freeze({
+    BRONZE: 3_000,
+    SILVER: null,
+    GOLD: null,
+    PLATINUM: null,
+    RATING_BATTLE: null,
+  }),
   difficultyRanges: Object.freeze({
     BRONZE: Object.freeze({ minimum: 1, maximum: 2 }),
     SILVER: Object.freeze({ minimum: 2, maximum: 3 }),
@@ -270,6 +284,44 @@ function applyPlatinumSeasonStats(competitive, { preMatchTier, rank, forfeited }
   if (rank === 1 && !forfeited) competitive.season.platinumSeasonWins += 1;
 }
 
+function ratingProgress(competitive, config = RATING_CONFIG) {
+  const currentRating = competitive.hiddenRating;
+  const currentTier = competitive.currentTier;
+  const boundaries = {
+    [TIER.BRONZE]: {
+      tierFloor: config.initialRating,
+      nextTierThreshold: config.tierThresholds.SILVER,
+    },
+    [TIER.SILVER]: {
+      tierFloor: config.tierThresholds.SILVER,
+      nextTierThreshold: config.tierThresholds.GOLD,
+    },
+    [TIER.GOLD]: {
+      tierFloor: config.tierThresholds.GOLD,
+      nextTierThreshold: config.tierThresholds.PLATINUM,
+    },
+    [TIER.PLATINUM]: {
+      tierFloor: config.tierThresholds.PLATINUM,
+      nextTierThreshold: config.ratingBattleThreshold,
+    },
+  };
+  const boundary = boundaries[currentTier];
+  if (!boundary) {
+    return {
+      currentRating,
+      tierFloor: config.ratingBattleThreshold,
+    };
+  }
+  const range = boundary.nextTierThreshold - boundary.tierFloor;
+  return {
+    currentRating,
+    tierFloor: boundary.tierFloor,
+    nextTierThreshold: boundary.nextTierThreshold,
+    progressFraction: clamp((currentRating - boundary.tierFloor) / range, 0, 1),
+    pointsToNextTier: Math.max(0, boundary.nextTierThreshold - currentRating),
+  };
+}
+
 function competitiveProjection(profile) {
   const competitive = profile.competitive;
   if (!competitive) return null;
@@ -277,6 +329,7 @@ function competitiveProjection(profile) {
   return {
     currentTier: competitive.currentTier,
     ratingBattle: competitive.ratingBattle,
+    ...ratingProgress(competitive),
     ...(competitive.ratingBattle ? { displayRating: competitive.hiddenRating } : {}),
     stats: {
       totalWins: stats.totalWins,
@@ -294,6 +347,7 @@ function competitiveProjection(profile) {
 function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
   const offset = averageHiddenRating - config.initialRating;
   const npc = config.npcSkill;
+  const tier = tierForRating(averageHiddenRating, config);
   return {
     profileVersion: "phase-d2-rating-derived-1",
     sourceAverageHiddenRating: Math.round(averageHiddenRating),
@@ -308,7 +362,12 @@ function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
       npc.minimumReactionMs,
       npc.maximumReactionMs
     )),
+    answerRemainingMs: config.npcAnswerRemainingMs[tier] ?? null,
   };
+}
+
+function questionDurationMsForTier(tier, config = RATING_CONFIG) {
+  return config.questionDurationMs[tier] ?? 5_000;
 }
 
 function highestTier(tiers) {
@@ -356,7 +415,9 @@ module.exports = {
   npcFillWaitMsForTiers,
   npcSkillInputForRating,
   platinumPromotionEligible,
+  questionDurationMsForTier,
   questionSelectionBoundary,
+  ratingProgress,
   seasonForEpoch,
   softResetRating,
   tierForCompetitiveProfile,

@@ -114,7 +114,7 @@ private struct CompetitiveMatchSetupView: View {
                 Text("対戦開始")
                     .font(.headline)
                     .foregroundStyle(.secondary)
-                Text("\(Int(remaining.rounded(.up)))")
+                Text("\(max(1, Int(remaining.rounded(.up))))")
                     .font(.system(size: 64, weight: .bold, design: .rounded))
                     .monospacedDigit()
             }
@@ -185,6 +185,19 @@ private struct CompetitiveBattleView: View {
                     Text("\(participant.score)pt")
                         .font(.subheadline.bold())
                         .monospacedDigit()
+                    if state.phase == .questionOpen,
+                       participant.kind == .npc,
+                       participant.answered {
+                        Label("回答済み", systemImage: "checkmark.circle.fill")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.orange)
+                    } else if state.phase == .questionResult,
+                              let delta = state.questionResult?.scoreDeltas[participant.uid] {
+                        Text(CompetitiveClientDisplay.scoreDeltaText(delta))
+                            .font(.caption.bold())
+                            .monospacedDigit()
+                            .foregroundStyle(scoreDeltaColor(delta))
+                    }
                 }
                 .foregroundStyle(
                     participant.uid == coordinator.activeSession?.uid
@@ -196,6 +209,12 @@ private struct CompetitiveBattleView: View {
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
             }
         }
+    }
+
+    private func scoreDeltaColor(_ delta: Int) -> Color {
+        if delta > 0 { return .green }
+        if delta < 0 { return .red }
+        return .secondary
     }
 
     private func progress(_ question: CompetitiveQuestion) -> some View {
@@ -288,7 +307,23 @@ private struct CompetitiveBattleView: View {
 
     @ViewBuilder
     private var reconnectOverlay: some View {
-        if let participant = myParticipant, participant.status == .reconnecting {
+        if let uid = coordinator.activeSession?.uid,
+           state.forfeitedUIDs.contains(uid) {
+            ZStack {
+                Color.black.opacity(0.35).ignoresSafeArea()
+                VStack(spacing: 10) {
+                    Image(systemName: "flag.checkered")
+                        .font(.title)
+                    Text("棄権しました")
+                        .font(.headline)
+                    Text("対戦結果を待っています")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(24)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+            }
+        } else if let participant = myParticipant, participant.status == .reconnecting {
             ZStack {
                 Color.black.opacity(0.35).ignoresSafeArea()
                 VStack(spacing: 14) {

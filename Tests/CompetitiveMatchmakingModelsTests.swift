@@ -14,7 +14,9 @@ final class CompetitiveMatchmakingModelsTests: XCTestCase {
             "competitive": [
                 "currentTier": "RATING_BATTLE",
                 "ratingBattle": true,
-                "displayRating": 1_640,
+                "displayRating": 1_840,
+                "currentRating": 1_840,
+                "tierFloor": 1_800,
                 "stats": [
                     "matchesPlayed": 10,
                     "totalWins": 4,
@@ -39,7 +41,11 @@ final class CompetitiveMatchmakingModelsTests: XCTestCase {
             assignmentTicket: "ticket-1"
         ))
         XCTAssertEqual(projection.competitive?.currentTier, .ratingBattle)
-        XCTAssertEqual(projection.competitive?.displayRating, 1_640)
+        XCTAssertEqual(projection.competitive?.displayRating, 1_840)
+        XCTAssertEqual(projection.competitive?.currentRating, 1_840)
+        XCTAssertEqual(projection.competitive?.tierFloor, 1_800)
+        XCTAssertNil(projection.competitive?.nextTierThreshold)
+        XCTAssertNil(projection.competitive?.progressFraction)
         XCTAssertEqual(projection.competitive?.stats.totalWins, 4)
         XCTAssertEqual(projection.competitive?.season.seasonId, "season-1")
     }

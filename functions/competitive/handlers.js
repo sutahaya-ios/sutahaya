@@ -95,6 +95,10 @@ function activeSessionRef(uid) {
   );
 }
 
+async function removeForfeitedPresence(matchId, uid) {
+  await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}/${uid}`).remove();
+}
+
 function rejection(intentId, code, state = null) {
   return {
     intentId: intentId || "unknown",
@@ -626,6 +630,9 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       ? null
       : existingIntentOutcome(match, envelope, uid);
     if (duplicate) {
+      if (envelope.type === "forfeit" && duplicate.originalStatus === "ACCEPTED") {
+        await removeForfeitedPresence(envelope.matchId, uid);
+      }
       const ack = withDiagnostics(duplicate, invocation);
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
@@ -648,8 +655,12 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       return ack;
     }
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
+    const committed = await commitClientIntent(envelope, uid, now, null);
+    if (envelope.type === "forfeit" && committed.status === "ACCEPTED") {
+      await removeForfeitedPresence(envelope.matchId, uid);
+    }
     const ack = withDiagnostics(
-      await commitClientIntent(envelope, uid, now, null),
+      committed,
       invocation,
       now
     );
@@ -759,6 +770,7 @@ const competitivePresenceChanged = onValueWritten({
   const normalizedSignal = {
     ...signal,
     status: signal.connected ? "CONNECTED" : "DISCONNECTED",
+    authorityEventKey: event.time,
   };
   const { matchId, uid } = event.params;
   const reference = matchRef(matchId);

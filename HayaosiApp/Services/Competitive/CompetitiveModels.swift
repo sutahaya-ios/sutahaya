@@ -103,6 +103,7 @@ struct CompetitivePublicState: Equatable, Sendable {
     let phase: CompetitivePhase
     let stateVersion: Int
     let serverSequence: Int
+    let forfeitedUIDs: [String]
     let participants: [CompetitiveParticipant]
     let currentQuestionIndex: Int
     let currentQuestion: CompetitiveQuestion?
@@ -164,6 +165,7 @@ struct CompetitivePublicState: Equatable, Sendable {
         self.phase = phase
         self.stateVersion = stateVersion
         self.serverSequence = serverSequence
+        self.forfeitedUIDs = CompetitiveValue.strings(value["forfeitedUIDs"])
         self.participants = participants
         self.currentQuestionIndex = currentQuestionIndex
         self.currentQuestion = Self.question(value["currentQuestion"])
@@ -316,8 +318,37 @@ struct CompetitiveProfileProjection: Equatable, Sendable {
     let currentTier: CompetitiveTier
     let ratingBattle: Bool
     let displayRating: Int?
+    let currentRating: Int?
+    let tierFloor: Int?
+    let nextTierThreshold: Int?
+    let progressFraction: Double?
+    let pointsToNextTier: Int?
     let stats: CompetitiveStatsProjection
     let season: CompetitiveSeasonProjection
+
+    init(
+        currentTier: CompetitiveTier,
+        ratingBattle: Bool,
+        displayRating: Int?,
+        currentRating: Int? = nil,
+        tierFloor: Int? = nil,
+        nextTierThreshold: Int? = nil,
+        progressFraction: Double? = nil,
+        pointsToNextTier: Int? = nil,
+        stats: CompetitiveStatsProjection,
+        season: CompetitiveSeasonProjection
+    ) {
+        self.currentTier = currentTier
+        self.ratingBattle = ratingBattle
+        self.displayRating = displayRating
+        self.currentRating = currentRating
+        self.tierFloor = tierFloor
+        self.nextTierThreshold = nextTierThreshold
+        self.progressFraction = progressFraction
+        self.pointsToNextTier = pointsToNextTier
+        self.stats = stats
+        self.season = season
+    }
 }
 
 struct CompetitiveMatchmakingProjection: Equatable, Sendable {
@@ -388,6 +419,11 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
             currentTier: tier,
             ratingBattle: ratingBattle,
             displayRating: CompetitiveValue.int(value["displayRating"]),
+            currentRating: CompetitiveValue.int(value["currentRating"]),
+            tierFloor: CompetitiveValue.int(value["tierFloor"]),
+            nextTierThreshold: CompetitiveValue.int(value["nextTierThreshold"]),
+            progressFraction: CompetitiveValue.double(value["progressFraction"]),
+            pointsToNextTier: CompetitiveValue.int(value["pointsToNextTier"]),
             stats: CompetitiveStatsProjection(
                 totalWins: totalWins,
                 maxWinStreak: maxWinStreak,

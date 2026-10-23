@@ -58,14 +58,34 @@ enum CompetitiveClientDisplay {
 
     static func ratingText(for profile: CompetitiveProfileProjection?) -> String? {
         guard let profile,
-              profile.ratingBattle,
-              profile.currentTier == .ratingBattle,
-              let displayRating = profile.displayRating else { return nil }
-        return "Rating \(displayRating)"
+              let rating = profile.currentRating ?? profile.displayRating else { return nil }
+        return "\(rating) pt"
+    }
+
+    static func rankProgress(for profile: CompetitiveProfileProjection?) -> Double? {
+        guard let profile,
+              !profile.ratingBattle,
+              profile.currentTier != .ratingBattle,
+              let progress = profile.progressFraction else { return nil }
+        return min(1, max(0, progress))
+    }
+
+    static func pointsToNextTierText(for profile: CompetitiveProfileProjection?) -> String? {
+        guard let profile,
+              !profile.ratingBattle,
+              profile.currentTier != .ratingBattle,
+              let points = profile.pointsToNextTier else { return nil }
+        return "次のランクまで \(max(0, points))"
     }
 
     static func winRateText(_ value: Double) -> String {
         "\(Int((value * 100).rounded()))%"
+    }
+
+    static func scoreDeltaText(_ delta: Int) -> String {
+        if delta > 0 { return "+\(delta)" }
+        if delta == 0 { return "±0" }
+        return "\(delta)"
     }
 
     static func canCancelQueue(_ state: CompetitiveMatchmakingState?) -> Bool {

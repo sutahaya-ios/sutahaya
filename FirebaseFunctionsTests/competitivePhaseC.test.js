@@ -220,6 +220,10 @@ async function joinReadyOpen(clients, sessions) {
 
 async function playTwentyQuestions(clients, sessions, matchId) {
   const seenNPCOutcomes = new Set();
+  const initialState = await adminRequest(`competitiveV2/matches/${matchId}/private`);
+  const expectedScores = Object.fromEntries(
+    initialState.participantOrder.map((uid) => [uid, 0])
+  );
   for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
     let state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     assert.equal(state.phase, PHASE.QUESTION_OPEN);
@@ -253,6 +257,10 @@ async function playTwentyQuestions(clients, sessions, matchId) {
       assert.equal(result.scoreDeltas[uid], 0);
       if (uid.startsWith("npc:")) seenNPCOutcomes.add("unanswered");
     }
+    for (const uid of initialState.participantOrder) {
+      expectedScores[uid] += result.scoreDeltas[uid];
+      assert.equal(result.cumulativeScores[uid], expectedScores[uid]);
+    }
     await delay(3);
     await reconcile(clients[0], sessions[0], `advance-${questionIndex}`);
     if (questionIndex < 19) {
@@ -263,6 +271,7 @@ async function playTwentyQuestions(clients, sessions, matchId) {
   assert.equal(finalState.phase, PHASE.SETTLED);
   assert.equal(finalState.currentQuestionIndex, 19);
   assert.equal(Object.keys(finalState.matchResult.finalScores).length, 4);
+  assert.deepEqual(finalState.matchResult.finalScores, expectedScores);
   if (clients.length < 4) {
     assert.deepEqual(seenNPCOutcomes, new Set(["correct", "wrong", "unanswered"]));
   }
@@ -510,8 +519,15 @@ describe("Competitive Phase C Emulator", () => {
       );
       return participant?.status === "RECONNECTING";
     }, "Room B legitimate disconnect");
-    await adminRequest(roomBPresencePath, "DELETE");
-    assert.equal(await adminRequest(roomBPresencePath), null);
+    assert.equal(
+      (await coreIntent(client, matchEnvelope(sessionB, "reconnect", "before-explicit-forfeit"))).status,
+      "ACCEPTED"
+    );
+    await assertSucceeds(set(
+      ref(client.database, roomBPresencePath),
+      presencePayload(sessionB, true)
+    ));
+    assert.equal((await adminRequest(roomBPresencePath)).connected, true);
     const scoreBefore = (await adminRequest(
       `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
     )) || 0;
@@ -519,11 +535,25 @@ describe("Competitive Phase C Emulator", () => {
     const explicitForfeit = await coreIntent(client, explicitForfeitEnvelope);
     assert.equal(explicitForfeit.status, "ACCEPTED");
     assert.equal((await coreIntent(client, explicitForfeitEnvelope)).status, "DUPLICATE");
+    assert.equal(await adminRequest(roomBPresencePath), null);
+    await assertFails(set(
+      ref(client.database, roomBPresencePath),
+      presencePayload(sessionB, true)
+    ));
     const roomBParticipant = await adminRequest(
       `competitiveV2/matches/${sessionB.matchId}/private/participants/${client.uid}`
     );
     assert.equal(roomBParticipant.status, "FORFEITED");
     assert.equal(roomBParticipant.forfeitReason, "EXPLICIT_FORFEIT");
+    assert.equal(roomBParticipant.joined, undefined);
+    assert.equal(roomBParticipant.ready, undefined);
+    assert.equal(roomBParticipant.sessionId, sessionB.sessionId);
+    assert.equal(await adminRequest(
+      `competitiveV2/matches/${sessionB.matchId}/public/participants/${client.uid}`
+    ), null);
+    assert.ok((await adminRequest(
+      `competitiveV2/matches/${sessionB.matchId}/public/forfeitedUIDs`
+    )).includes(client.uid));
     assert.equal(await adminRequest(
       `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
     ), scoreBefore);

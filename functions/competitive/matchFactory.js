@@ -9,7 +9,11 @@ const {
   SERVER_VERSION,
   RECONNECT_GRACE_MS,
 } = require("./constants");
-const { RATING_CONFIG, questionSelectionBoundary } = require("./rating");
+const {
+  RATING_CONFIG,
+  questionDurationMsForTier,
+  questionSelectionBoundary,
+} = require("./rating");
 const { selectCompetitiveQuestions } = require("./questionBank");
 
 function buildQuestionInstances(matchId, questionSelection) {
@@ -37,9 +41,9 @@ function buildCompetitiveMatch({
   matchId,
   players,
   createdAtEpochMs,
-  countdownDurationMs = 10,
-  questionDurationMs = 5_000,
-  resultDurationMs = 10,
+  countdownDurationMs = 3_000,
+  questionDurationMs = null,
+  resultDurationMs = 3_000,
   reconnectGraceMs = RECONNECT_GRACE_MS,
   requiresActiveSessionFence = false,
   npcSkillInput = null,
@@ -52,6 +56,8 @@ function buildCompetitiveMatch({
   const participantOrder = players.map((player) => player.uid);
   const questionSelection = questionSelectionInput
     || questionSelectionBoundary(RATING_CONFIG.initialRating);
+  const resolvedQuestionDurationMs = questionDurationMs
+    ?? questionDurationMsForTier(questionSelection.matchTier);
   const participants = Object.fromEntries(players.map((player, slot) => {
     const kind = player.kind === PARTICIPANT_KIND.NPC
       ? PARTICIPANT_KIND.NPC
@@ -100,7 +106,7 @@ function buildCompetitiveMatch({
       audit: {},
       config: {
         countdownDurationMs,
-        questionDurationMs,
+        questionDurationMs: resolvedQuestionDurationMs,
         resultDurationMs,
         reconnectGraceMs,
         npcSkillInput: npcSkillInput || {

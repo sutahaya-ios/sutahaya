@@ -41,9 +41,22 @@ struct CompetitiveHomeView: View {
             if let profile {
                 Text(CompetitiveClientDisplay.tierName(profile.currentTier))
                     .font(.title.bold())
+                if let progress = CompetitiveClientDisplay.rankProgress(for: profile) {
+                    ProgressView(value: progress)
+                        .tint(.blue)
+                        .frame(maxWidth: 240)
+                        .accessibilityLabel("次のランクまでの進捗")
+                        .accessibilityValue("\(Int((progress * 100).rounded()))パーセント")
+                }
                 if let rating = CompetitiveClientDisplay.ratingText(for: profile) {
                     Text(rating)
                         .font(.title3.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                if let remaining = CompetitiveClientDisplay.pointsToNextTierText(for: profile) {
+                    Text(remaining)
+                        .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }

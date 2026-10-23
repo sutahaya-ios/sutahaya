@@ -8,11 +8,15 @@ const {
   applyPlatinumSeasonStats,
   applyStats,
   calculatePairwiseRatingChanges,
+  competitiveProjection,
   ensureCompetitiveProfile,
   humanWeightForCount,
   initialCompetitiveProfile,
   lossMultiplierForTier,
+  npcSkillInputForRating,
   platinumPromotionEligible,
+  questionDurationMsForTier,
+  ratingProgress,
   seasonForEpoch,
   softResetRating,
   tierForCompetitiveProfile,
@@ -113,6 +117,40 @@ function settlementRoot({
 }
 
 describe("Competitive Phase D-2 rating", () => {
+  it("projects server-owned rating progress for every tier", () => {
+    const cases = [
+      [TIER.BRONZE, 1_128, 1_000, 1_200, 0.64, 72],
+      [TIER.SILVER, 1_250, 1_200, 1_400, 0.25, 150],
+      [TIER.GOLD, 1_500, 1_400, 1_600, 0.5, 100],
+      [TIER.PLATINUM, 1_700, 1_600, 1_800, 0.5, 100],
+      [TIER.PLATINUM, 1_850, 1_600, 1_800, 1, 0],
+    ];
+    for (const [tier, rating, floor, next, fraction, points] of cases) {
+      assert.deepEqual(ratingProgress({ currentTier: tier, hiddenRating: rating }), {
+        currentRating: rating,
+        tierFloor: floor,
+        nextTierThreshold: next,
+        progressFraction: fraction,
+        pointsToNextTier: points,
+      });
+    }
+    assert.deepEqual(
+      ratingProgress({ currentTier: TIER.RATING_BATTLE, hiddenRating: 1_920 }),
+      { currentRating: 1_920, tierFloor: 1_800 }
+    );
+  });
+
+  it("publishes own rating without private calculation details", () => {
+    const value = profile("p1", "match-rating", 1_128, RATING_CONFIG.seasonEpochStartMs + 1);
+    const projection = competitiveProjection(value);
+    assert.equal(projection.currentRating, 1_128);
+    assert.equal(projection.currentTier, TIER.BRONZE);
+    assert.equal(projection.progressFraction, 0.64);
+    assert.equal(projection.pointsToNextTier, 72);
+    assert.equal(Object.hasOwn(projection, "hiddenRating"), false);
+    assert.equal(Object.hasOwn(projection, "lossMultiplier"), false);
+  });
+
   it("uses opponent MMR in four-player pairwise Elo and rewards an upset more", () => {
     const expected = calculatePairwiseRatingChanges([
       ratingPlayer("p1", 1_400, 1),
@@ -163,6 +201,13 @@ describe("Competitive Phase D-2 rating", () => {
     assert.equal(tierForRating(RATING_CONFIG.tierThresholds.PLATINUM), TIER.PLATINUM);
     assert.equal(tierForRating(RATING_CONFIG.ratingBattleThreshold), TIER.RATING_BATTLE);
     assert.equal(tierForRating(RATING_CONFIG.ratingBattleThreshold - 1), TIER.PLATINUM);
+  });
+
+  it("uses eight seconds and a three-second remaining answer target for Bronze", () => {
+    assert.equal(questionDurationMsForTier(TIER.BRONZE), 8_000);
+    assert.equal(questionDurationMsForTier(TIER.SILVER), 5_000);
+    assert.equal(npcSkillInputForRating(1_000).answerRemainingMs, 3_000);
+    assert.equal(npcSkillInputForRating(1_200).answerRemainingMs, null);
   });
 
   it("supports promotion and demotion without a second rating engine", () => {
@@ -399,6 +444,11 @@ describe("Competitive Phase D-2 settlement", () => {
     assert.equal(p1.won, false);
     assert.ok(p1.ratingDelta < 0);
     assert.equal(p1.stats.totalWins, 0);
+    const ordinaryLast = settleCompetitiveRoot(settlementRoot({
+      ratings: [1_000, 1_000, 1_000, 1_000],
+      ranks: [4, 1, 2, 3],
+    }), "match-rating", RATING_CONFIG.seasonEpochStartMs + 2);
+    assert.equal(p1.ratingDelta, ordinaryLast.settlement.playerResults.p1.ratingDelta);
   });
 
   it("soft-resets a player crossing a season before applying settlement once", () => {

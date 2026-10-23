@@ -2,22 +2,58 @@ import XCTest
 @testable import HayaosiApp
 
 final class CompetitiveClientPolicyTests: XCTestCase {
-    func test_BronzeはRating数値を表示しない() {
+    func test_BronzeからPlatinumはServer投影のRatingと進捗を表示する() {
+        let cases: [(CompetitiveTier, Int, Double, Int)] = [
+            (.bronze, 1_128, 0.64, 72),
+            (.silver, 1_250, 0.25, 150),
+            (.gold, 1_500, 0.5, 100),
+            (.platinum, 1_700, 0.5, 100),
+            (.platinum, 1_850, 1, 0),
+        ]
+        for (tier, rating, progress, remaining) in cases {
+            let profile = profile(
+                tier: tier,
+                ratingBattle: false,
+                displayRating: nil,
+                currentRating: rating,
+                progressFraction: progress,
+                pointsToNextTier: remaining
+            )
+            XCTAssertEqual(CompetitiveClientDisplay.ratingText(for: profile), "\(rating) pt")
+            XCTAssertEqual(CompetitiveClientDisplay.rankProgress(for: profile), progress)
+            XCTAssertEqual(
+                CompetitiveClientDisplay.pointsToNextTierText(for: profile),
+                "次のランクまで \(remaining)"
+            )
+        }
         let profile = profile(tier: .bronze, ratingBattle: false, displayRating: nil)
         XCTAssertEqual(CompetitiveClientDisplay.tierName(profile.currentTier), "Bronze")
         XCTAssertNil(CompetitiveClientDisplay.ratingText(for: profile))
         XCTAssertEqual(CompetitiveClientDisplay.winRateText(profile.stats.winRate), "50%")
     }
 
-    func test_RatingBattleだけServerのdisplayRatingを表示する() {
-        let profile = profile(tier: .ratingBattle, ratingBattle: true, displayRating: 1_842)
-        XCTAssertEqual(CompetitiveClientDisplay.ratingText(for: profile), "Rating 1842")
+    func test_RatingBattleはRatingだけ表示してMeterを出さない() {
+        let profile = profile(
+            tier: .ratingBattle,
+            ratingBattle: true,
+            displayRating: 1_842,
+            currentRating: 1_842
+        )
+        XCTAssertEqual(CompetitiveClientDisplay.ratingText(for: profile), "1842 pt")
+        XCTAssertNil(CompetitiveClientDisplay.rankProgress(for: profile))
+        XCTAssertNil(CompetitiveClientDisplay.pointsToNextTierText(for: profile))
     }
 
     func test_MATCH_FOUND以降はQueueキャンセル不可() {
         XCTAssertTrue(CompetitiveClientDisplay.canCancelQueue(.queued))
         XCTAssertFalse(CompetitiveClientDisplay.canCancelQueue(.matchFound))
         XCTAssertFalse(CompetitiveClientDisplay.canCancelQueue(.waitingPlayers))
+    }
+
+    func test_得点差分を符号付きで表示する() {
+        XCTAssertEqual(CompetitiveClientDisplay.scoreDeltaText(20), "+20")
+        XCTAssertEqual(CompetitiveClientDisplay.scoreDeltaText(-10), "-10")
+        XCTAssertEqual(CompetitiveClientDisplay.scoreDeltaText(0), "±0")
     }
 
     func test_ActiveMatchはQueue表示より優先される() {
@@ -99,12 +135,18 @@ final class CompetitiveClientPolicyTests: XCTestCase {
     private func profile(
         tier: CompetitiveTier,
         ratingBattle: Bool,
-        displayRating: Int?
+        displayRating: Int?,
+        currentRating: Int? = nil,
+        progressFraction: Double? = nil,
+        pointsToNextTier: Int? = nil
     ) -> CompetitiveProfileProjection {
         CompetitiveProfileProjection(
             currentTier: tier,
             ratingBattle: ratingBattle,
             displayRating: displayRating,
+            currentRating: currentRating,
+            progressFraction: progressFraction,
+            pointsToNextTier: pointsToNextTier,
             stats: CompetitiveStatsProjection(totalWins: 5, maxWinStreak: 3, winRate: 0.5),
             season: CompetitiveSeasonProjection(
                 seasonId: "season-1",

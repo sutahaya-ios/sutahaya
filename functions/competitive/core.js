@@ -30,15 +30,23 @@ function intentFingerprint(envelope, uid) {
 
 function publicParticipants(privateState) {
   const currentAnswers = acceptedAnswersForCurrentQuestion(privateState);
-  return Object.fromEntries(privateState.participantOrder.map((uid) => {
+  const terminal = [
+    PHASE.MATCH_FINISHED,
+    PHASE.SETTLEMENT_PENDING,
+    PHASE.SETTLED,
+  ].includes(privateState.phase);
+  const visibleUIDs = terminal
+    ? privateState.participantOrder
+    : activeParticipantUIDs(privateState);
+  return Object.fromEntries(visibleUIDs.map((uid) => {
     const participant = privateState.participants[uid];
     return [uid, {
       uid,
       slot: participant.slot,
       kind: participant.kind || PARTICIPANT_KIND.HUMAN,
       displayName: participant.displayName,
-      joined: participant.joined,
-      ready: participant.ready,
+      joined: participant.joined ?? false,
+      ready: participant.ready ?? false,
       active: participant.active,
       forfeited: participant.forfeited,
       status: participant.status || PARTICIPANT_STATUS.CONNECTED,
@@ -71,16 +79,21 @@ function publicQuestion(privateState) {
 function publicQuestionResult(privateState) {
   const result = privateState.currentQuestion?.result;
   if (!result) return null;
+  const liveUIDs = new Set(activeParticipantUIDs(privateState));
+  const liveValues = (values) => (values || []).filter((uid) => liveUIDs.has(uid));
+  const liveScores = (values) => Object.fromEntries(
+    Object.entries(values || {}).filter(([uid]) => liveUIDs.has(uid))
+  );
   return {
     questionId: result.questionId,
     questionIndex: result.questionIndex,
     closeReason: result.closeReason,
-    answerOrder: result.answerOrder || [],
-    correctUIDs: result.correctUIDs || [],
-    wrongUIDs: result.wrongUIDs || [],
-    unansweredUIDs: result.unansweredUIDs || [],
-    scoreDeltas: result.scoreDeltas || {},
-    cumulativeScores: result.cumulativeScores || {},
+    answerOrder: liveValues(result.answerOrder),
+    correctUIDs: liveValues(result.correctUIDs),
+    wrongUIDs: liveValues(result.wrongUIDs),
+    unansweredUIDs: liveValues(result.unansweredUIDs),
+    scoreDeltas: liveScores(result.scoreDeltas),
+    cumulativeScores: liveScores(result.cumulativeScores),
     correctAnswerId: result.correctAnswerId,
     closedAtEpochMs: result.closedAtEpochMs,
   };
@@ -95,6 +108,9 @@ function syncPublic(match) {
     phase: state.phase,
     stateVersion: state.stateVersion,
     serverSequence: state.serverSequence,
+    forfeitedUIDs: state.participantOrder.filter(
+      (uid) => state.participants[uid]?.forfeited
+    ),
     participants: publicParticipants(state),
     currentQuestionIndex: state.currentQuestionIndex,
     currentQuestion: publicQuestion(state),
@@ -248,6 +264,7 @@ function npcPlans(privateState, questionIndex, question) {
   const reactionBaseMs = Number.isFinite(privateState.config?.npcSkillInput?.reactionBaseMs)
     ? privateState.config.npcSkillInput.reactionBaseMs
     : 250;
+  const answerRemainingMs = privateState.config?.npcSkillInput?.answerRemainingMs;
   return Object.fromEntries(privateState.participantOrder.flatMap((uid) => {
     const participant = privateState.participants[uid];
     if (participant?.kind !== PARTICIPANT_KIND.NPC || !participant.active) return [];
@@ -268,15 +285,21 @@ function npcPlans(privateState, questionIndex, question) {
         ? question.correctAnswerId
         : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
     }
+    const acceptedAtEpochMs = Number.isFinite(answerRemainingMs)
+      ? question.deadlineEpochMs
+        - answerRemainingMs
+        + (participant.slot * 25)
+        + ((questionIndex % 5) * 20)
+      : question.openedAtEpochMs
+        + reactionBaseMs
+        + (participant.slot * 25)
+        + ((questionIndex % 5) * 20);
     return [[uid, {
       uid,
       eventId: `npc-answer-${question.questionId}-${uid}`,
       questionId: question.questionId,
       answerId,
-      acceptedAtEpochMs: question.openedAtEpochMs
-        + reactionBaseMs
-        + (participant.slot * 25)
-        + ((questionIndex % 5) * 20),
+      acceptedAtEpochMs,
       status: "ACCEPTED",
       source: "SERVER_NPC",
     }]];
@@ -309,6 +332,10 @@ function forfeitParticipant(privateState, participant, nowEpochMs, reason) {
   participant.status = PARTICIPANT_STATUS.FORFEITED;
   participant.forfeitReason = reason;
   participant.forfeitedAtEpochMs = nowEpochMs;
+  delete participant.joined;
+  delete participant.ready;
+  delete participant.assignmentTicket;
+  delete participant.presenceAuthorityEventKey;
   delete participant.disconnectedAtEpochMs;
   delete participant.reconnectDeadlineEpochMs;
   return true;
@@ -359,13 +386,13 @@ function closeQuestion(privateState, nowEpochMs, closeReason) {
   question.answers = acceptedAnswers;
   const scoring = scoreQuestion({
     answers: acceptedAnswers,
-    participantOrder: privateState.participantOrder,
+    participantOrder: activeParticipantUIDs(privateState),
     deadlineEpochMs: question.deadlineEpochMs,
     correctAnswerId: question.correctAnswerId,
   });
   const cumulativeScores = { ...privateState.scores };
   for (const uid of privateState.participantOrder) {
-    cumulativeScores[uid] = (cumulativeScores[uid] || 0) + scoring.scoreDeltas[uid];
+    cumulativeScores[uid] = (cumulativeScores[uid] || 0) + (scoring.scoreDeltas[uid] || 0);
   }
   privateState.scores = cumulativeScores;
   question.result = {
@@ -382,17 +409,30 @@ function closeQuestion(privateState, nowEpochMs, closeReason) {
 }
 
 function finishMatch(privateState, nowEpochMs) {
-  const ranked = rankedScores(privateState.scores, privateState.participantOrder);
+  const activeUIDs = privateState.participantOrder.filter(
+    (uid) => !privateState.participants[uid].forfeited
+  );
+  const forfeitedUIDs = privateState.participantOrder.filter(
+    (uid) => privateState.participants[uid].forfeited
+  );
+  const activeRanked = rankedScores(privateState.scores, activeUIDs);
+  const forfeitedRank = activeRanked.length + 1;
+  const ranked = [
+    ...activeRanked,
+    ...forfeitedUIDs.map((uid) => ({
+      uid,
+      score: privateState.scores[uid] || 0,
+      rank: forfeitedRank,
+    })),
+  ];
   privateState.phase = PHASE.MATCH_FINISHED;
   privateState.matchResult = {
     matchId: privateState.matchId,
     outcome: "COMPLETED",
     finalScores: Object.fromEntries(ranked.map((entry) => [entry.uid, entry.score])),
     ranks: Object.fromEntries(ranked.map((entry) => [entry.uid, entry.rank])),
-    winnerUIDs: ranked.filter((entry) => entry.rank === 1).map((entry) => entry.uid),
-    forfeitedUIDs: privateState.participantOrder.filter(
-      (uid) => privateState.participants[uid].forfeited
-    ),
+    winnerUIDs: activeRanked.filter((entry) => entry.rank === 1).map((entry) => entry.uid),
+    forfeitedUIDs,
     finishedAtEpochMs: nowEpochMs,
     configVersion: privateState.configVersion,
   };
@@ -674,6 +714,11 @@ function processPresenceSignal(inputMatch, signal, uid, nowEpochMs) {
       || [PHASE.MATCH_FINISHED, PHASE.SETTLEMENT_PENDING, PHASE.SETTLED].includes(state.phase)) {
     return { match, changed: false, rejectionCode: "INVALID_MATCH_STATE" };
   }
+  if (typeof signal.authorityEventKey === "string"
+      && typeof participant.presenceAuthorityEventKey === "string"
+      && signal.authorityEventKey <= participant.presenceAuthorityEventKey) {
+    return { match, changed: false, rejectionCode: "STALE_PRESENCE_EVENT" };
+  }
   const stateBefore = state.phase;
   if (signal.status === "DISCONNECTED") {
     if (participant.status === PARTICIPANT_STATUS.RECONNECTING) {
@@ -695,6 +740,9 @@ function processPresenceSignal(inputMatch, signal, uid, nowEpochMs) {
     }
   } else {
     return { match, changed: false, rejectionCode: "INVALID_PRESENCE_STATUS" };
+  }
+  if (typeof signal.authorityEventKey === "string") {
+    participant.presenceAuthorityEventKey = signal.authorityEventKey;
   }
   state.serverSequence += 1;
   state.stateVersion += 1;

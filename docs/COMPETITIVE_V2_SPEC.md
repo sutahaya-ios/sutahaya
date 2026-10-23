@@ -224,7 +224,7 @@ Serverは少なくとも以下を所有する。
 clientが読む状態は、Server内部状態から生成したsanitized projectionとする。
 
 - 対戦中に公開してよい: display name、avatar用公開値、slot、接続状態の粗い表現、score、公開state、残り時間の基準、prompt、choices、Playerごとの回答済み状態。
-- 問題確定前に公開しない: correct answer、内部question ID、正解index、出題seed、NPCの将来行動、MMR。
+- 問題確定前に公開しない: correct answer、内部question ID、正解index、出題seed、NPCの将来行動、他Playerのrating、rating計算過程。本人用projectionには現在ratingとServer計算済みのTier進捗だけを公開してよい。
 - `QUESTION_RESULT` 以後に、答え合わせに必要な正解表示を公開してよい。
 - `MATCH_FINISHED` ではscoreとrankを公開するが、MMR更新結果はsettlement確定後に公開する。
 
@@ -279,6 +279,7 @@ CREATED
 
 ### 5.4 COUNTDOWN
 
+- **表示時間**: Productionの開始演出は3秒とし、Clientは3→2→1を表示する。
 - **Server保持**: immutable roster snapshot、startAt、最初のquestion参照、全deadline基準時刻。
 - **公開**: roster、countdown基準、接続状態、公開設定。
 - **許可Intent**: `reconnect`、明示的な `forfeit`、`heartbeat`。
@@ -288,6 +289,7 @@ CREATED
 
 ### 5.5 QUESTION_OPEN
 
+- **回答時間**: Bronzeは8秒、Silver以上は5秒とする。Bronze NPCはhumanが十分に回答できるよう、残り3秒付近で回答する。
 - **Server保持**: canonical question、correct answer、active Player集合、Playerごとの回答済み状態、受理済み回答、`questionOpenedAt`、`questionDeadline`、採点設定。
 - **公開**: match固有でopaqueな `questionId`、prompt、opaque `answerId`付きchoices、deadline基準、score、Playerごとの回答済み状態。correct answerは非公開。
 - **許可Intent**: 未回答humanの `submitAnswer(answerId)`、humanの `reconnect` / `forfeit`、`heartbeat`。
@@ -300,6 +302,7 @@ CREATED
 
 ### 5.6 QUESTION_RESULT
 
+- **表示時間**: Productionでは3秒間、同じBattle画面内に正解・各Playerのscore deltaを表示する。
 - **Server保持**: closedな回答集合、authoritativeな回答順、各回答のcorrectness、correct answer、score delta、total scores、question result sequence。
 - **公開**: 回答者ごとの結果、正解、score delta、total scores、結果表示期限。
 - **許可Intent**: `reconnect`、`forfeit`、`heartbeat`。
@@ -593,8 +596,9 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 
 ### 9.2 表示
 
-- Rating Battle未満: exact MMRを隠し、configVersionに固定された閾値から表示Tierを導出する。
-- Rating Battle: exact MMRを数値Ratingとして表示する。
+- 本人用projectionでは全Tierで現在ratingを表示できる。Bronze〜PlatinumはServerが`tierFloor / nextTierThreshold / progressFraction / pointsToNextTier`を確定し、Clientは境界値や昇格条件を再計算しない。
+- Platinumはratingが1800以上でもSeason勝率gate未達ならTierを維持し、meterを満タンで表示する。Rating Battleは次Tier meterを表示しない。
+- 他Playerのexact rating、raw delta計算、multiplier、settlement ledgerは公開しない。
 - APIは権限とzoneに応じたsanitized displayを返す。通常帯のclientへhidden MMRを送らない。
 - LeaderboardとMatch Historyは作らない。公開Statsは勝率・最高連勝・累計勝利数だけとする。
 
@@ -624,7 +628,7 @@ Server基準のanswer deadlineと表示に必要な非秘密metadataを除き、
 - rollover時は `1000 + (old - 1000) * 0.75` で基準rating方向へsoft resetする。完全resetはしない。
 - `platinumSeasonMatches / platinumSeasonWins`は「試合開始時にPlatinumだったhuman」の当該Season成績だけをServer保持し、Rating Battle昇格gateに使う。Season rolloverでresetする。
 - 初期Statsは`matchesPlayed / totalWins / currentWinStreak / maxWinStreak`だけをServer保持し、公開値は勝率・最高連勝・累計勝利数に限定する。
-- `final rank == 1`の非forfeit Playerを勝利とし、同率1位は全員勝利。表示順位1位でもforfeit済みなら勝利・連勝へ含めない。
+- `final rank == 1`の非forfeit Playerを勝利とし、同率1位は全員勝利。forfeit Playerはscoreにかかわらず最下位相当として既存pairwise Elo pipelineへ渡し、勝利・連勝へ含めない。
 
 ---
 
@@ -769,7 +773,7 @@ Phase Cではgraceを15秒に固定する。`competitiveV2/presence/{matchId}/{u
 - 4枠確定後にCOUNTDOWNを開始するcommitment boundary以後の明示的leaveは原則forfeit。
 - client UIは開始後の退出結果を明示するが、clientが「penaltyなし」を指定できない。
 - app終了・network lossは明示的leaveと同一扱いにせず、`RECONNECTING` とgraceを経由する。
-- Phase Cのcommitment boundary以後は`leave`を受理せず、専用`forfeit` Intentだけを即時棄権として受理する。forfeit時点の累積scoreを固定し、そのPlayerを残り問題のactive集合から外すが、最終結果・通常のscore順位・forfeitedUIDsには残す。将来のMMR最下位扱いはPhase D settlementで実装する。
+- Phase Cのcommitment boundary以後は`leave`を受理せず、専用`forfeit` Intentだけを即時棄権として受理する。forfeit時点の累積scoreを固定し、そのPlayerを回答対象・全員回答待ち母数・live participant / presence・live score更新から外す。private participantにはSettlementに必要なsession fence、preMatch rating/Tier、forfeit時刻・理由等だけを残す。最終結果ではforfeit Playerを最下位相当とし、`forfeitedUIDs`で明示する。
 
 ### 12.4 Server側障害
 
