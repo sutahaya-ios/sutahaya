@@ -413,6 +413,24 @@ describe("Competitive Phase C Emulator", () => {
     assert.equal(roomAState.phase, PHASE.QUESTION_OPEN);
     assert.equal(roomAState.currentQuestionIndex, 1);
 
+    const acceptedAnswer = await coreIntent(client, matchEnvelope(
+      sessionA,
+      "submitAnswer",
+      "answered-projection",
+      {
+        questionId: roomAState.currentQuestion.questionId,
+        stateVersion: roomAState.stateVersion,
+        payload: { answerId: roomAState.currentQuestion.correctAnswerId },
+      }
+    ));
+    assert.equal(acceptedAnswer.status, "ACCEPTED");
+    await waitFor(async () => {
+      const participant = await adminRequest(
+        `competitiveV2/matches/${roomA.matchId}/public/participants/${client.uid}`
+      );
+      return participant?.answered === true;
+    }, "answered projection after accepted answer");
+
     await assertSucceeds(set(ref(client.database, presencePath), disconnected));
     await waitFor(async () => {
       const participant = await adminRequest(

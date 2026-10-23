@@ -286,12 +286,19 @@ async function markAnswerDecision(reference, decision) {
 }
 
 async function publishAnswered(envelope, uid) {
-  const transaction = await matchRef(envelope.matchId)
-    .child(`public/participants/${uid}`)
-    .transaction((current) => {
-      if (!current || current.answerQuestionId !== envelope.questionId) return;
-      return { ...current, answered: true };
-    }, undefined, false);
+  const reference = matchRef(envelope.matchId)
+    .child(`public/participants/${uid}`);
+  const initial = await reference.get();
+  const initialValue = initial.exists() ? initial.val() : null;
+  let firstAttempt = true;
+  const transaction = await reference.transaction((current) => {
+    if (current === null && firstAttempt && initialValue !== null) {
+      current = initialValue;
+    }
+    firstAttempt = false;
+    if (!current || current.answerQuestionId !== envelope.questionId) return;
+    return { ...current, answered: true };
+  }, undefined, false);
   return transaction.committed;
 }
 
