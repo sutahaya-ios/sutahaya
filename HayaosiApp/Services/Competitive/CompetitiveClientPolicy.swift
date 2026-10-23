@@ -43,6 +43,44 @@ enum CompetitiveProjectionPolicy {
     }
 }
 
+enum CompetitiveSettlementRecoveryAction: Equatable {
+    case none
+    case refreshAndReconcile
+    case complete
+}
+
+enum CompetitiveSettlementRecoveryPolicy {
+    static let delayedThreshold = 8
+    static let retryDelayMilliseconds = 1_000
+
+    static func action(
+        for state: CompetitivePublicState?,
+        sessionKey: CompetitiveSessionKey
+    ) -> CompetitiveSettlementRecoveryAction {
+        guard let state, state.matchId == sessionKey.matchId else { return .none }
+        switch state.phase {
+        case .matchFinished, .settlementPending:
+            return .refreshAndReconcile
+        case .settled:
+            return .complete
+        default:
+            return .none
+        }
+    }
+
+    static func isDelayed(attempt: Int) -> Bool {
+        attempt >= delayedThreshold
+    }
+
+    static func shouldCompleteResult(
+        action: CompetitiveSettlementRecoveryAction,
+        completedSessionKey: CompetitiveSessionKey?,
+        expectedSessionKey: CompetitiveSessionKey
+    ) -> Bool {
+        action == .complete && completedSessionKey != expectedSessionKey
+    }
+}
+
 enum CompetitiveClientDisplay {
     static let questionCount = 20
 

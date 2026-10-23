@@ -105,6 +105,91 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertEqual(result.ratingDelta, 18)
     }
 
+    func test_Match終了からSettlement完了までResult回復を継続する() throws {
+        let key = CompetitiveSessionKey(session: session())
+        let finished = try XCTUnwrap(publicState(phase: .matchFinished))
+        let pending = try XCTUnwrap(publicState(phase: .settlementPending))
+        let settled = try XCTUnwrap(publicState(phase: .settled))
+
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(for: finished, sessionKey: key),
+            .refreshAndReconcile
+        )
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(for: pending, sessionKey: key),
+            .refreshAndReconcile
+        )
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(for: settled, sessionKey: key),
+            .complete
+        )
+    }
+
+    func test_SettledListenerを取りこぼしても再読込値を採用できる() throws {
+        let activeSession = session()
+        let pending = try XCTUnwrap(publicState(serverSequence: 20, phase: .settlementPending))
+        let reread = try XCTUnwrap(publicState(serverSequence: 21, phase: .settled))
+
+        XCTAssertTrue(
+            CompetitiveProjectionPolicy.shouldAccept(reread, for: activeSession, after: pending)
+        )
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(
+                for: reread,
+                sessionKey: CompetitiveSessionKey(session: activeSession)
+            ),
+            .complete
+        )
+    }
+
+    func test_SettlementTimeout後もServer再取得を継続する() throws {
+        let key = CompetitiveSessionKey(session: session())
+        let pending = try XCTUnwrap(publicState(phase: .settlementPending))
+
+        XCTAssertFalse(
+            CompetitiveSettlementRecoveryPolicy.isDelayed(
+                attempt: CompetitiveSettlementRecoveryPolicy.delayedThreshold - 1
+            )
+        )
+        XCTAssertTrue(
+            CompetitiveSettlementRecoveryPolicy.isDelayed(
+                attempt: CompetitiveSettlementRecoveryPolicy.delayedThreshold
+            )
+        )
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(for: pending, sessionKey: key),
+            .refreshAndReconcile
+        )
+    }
+
+    func test_DuplicateSettledはResult完了を二重実行しない() {
+        let key = CompetitiveSessionKey(session: session())
+        XCTAssertTrue(
+            CompetitiveSettlementRecoveryPolicy.shouldCompleteResult(
+                action: .complete,
+                completedSessionKey: nil,
+                expectedSessionKey: key
+            )
+        )
+        XCTAssertFalse(
+            CompetitiveSettlementRecoveryPolicy.shouldCompleteResult(
+                action: .complete,
+                completedSessionKey: key,
+                expectedSessionKey: key
+            )
+        )
+    }
+
+    func test_RoomAのSettlementはRoomBのResultへ影響しない() throws {
+        let roomB = CompetitiveSessionKey(session: session())
+        let roomAState = try XCTUnwrap(publicState(matchId: "match-a", phase: .settled))
+
+        XCTAssertEqual(
+            CompetitiveSettlementRecoveryPolicy.action(for: roomAState, sessionKey: roomB),
+            .none
+        )
+    }
+
     func test_PresenceはSessionFenceを保ったOfflineTombstoneを生成する() {
         let session = session()
         let online = CompetitiveService.presencePayload(
@@ -169,13 +254,15 @@ final class CompetitiveClientPolicyTests: XCTestCase {
     private func publicState(
         matchId: String = "match-b",
         serverSequence: Int = 10,
-        settled: Bool = false
+        settled: Bool = false,
+        phase: CompetitivePhase? = nil
     ) -> CompetitivePublicState? {
+        let resolvedPhase = phase ?? (settled ? .settled : .questionOpen)
         var value: [String: Any] = [
             "matchId": matchId,
             "protocolVersion": CompetitiveService.protocolVersion,
             "configVersion": "config-1",
-            "phase": settled ? "SETTLED" : "QUESTION_OPEN",
+            "phase": resolvedPhase.rawValue,
             "stateVersion": 4,
             "serverSequence": serverSequence,
             "currentQuestionIndex": 0,
@@ -202,7 +289,7 @@ final class CompetitiveClientPolicyTests: XCTestCase {
                 "deadlineEpochMs": 5_100
             ]
         ]
-        if settled {
+        if resolvedPhase == .settled {
             value["settlement"] = [
                 "status": "SETTLED",
                 "settlementId": "match-b:settlement",

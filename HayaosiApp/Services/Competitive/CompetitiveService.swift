@@ -70,22 +70,12 @@ final class CompetitiveService {
 
     func startListening() {
         stopListening()
-        let reference = database.child("competitiveV2/matches/\(session.matchId)/public")
+        let reference = publicMatchReference()
         publicReference = reference
         publicObserver = reference.observe(.value) { [weak self] snapshot in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                guard let state = CompetitivePublicState(databaseValue: snapshot.value) else {
-                    self.listeningError = CompetitiveServiceError.invalidPublicProjection
-                    return
-                }
-                guard CompetitiveProjectionPolicy.shouldAccept(
-                    state,
-                    for: self.session,
-                    after: self.state
-                ) else { return }
-                self.state = state
-                self.listeningError = nil
+                self.acceptPublicProjection(snapshot.value)
             }
         } withCancel: { [weak self] error in
             MainActor.assumeIsolated {
@@ -99,6 +89,21 @@ final class CompetitiveService {
                 self?.listeningError = error
             }
         }
+    }
+
+    /// Realtime eventを取りこぼしても、現在のServer projectionから復帰する。
+    @discardableResult
+    func refreshState() async throws -> CompetitivePublicState {
+        let snapshot = try await publicMatchReference().getData()
+        guard let candidate = CompetitivePublicState(databaseValue: snapshot.value) else {
+            throw CompetitiveServiceError.invalidPublicProjection
+        }
+        if CompetitiveProjectionPolicy.shouldAccept(candidate, for: session, after: state) {
+            state = candidate
+            listeningError = nil
+        }
+        guard let state else { throw CompetitiveServiceError.invalidPublicProjection }
+        return state
     }
 
     func stopListening() {
@@ -193,6 +198,22 @@ final class CompetitiveService {
             eventId: eventId,
             functionName: "competitiveReconcileMatch"
         )
+    }
+
+    private func publicMatchReference() -> DatabaseReference {
+        database.child("competitiveV2/matches/\(session.matchId)/public")
+    }
+
+    private func acceptPublicProjection(_ value: Any?) {
+        guard let candidate = CompetitivePublicState(databaseValue: value) else {
+            listeningError = CompetitiveServiceError.invalidPublicProjection
+            return
+        }
+        guard CompetitiveProjectionPolicy.shouldAccept(candidate, for: session, after: state) else {
+            return
+        }
+        state = candidate
+        listeningError = nil
     }
 
     private func presence() -> DatabaseReference {
@@ -349,45 +370,25 @@ final class CompetitiveMatchmakingService {
         projectionObserver = reference.observe(.value) { [weak self] snapshot in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                guard snapshot.exists() else {
-                    self.state = nil
-                    self.listeningError = nil
-                    return
-                }
-                guard let state = CompetitiveMatchmakingProjection(databaseValue: snapshot.value) else {
-                    self.listeningError = CompetitiveServiceError.invalidMatchmakingProjection
-                    return
-                }
-                if let current = self.state,
-                   state.sessionEpoch < current.sessionEpoch
-                    || (state.sessionEpoch == current.sessionEpoch
-                        && state.updatedAtEpochMS < current.updatedAtEpochMS) {
-                    return
-                }
-                self.state = state
-                self.listeningError = nil
-                if state.state == .queued,
-                   let nextCheckAfterMS = state.nextCheckAfterMS,
-                   let queuedAtEpochMS = state.queuedAtEpochMS {
-                    let nowEpochMS = Date().timeIntervalSince1970 * 1_000
-                    self.scheduleNPCFillCheck(
-                        afterMilliseconds: max(
-                            0,
-                            Int(queuedAtEpochMS) + nextCheckAfterMS - Int(nowEpochMS)
-                        ),
-                        sessionId: state.sessionId,
-                        sessionEpoch: state.sessionEpoch
-                    )
-                } else {
-                    self.npcFillTask?.cancel()
-                    self.npcFillTask = nil
-                }
+                self.acceptMatchmakingProjection(snapshot.value, exists: snapshot.exists())
             }
         } withCancel: { [weak self] error in
             MainActor.assumeIsolated {
                 self?.listeningError = error
             }
         }
+    }
+
+    /// Settlement後のrating / Tier / Statsをlistenerだけに依存せず再取得する。
+    @discardableResult
+    func refreshState() async throws -> CompetitiveMatchmakingProjection? {
+        let snapshot = try await database
+            .child("competitiveV2/matchmaking/public/\(uid)")
+            .getData()
+        listeningError = nil
+        acceptMatchmakingProjection(snapshot.value, exists: snapshot.exists())
+        if let listeningError { throw listeningError }
+        return state
     }
 
     func stopObservingMatchmakingState() {
@@ -400,6 +401,43 @@ final class CompetitiveMatchmakingService {
         listeningError = nil
         npcFillTask?.cancel()
         npcFillTask = nil
+    }
+
+    private func acceptMatchmakingProjection(_ value: Any?, exists: Bool) {
+        guard exists else {
+            state = nil
+            listeningError = nil
+            return
+        }
+        guard let candidate = CompetitiveMatchmakingProjection(databaseValue: value) else {
+            listeningError = CompetitiveServiceError.invalidMatchmakingProjection
+            return
+        }
+        if let current = state,
+           candidate.sessionEpoch < current.sessionEpoch
+            || (candidate.sessionEpoch == current.sessionEpoch
+                && candidate.updatedAtEpochMS < current.updatedAtEpochMS) {
+            listeningError = nil
+            return
+        }
+        state = candidate
+        listeningError = nil
+        if candidate.state == .queued,
+           let nextCheckAfterMS = candidate.nextCheckAfterMS,
+           let queuedAtEpochMS = candidate.queuedAtEpochMS {
+            let nowEpochMS = Date().timeIntervalSince1970 * 1_000
+            scheduleNPCFillCheck(
+                afterMilliseconds: max(
+                    0,
+                    Int(queuedAtEpochMS) + nextCheckAfterMS - Int(nowEpochMS)
+                ),
+                sessionId: candidate.sessionId,
+                sessionEpoch: candidate.sessionEpoch
+            )
+        } else {
+            npcFillTask?.cancel()
+            npcFillTask = nil
+        }
     }
 
     func joinQueue(eventId: String = UUID().uuidString) async throws -> CompetitiveMatchmakingAck {

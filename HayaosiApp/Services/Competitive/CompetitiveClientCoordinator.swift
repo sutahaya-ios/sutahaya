@@ -12,10 +12,14 @@ final class CompetitiveClientCoordinator {
     private(set) var isPreparingMatch = false
     private(set) var isSubmittingAnswer = false
     private(set) var isForfeitSending = false
+    private(set) var isSettlementRecoveryDelayed = false
+    private(set) var resultReadySessionKey: CompetitiveSessionKey?
     var userMessage: String?
 
     private var preparationTask: Task<Void, Never>?
     private var reconcileTask: Task<Void, Never>?
+    private var settlementRecoveryTask: Task<Void, Never>?
+    private var settledProfileRefreshTask: Task<Void, Never>?
 
     var profile: CompetitiveProfileProjection? {
         matchmakingService?.state?.competitive
@@ -44,9 +48,15 @@ final class CompetitiveClientCoordinator {
         preparationTask = nil
         reconcileTask?.cancel()
         reconcileTask = nil
+        settlementRecoveryTask?.cancel()
+        settlementRecoveryTask = nil
+        settledProfileRefreshTask?.cancel()
+        settledProfileRefreshTask = nil
         battleService?.stopListening()
         battleService = nil
         activeSession = nil
+        resultReadySessionKey = nil
+        isSettlementRecoveryDelayed = false
         matchmakingService?.stopObservingMatchmakingState()
         matchmakingService = nil
     }
@@ -98,6 +108,7 @@ final class CompetitiveClientCoordinator {
         preparationTask = Task { [weak self] in
             await self?.prepareMatchIfNeeded(expectedKey: expectedKey)
         }
+        handleSettlementProjection(expectedKey: expectedKey)
         scheduleReconcileIfNeeded(expectedKey: expectedKey)
     }
 
@@ -167,9 +178,13 @@ final class CompetitiveClientCoordinator {
         guard canLeaveResult else { return }
         preparationTask?.cancel()
         reconcileTask?.cancel()
+        settlementRecoveryTask?.cancel()
+        settledProfileRefreshTask?.cancel()
         battleService?.stopListening()
         battleService = nil
         activeSession = nil
+        resultReadySessionKey = nil
+        isSettlementRecoveryDelayed = false
     }
 
     func playAgain() async {
@@ -199,8 +214,20 @@ final class CompetitiveClientCoordinator {
 
     var canLeaveResult: Bool {
         guard let state = battleService?.state else { return false }
-        if state.phase == .settled { return true }
+        if state.phase == .settled || resultReadySessionKey == activeSessionKey { return true }
         return state.phase == .matchFinished && state.finalResult?.outcome != "COMPLETED"
+    }
+
+    func retrySettlementRecovery() {
+        guard let expectedKey = activeSessionKey,
+              CompetitiveSettlementRecoveryPolicy.action(
+                for: battleService?.state,
+                sessionKey: expectedKey
+              ) == .refreshAndReconcile else { return }
+        settlementRecoveryTask?.cancel()
+        settlementRecoveryTask = nil
+        isSettlementRecoveryDelayed = false
+        startSettlementRecovery(expectedKey: expectedKey)
     }
 
     private func activate(_ session: CompetitiveSession) {
@@ -208,9 +235,13 @@ final class CompetitiveClientCoordinator {
         guard activeSessionKey != newKey else { return }
         preparationTask?.cancel()
         reconcileTask?.cancel()
+        settlementRecoveryTask?.cancel()
+        settledProfileRefreshTask?.cancel()
         battleService?.stopListening()
 
         activeSession = session
+        resultReadySessionKey = nil
+        isSettlementRecoveryDelayed = false
         let service = CompetitiveService(session: session)
         battleService = service
         service.startListening()
@@ -271,9 +302,9 @@ final class CompetitiveClientCoordinator {
             dueEpochMS = state.currentQuestion?.deadlineEpochMS
         case .questionResult:
             dueEpochMS = state.resultEndsAtEpochMS
-        case .nextQuestion, .matchFinished, .settlementPending:
+        case .nextQuestion:
             dueEpochMS = 0
-        case .created, .waitingPlayers, .settled:
+        case .created, .waitingPlayers, .matchFinished, .settlementPending, .settled:
             dueEpochMS = nil
         }
         guard let dueEpochMS else { return }
@@ -299,6 +330,125 @@ final class CompetitiveClientCoordinator {
             } catch {
                 guard let self, self.activeSessionKey == expectedKey else { return }
                 self.userMessage = CompetitiveClientDisplay.userMessage(for: error)
+            }
+        }
+    }
+
+    private func handleSettlementProjection(expectedKey: CompetitiveSessionKey) {
+        switch CompetitiveSettlementRecoveryPolicy.action(
+            for: battleService?.state,
+            sessionKey: expectedKey
+        ) {
+        case .none:
+            settlementRecoveryTask?.cancel()
+            settlementRecoveryTask = nil
+            isSettlementRecoveryDelayed = false
+        case .refreshAndReconcile:
+            startSettlementRecovery(expectedKey: expectedKey)
+        case .complete:
+            markSettlementComplete(expectedKey: expectedKey)
+        }
+    }
+
+    private func startSettlementRecovery(expectedKey: CompetitiveSessionKey) {
+        guard settlementRecoveryTask == nil else { return }
+        settlementRecoveryTask = Task { [weak self] in
+            await self?.recoverSettlement(expectedKey: expectedKey)
+        }
+    }
+
+    private func recoverSettlement(expectedKey: CompetitiveSessionKey) async {
+        var attempt = 0
+        while !Task.isCancelled {
+            guard activeSessionKey == expectedKey, let service = battleService else { return }
+
+            do {
+                _ = try await service.refreshState()
+            } catch {
+                // Reconcileと次回readで回復を続ける。rating/statsはClientで推測しない。
+            }
+
+            switch CompetitiveSettlementRecoveryPolicy.action(
+                for: service.state,
+                sessionKey: expectedKey
+            ) {
+            case .complete:
+                markSettlementComplete(expectedKey: expectedKey)
+                return
+            case .none:
+                settlementRecoveryTask = nil
+                return
+            case .refreshAndReconcile:
+                do {
+                    _ = try await service.reconcile()
+                } catch {
+                    // 一時失敗でもServer projectionの再取得を継続する。
+                }
+            }
+
+            do {
+                try await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled, activeSessionKey == expectedKey else { return }
+                _ = try await service.refreshState()
+                if CompetitiveSettlementRecoveryPolicy.action(
+                    for: service.state,
+                    sessionKey: expectedKey
+                ) == .complete {
+                    markSettlementComplete(expectedKey: expectedKey)
+                    return
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                // 次のretryで再取得する。
+            }
+
+            attempt += 1
+            isSettlementRecoveryDelayed = CompetitiveSettlementRecoveryPolicy.isDelayed(
+                attempt: attempt
+            )
+            do {
+                try await Task.sleep(
+                    for: .milliseconds(
+                        CompetitiveSettlementRecoveryPolicy.retryDelayMilliseconds
+                    )
+                )
+            } catch {
+                return
+            }
+        }
+    }
+
+    private func markSettlementComplete(expectedKey: CompetitiveSessionKey) {
+        guard activeSessionKey == expectedKey else { return }
+        settlementRecoveryTask?.cancel()
+        settlementRecoveryTask = nil
+        isSettlementRecoveryDelayed = false
+        guard CompetitiveSettlementRecoveryPolicy.shouldCompleteResult(
+            action: .complete,
+            completedSessionKey: resultReadySessionKey,
+            expectedSessionKey: expectedKey
+        ) else { return }
+        resultReadySessionKey = expectedKey
+        refreshSettledProfile(expectedKey: expectedKey)
+    }
+
+    private func refreshSettledProfile(expectedKey: CompetitiveSessionKey) {
+        settledProfileRefreshTask?.cancel()
+        settledProfileRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            for attempt in 0..<3 {
+                guard !Task.isCancelled,
+                      self.activeSessionKey == expectedKey,
+                      let matchmakingService = self.matchmakingService else { return }
+                do {
+                    _ = try await matchmakingService.refreshState()
+                    return
+                } catch where attempt < 2 {
+                    try? await Task.sleep(for: .milliseconds(500))
+                } catch {
+                    return
+                }
             }
         }
     }

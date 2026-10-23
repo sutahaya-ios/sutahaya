@@ -13,8 +13,7 @@ struct CompetitiveResultView: View {
                 if let settlementResult { rankChangeCard(settlementResult) }
                 if let profile = coordinator.profile { statsCard(profile) }
                 if !coordinator.canLeaveResult {
-                    ProgressView("ランクを更新しています…")
-                        .padding(.top, 8)
+                    settlementRecoveryStatus
                 }
             }
             .padding(20)
@@ -45,6 +44,27 @@ struct CompetitiveResultView: View {
         .navigationTitle("対戦結果")
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
+    }
+
+    private var settlementRecoveryStatus: some View {
+        VStack(spacing: 10) {
+            ProgressView()
+            Text(
+                coordinator.isSettlementRecoveryDelayed
+                    ? "更新に時間がかかっています。サーバーの状態を再確認しています…"
+                    : "ランクを更新しています…"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            if coordinator.isSettlementRecoveryDelayed {
+                Button("今すぐ再確認") {
+                    coordinator.retrySettlementRecovery()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(.top, 8)
     }
 
     private var myUID: String? { coordinator.activeSession?.uid }
