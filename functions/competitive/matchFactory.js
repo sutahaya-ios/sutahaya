@@ -15,6 +15,7 @@ const {
   questionSelectionBoundary,
 } = require("./rating");
 const { selectCompetitiveQuestions } = require("./questionBank");
+const { buildNPCProfiles } = require("./npc");
 
 function buildQuestionInstances(matchId, questionSelection) {
   return selectCompetitiveQuestions({
@@ -83,6 +84,11 @@ function buildCompetitiveMatch({
       status: PARTICIPANT_STATUS.CONNECTED,
     }];
   }));
+  const resolvedNPCSkillInput = npcSkillInput || {
+    profileVersion: "phase-c-fixed-test-1",
+    reactionBaseMs: 250,
+  };
+  const npcProfiles = buildNPCProfiles({ matchId, participants });
 
   return {
     private: {
@@ -109,10 +115,8 @@ function buildCompetitiveMatch({
         questionDurationMs: resolvedQuestionDurationMs,
         resultDurationMs,
         reconnectGraceMs,
-        npcSkillInput: npcSkillInput || {
-          profileVersion: "phase-c-fixed-test-1",
-          reactionBaseMs: 250,
-        },
+        npcSkillInput: resolvedNPCSkillInput,
+        npcProfiles,
         questionSelection,
         season,
       },

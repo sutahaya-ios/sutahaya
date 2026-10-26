@@ -477,7 +477,10 @@ describe("Competitive Core unit", () => {
       matchId: "match-unit",
       players: mixedPlayers,
       createdAtEpochMs: 1_000,
-      npcSkillInput: npcSkillInputForRating(1_000),
+      npcSkillInput: {
+        ...npcSkillInputForRating(1_000),
+        attemptPermille: 1_000,
+      },
     });
     assert.equal(match.private.config.countdownDurationMs, 3_000);
     assert.equal(match.private.config.questionDurationMs, 8_000);
@@ -495,8 +498,12 @@ describe("Competitive Core unit", () => {
       left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs
     ));
     for (const [, plan] of orderedPlans) {
-      const remainingMs = question.deadlineEpochMs - plan.acceptedAtEpochMs;
-      assert.ok(remainingMs <= 3_000 && remainingMs >= 2_900);
+      const elapsedMs = plan.acceptedAtEpochMs - question.openedAtEpochMs;
+      if (plan.fastAnswer) {
+        assert.ok(elapsedMs >= 2_700 && elapsedMs <= 3_300);
+      } else {
+        assert.ok(elapsedMs >= 4_500 && elapsedMs <= 5_500);
+      }
     }
 
     assert.equal(
@@ -520,6 +527,19 @@ describe("Competitive Core unit", () => {
     assert.equal(
       match.public.currentQuestion.nextServerActionAtEpochMs,
       orderedPlans[1][1].acceptedAtEpochMs
+    );
+
+    const answeredAfterFirst = Object.values(match.public.participants)
+      .filter((participant) => participant.answered).length;
+    match = applyReconcile(
+      match,
+      players[0],
+      "timing-first-npc-retry",
+      orderedPlans[0][1].acceptedAtEpochMs
+    ).match;
+    assert.equal(
+      Object.values(match.public.participants).filter((participant) => participant.answered).length,
+      answeredAfterFirst
     );
 
     match = applyReconcile(

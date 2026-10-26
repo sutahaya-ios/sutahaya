@@ -9,6 +9,7 @@ const {
   SETTLEMENT_VERSION,
 } = require("./constants");
 const { rankedScores, scoreQuestion } = require("./scoring");
+const { buildNPCProfiles, createNPCAnswerPlan } = require("./npc");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -267,48 +268,22 @@ function validateParticipant(privateState, envelope, uid) {
 }
 
 function npcPlans(privateState, questionIndex, question) {
-  const reactionBaseMs = Number.isFinite(privateState.config?.npcSkillInput?.reactionBaseMs)
-    ? privateState.config.npcSkillInput.reactionBaseMs
-    : 250;
-  const answerRemainingMs = privateState.config?.npcSkillInput?.answerRemainingMs;
+  privateState.config.npcProfiles ||= buildNPCProfiles({
+    matchId: privateState.matchId,
+    participants: privateState.participants,
+  });
   return Object.fromEntries(privateState.participantOrder.flatMap((uid) => {
     const participant = privateState.participants[uid];
     if (participant?.kind !== PARTICIPANT_KIND.NPC || !participant.active) return [];
-    const configuredAccuracy = privateState.config?.npcSkillInput?.accuracyPermille;
-    let answerId;
-    if (Number.isFinite(configuredAccuracy)) {
-      const attemptRoll = (questionIndex * 173 + participant.slot * 271) % 1_000;
-      const attemptPermille = privateState.config?.npcSkillInput?.attemptPermille ?? 920;
-      if (attemptRoll >= attemptPermille) return [];
-      answerId = attemptRoll < configuredAccuracy
-        ? question.correctAnswerId
-        : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
-    } else {
-      // Phase Cの固定test inputとの後方互換。
-      const behavior = (questionIndex + participant.slot) % 3;
-      if (behavior === 2) return [];
-      answerId = behavior === 0
-        ? question.correctAnswerId
-        : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
-    }
-    const acceptedAtEpochMs = Number.isFinite(answerRemainingMs)
-      ? question.deadlineEpochMs
-        - answerRemainingMs
-        + (participant.slot * 25)
-        + ((questionIndex % 5) * 20)
-      : question.openedAtEpochMs
-        + reactionBaseMs
-        + (participant.slot * 25)
-        + ((questionIndex % 5) * 20);
-    return [[uid, {
-      uid,
-      eventId: `npc-answer-${question.questionId}-${uid}`,
-      questionId: question.questionId,
-      answerId,
-      acceptedAtEpochMs,
-      status: "ACCEPTED",
-      source: "SERVER_NPC",
-    }]];
+    const plan = createNPCAnswerPlan({
+      matchId: privateState.matchId,
+      participant,
+      questionIndex,
+      question,
+      skillInput: privateState.config?.npcSkillInput,
+      profile: privateState.config.npcProfiles[uid],
+    });
+    return plan ? [[uid, plan]] : [];
   }));
 }
 

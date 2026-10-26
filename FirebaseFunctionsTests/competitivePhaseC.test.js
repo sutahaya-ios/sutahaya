@@ -380,7 +380,10 @@ describe("Competitive Phase C Emulator", () => {
       .sort((left, right) => left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs);
     assert.equal(humanUIDs.length, 2);
     assert.equal(orderedNPCPlans.length, 2);
-    await delay(80);
+    await delay(Math.max(
+      0,
+      orderedNPCPlans[0][1].acceptedAtEpochMs - Date.now() + 25
+    ));
 
     const firstSeenByAllClients = queued.clients.map((client) => waitForPublicState(
       client,
@@ -398,6 +401,11 @@ describe("Competitive Phase C Emulator", () => {
       assert.equal(state.participants[orderedNPCPlans[0][0]].answerId, undefined);
       for (const uid of humanUIDs) assert.equal(state.participants[uid].answered, false);
     }
+
+    await delay(Math.max(
+      0,
+      orderedNPCPlans[1][1].acceptedAtEpochMs - Date.now() + 25
+    ));
 
     const secondSeenByAllClients = queued.clients.map((client) => waitForPublicState(
       client,

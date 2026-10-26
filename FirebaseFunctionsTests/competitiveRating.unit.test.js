@@ -207,7 +207,11 @@ describe("Competitive Phase D-2 rating", () => {
     assert.equal(questionDurationMsForTier(TIER.BRONZE), 8_000);
     assert.equal(questionDurationMsForTier(TIER.SILVER), 5_000);
     assert.equal(npcSkillInputForRating(1_000).answerRemainingMs, 3_000);
+    assert.equal(npcSkillInputForRating(1_000).normalAnswerElapsedMs, 5_000);
+    assert.equal(npcSkillInputForRating(1_000).fastAnswerElapsedMs, 3_000);
     assert.equal(npcSkillInputForRating(1_200).answerRemainingMs, null);
+    assert.equal(npcSkillInputForRating(1_200).normalAnswerElapsedMs, 4_100);
+    assert.equal(npcSkillInputForRating(1_200).fastAnswerElapsedMs, 2_600);
   });
 
   it("supports promotion and demotion without a second rating engine", () => {

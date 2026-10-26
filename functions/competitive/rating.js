@@ -45,6 +45,27 @@ const RATING_CONFIG = Object.freeze({
     PLATINUM: null,
     RATING_BATTLE: null,
   }),
+  npcNormalAnswerElapsedMs: Object.freeze({
+    BRONZE: 5_000,
+    SILVER: 4_100,
+    GOLD: null,
+    PLATINUM: null,
+    RATING_BATTLE: null,
+  }),
+  npcFastAnswerElapsedMs: Object.freeze({
+    BRONZE: 3_000,
+    SILVER: 2_600,
+    GOLD: null,
+    PLATINUM: null,
+    RATING_BATTLE: null,
+  }),
+  npcReactionReferenceMs: Object.freeze({
+    BRONZE: 700,
+    SILVER: 610,
+    GOLD: null,
+    PLATINUM: null,
+    RATING_BATTLE: null,
+  }),
   difficultyRanges: Object.freeze({
     BRONZE: Object.freeze({ minimum: 1, maximum: 2 }),
     SILVER: Object.freeze({ minimum: 2, maximum: 3 }),
@@ -348,6 +369,17 @@ function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
   const offset = averageHiddenRating - config.initialRating;
   const npc = config.npcSkill;
   const tier = tierForRating(averageHiddenRating, config);
+  const reactionBaseMs = Math.round(clamp(
+    npc.reactionBaseMs - offset * npc.reactionSlopePerRatingPoint,
+    npc.minimumReactionMs,
+    npc.maximumReactionMs
+  ));
+  const reactionReferenceMs = config.npcReactionReferenceMs[tier];
+  const reactionAdjustmentMs = Number.isFinite(reactionReferenceMs)
+    ? reactionBaseMs - reactionReferenceMs
+    : 0;
+  const normalAnswerElapsedMs = config.npcNormalAnswerElapsedMs[tier];
+  const fastAnswerElapsedMs = config.npcFastAnswerElapsedMs[tier];
   return {
     profileVersion: "phase-d2-rating-derived-1",
     sourceAverageHiddenRating: Math.round(averageHiddenRating),
@@ -357,12 +389,14 @@ function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
       npc.minimumAccuracyPermille,
       npc.maximumAccuracyPermille
     )),
-    reactionBaseMs: Math.round(clamp(
-      npc.reactionBaseMs - offset * npc.reactionSlopePerRatingPoint,
-      npc.minimumReactionMs,
-      npc.maximumReactionMs
-    )),
+    reactionBaseMs,
     answerRemainingMs: config.npcAnswerRemainingMs[tier] ?? null,
+    normalAnswerElapsedMs: Number.isFinite(normalAnswerElapsedMs)
+      ? normalAnswerElapsedMs + reactionAdjustmentMs
+      : null,
+    fastAnswerElapsedMs: Number.isFinite(fastAnswerElapsedMs)
+      ? fastAnswerElapsedMs + Math.round(reactionAdjustmentMs / 2)
+      : null,
   };
 }
 
