@@ -1,13 +1,13 @@
 const { createHash } = require("node:crypto");
 
-const NPC_PROFILE_VERSION = "competitive-npc-profile-v1";
+const NPC_PROFILE_VERSION = "competitive-npc-profile-v2";
 const NPC_PROFILE_CONFIG = Object.freeze({
   accuracyOffsetsPermille: Object.freeze([-30, -10, 10, 30]),
   attemptOffsetsPermille: Object.freeze([-15, -5, 5, 15]),
   reactionOffsetsMs: Object.freeze([-300, -100, 100, 300]),
   questionJitterMs: 100,
-  fastMatchModulo: 3,
-  fastQuestionModulo: 5,
+  remainingTargetQuestionJitterMs: 400,
+  fastQuestionModulo: 45,
   minimumAnswerElapsedMs: 100,
   deadlineSafetyMs: 100,
 });
@@ -38,12 +38,7 @@ function npcParticipants(participants) {
 function buildNPCProfiles({ matchId, participants }) {
   const npcs = npcParticipants(participants);
   if (npcs.length === 0) return {};
-  const hasFastType = deterministicInteger(matchId, "fast-match")
-    % NPC_PROFILE_CONFIG.fastMatchModulo === 0;
-  const fastIndex = hasFastType
-    ? deterministicInteger(matchId, "fast-npc") % npcs.length
-    : -1;
-  return Object.fromEntries(npcs.map((participant, index) => [participant.uid, {
+  return Object.fromEntries(npcs.map((participant) => [participant.uid, {
     profileVersion: NPC_PROFILE_VERSION,
     accuracyOffsetPermille: rotatedOffset(
       NPC_PROFILE_CONFIG.accuracyOffsetsPermille,
@@ -63,14 +58,12 @@ function buildNPCProfiles({ matchId, participants }) {
       participant.slot,
       "reaction-profile"
     ),
-    fastType: index === fastIndex,
   }]));
 }
 
-function isFastNPCQuestion({ matchId, slot, questionIndex, profile }) {
-  return Boolean(profile?.fastType)
-    && deterministicInteger(matchId, slot, questionIndex, "fast-question")
-      % NPC_PROFILE_CONFIG.fastQuestionModulo === 0;
+function isFastNPCQuestion({ matchId, slot, questionIndex }) {
+  return deterministicInteger(matchId, slot, questionIndex, "fast-question")
+    % NPC_PROFILE_CONFIG.fastQuestionModulo === 0;
 }
 
 function answerElapsedMs({
@@ -97,7 +90,9 @@ function answerElapsedMs({
   const reactionOffset = Number.isFinite(profile?.reactionOffsetMs)
     ? profile.reactionOffsetMs
     : 0;
-  const jitterRange = NPC_PROFILE_CONFIG.questionJitterMs;
+  const jitterRange = Number.isFinite(skillInput?.answerRemainingMs)
+    ? NPC_PROFILE_CONFIG.remainingTargetQuestionJitterMs
+    : NPC_PROFILE_CONFIG.questionJitterMs;
   const jitter = (deterministicInteger(matchId, slot, questionIndex, "timing-jitter")
     % (jitterRange * 2 + 1)) - jitterRange;
   const adjustedReactionOffset = fastAnswer

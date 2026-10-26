@@ -500,9 +500,9 @@ describe("Competitive Core unit", () => {
     for (const [, plan] of orderedPlans) {
       const elapsedMs = plan.acceptedAtEpochMs - question.openedAtEpochMs;
       if (plan.fastAnswer) {
-        assert.ok(elapsedMs >= 2_700 && elapsedMs <= 3_300);
+        assert.ok(elapsedMs >= 2_300 && elapsedMs <= 3_700);
       } else {
-        assert.ok(elapsedMs >= 4_500 && elapsedMs <= 5_500);
+        assert.ok(elapsedMs >= 4_200 && elapsedMs <= 5_800);
       }
     }
 

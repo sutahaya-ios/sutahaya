@@ -38,47 +38,41 @@ describe("Competitive NPC profile", () => {
     assert.equal(new Set(profiles.map((profile) => profile.reactionOffsetMs)).size, 3);
     assert.ok(profiles.every((profile) => Math.abs(profile.accuracyOffsetPermille) <= 30));
     assert.ok(profiles.every((profile) => Math.abs(profile.reactionOffsetMs) <= 300));
-    assert.ok(profiles.filter((profile) => profile.fastType).length <= 1);
+    assert.ok(profiles.every((profile) => !("fastType" in profile)));
   });
 
-  it("selects about one fast-NPC match in three and never more than one NPC", () => {
-    let fastMatches = 0;
-    for (let index = 0; index < 300; index += 1) {
-      const profiles = Object.values(buildNPCProfiles({
-        matchId: `distribution-match-${index}`,
-        participants,
-      }));
-      const fastCount = profiles.filter((profile) => profile.fastType).length;
-      assert.ok(fastCount <= 1);
-      if (fastCount === 1) fastMatches += 1;
-    }
-    assert.ok(fastMatches >= 80 && fastMatches <= 120, `fast matches: ${fastMatches}`);
-  });
-
-  it("selects about one fast question in five with retry-stable decisions", () => {
+  it("gives every NPC a low, retry-stable chance of answering early", () => {
     let fastQuestions = 0;
     let totalQuestions = 0;
+    const fastQuestionsBySlot = new Map();
     for (let matchIndex = 0; matchIndex < 300; matchIndex += 1) {
       const matchId = `question-distribution-${matchIndex}`;
-      const profiles = buildNPCProfiles({ matchId, participants });
-      const fastEntry = Object.entries(profiles).find(([, profile]) => profile.fastType);
-      if (!fastEntry) continue;
-      const participant = participants.find((value) => value.uid === fastEntry[0]);
-      for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
-        const input = {
-          matchId,
-          slot: participant.slot,
-          questionIndex,
-          profile: fastEntry[1],
-        };
-        const selected = isFastNPCQuestion(input);
-        assert.equal(isFastNPCQuestion(input), selected);
-        if (selected) fastQuestions += 1;
-        totalQuestions += 1;
+      for (const participant of participants.filter((value) => value.kind === "NPC")) {
+        for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
+          const input = {
+            matchId,
+            slot: participant.slot,
+            questionIndex,
+          };
+          const selected = isFastNPCQuestion(input);
+          assert.equal(isFastNPCQuestion(input), selected);
+          if (selected) {
+            fastQuestions += 1;
+            fastQuestionsBySlot.set(
+              participant.slot,
+              (fastQuestionsBySlot.get(participant.slot) || 0) + 1
+            );
+          }
+          totalQuestions += 1;
+        }
       }
     }
     const rate = fastQuestions / totalQuestions;
-    assert.ok(rate >= 0.17 && rate <= 0.23, `fast question rate: ${rate}`);
+    assert.ok(rate >= 0.018 && rate <= 0.027, `fast question rate: ${rate}`);
+    assert.ok(
+      participants.filter((value) => value.kind === "NPC")
+        .every((participant) => (fastQuestionsBySlot.get(participant.slot) || 0) > 0)
+    );
   });
 
   it("keeps Bronze and Silver normal/fast timing within human-like ranges", () => {
@@ -106,8 +100,8 @@ describe("Competitive NPC profile", () => {
               skillInput: bronze,
               fastAnswer: true,
             });
-            assert.ok(bronzeNormal >= 4_500 && bronzeNormal <= 5_500);
-            assert.ok(bronzeFast >= 2_700 && bronzeFast <= 3_300);
+            assert.ok(bronzeNormal >= 4_200 && bronzeNormal <= 5_800);
+            assert.ok(bronzeFast >= 2_300 && bronzeFast <= 3_700);
 
             const silverNormal = answerElapsedMs({
               ...common,
