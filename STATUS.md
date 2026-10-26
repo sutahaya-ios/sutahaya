@@ -44,6 +44,7 @@
 ## 作業中宣言(着手前にここへ記入 → 完了したら消して「最新更新」へ)
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/core.js`・`HayaosiApp/Services/Competitive/CompetitiveModels.swift`・`CompetitiveClientCoordinator.swift`・`CompetitiveClientPolicy.swift`・`HayaosiApp/Views/Competitive/CompetitiveBattleView.swift`・関連テスト | Competitive QUESTION_OPEN中のServer確定NPC回答をpublic `answered`へ個別Realtime反映し、Human/NPC共通表示へ接続 | 2026年10月26日 |
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
 ## 最新更新(2026年8月25日〜10月23日)
