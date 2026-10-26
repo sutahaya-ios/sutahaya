@@ -56,6 +56,38 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertEqual(CompetitiveClientDisplay.scoreDeltaText(0), "±0")
     }
 
+    func test_QUESTION_OPENはHumanとNPCのansweredを共通表示する() {
+        let human = participant(uid: "human", kind: .human, answered: true)
+        let npc = participant(uid: "npc", kind: .npc, answered: true)
+        let unansweredNPC = participant(uid: "npc-2", kind: .npc, answered: false)
+
+        XCTAssertTrue(CompetitiveClientDisplay.showsAnswered(human, phase: .questionOpen))
+        XCTAssertTrue(CompetitiveClientDisplay.showsAnswered(npc, phase: .questionOpen))
+        XCTAssertFalse(
+            CompetitiveClientDisplay.showsAnswered(unansweredNPC, phase: .questionOpen)
+        )
+        XCTAssertFalse(CompetitiveClientDisplay.showsAnswered(npc, phase: .questionResult))
+    }
+
+    func test_ServerAction時刻をdeadlineより優先してReconcileする() throws {
+        let npcDue = try XCTUnwrap(publicState(nextServerActionAtEpochMS: 3_100))
+        let deadlineOnly = try XCTUnwrap(publicState())
+
+        XCTAssertEqual(
+            CompetitiveReconcileSchedule.dueEpochMS(for: npcDue, actorUID: "player-1"),
+            3_100
+        )
+        XCTAssertEqual(
+            CompetitiveReconcileSchedule.dueEpochMS(for: npcDue, actorUID: "other-player"),
+            5_100
+        )
+        XCTAssertEqual(
+            CompetitiveReconcileSchedule.dueEpochMS(for: deadlineOnly, actorUID: "player-1"),
+            5_100
+        )
+        XCTAssertNil(npcDue.currentQuestion?.correctAnswerId)
+    }
+
     func test_ActiveMatchはQueue表示より優先される() {
         XCTAssertEqual(
             CompetitiveClientScreen.resolve(matchmakingState: .queued, hasActiveMatch: true),
@@ -255,9 +287,21 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         matchId: String = "match-b",
         serverSequence: Int = 10,
         settled: Bool = false,
-        phase: CompetitivePhase? = nil
+        phase: CompetitivePhase? = nil,
+        nextServerActionAtEpochMS: Double? = nil
     ) -> CompetitivePublicState? {
         let resolvedPhase = phase ?? (settled ? .settled : .questionOpen)
+        var question: [String: Any] = [
+            "questionId": "q-1",
+            "questionIndex": 0,
+            "prompt": "apple",
+            "choices": [["answerId": "a-1", "text": "りんご"]],
+            "openedAtEpochMs": 100,
+            "deadlineEpochMs": 5_100
+        ]
+        if let nextServerActionAtEpochMS {
+            question["nextServerActionAtEpochMs"] = nextServerActionAtEpochMS
+        }
         var value: [String: Any] = [
             "matchId": matchId,
             "protocolVersion": CompetitiveService.protocolVersion,
@@ -280,14 +324,7 @@ final class CompetitiveClientPolicyTests: XCTestCase {
                     "score": 0
                 ]
             ],
-            "currentQuestion": [
-                "questionId": "q-1",
-                "questionIndex": 0,
-                "prompt": "apple",
-                "choices": [["answerId": "a-1", "text": "りんご"]],
-                "openedAtEpochMs": 100,
-                "deadlineEpochMs": 5_100
-            ]
+            "currentQuestion": question
         ]
         if resolvedPhase == .settled {
             value["settlement"] = [
@@ -307,5 +344,27 @@ final class CompetitiveClientPolicyTests: XCTestCase {
             ]
         }
         return CompetitivePublicState(databaseValue: value)
+    }
+
+    private func participant(
+        uid: String,
+        kind: CompetitiveParticipant.Kind,
+        answered: Bool
+    ) -> CompetitiveParticipant {
+        CompetitiveParticipant(
+            uid: uid,
+            slot: 0,
+            kind: kind,
+            displayName: uid,
+            joined: true,
+            ready: true,
+            active: true,
+            forfeited: false,
+            status: .connected,
+            disconnectedAtEpochMS: nil,
+            reconnectDeadlineEpochMS: nil,
+            answered: answered,
+            score: 0
+        )
     }
 }

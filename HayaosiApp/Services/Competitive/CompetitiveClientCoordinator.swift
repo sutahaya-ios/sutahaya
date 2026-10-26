@@ -294,23 +294,16 @@ final class CompetitiveClientCoordinator {
         reconcileTask?.cancel()
         guard let state = battleService?.state else { return }
 
-        let dueEpochMS: Double?
-        switch state.phase {
-        case .countdown:
-            dueEpochMS = state.countdownEndsAtEpochMS
-        case .questionOpen:
-            dueEpochMS = state.currentQuestion?.deadlineEpochMS
-        case .questionResult:
-            dueEpochMS = state.resultEndsAtEpochMS
-        case .nextQuestion:
-            dueEpochMS = 0
-        case .created, .waitingPlayers, .matchFinished, .settlementPending, .settled:
-            dueEpochMS = nil
+        guard let activeSession,
+              let dueEpochMS = CompetitiveReconcileSchedule.dueEpochMS(
+                for: state,
+                actorUID: activeSession.uid
+              ) else {
+            return
         }
-        guard let dueEpochMS else { return }
 
         let nowEpochMS = Date().timeIntervalSince1970 * 1_000
-        let delayMS = max(0, Int(dueEpochMS - nowEpochMS)) + 100
+        let delayMS = max(0, Int(dueEpochMS - nowEpochMS)) + 50
         reconcileTask = Task { [weak self] in
             do {
                 try await Task.sleep(for: .milliseconds(delayMS))

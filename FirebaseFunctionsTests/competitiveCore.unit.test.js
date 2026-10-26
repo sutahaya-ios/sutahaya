@@ -491,9 +491,47 @@ describe("Competitive Core unit", () => {
     match = applyReconcile(match, players[0], "timing-open", 4_004).match;
 
     const question = match.private.currentQuestion;
-    for (const plan of Object.values(question.npcPlans)) {
+    const orderedPlans = Object.entries(question.npcPlans).sort((left, right) => (
+      left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs
+    ));
+    for (const [, plan] of orderedPlans) {
       const remainingMs = question.deadlineEpochMs - plan.acceptedAtEpochMs;
       assert.ok(remainingMs <= 3_000 && remainingMs >= 2_900);
     }
+
+    assert.equal(
+      match.public.currentQuestion.nextServerActionAtEpochMs,
+      orderedPlans[0][1].acceptedAtEpochMs
+    );
+    assert.equal(match.public.currentQuestion.correctAnswerId, undefined);
+    assert.equal(match.public.questionResult, null);
+
+    match = applyReconcile(
+      match,
+      players[0],
+      "timing-first-npc",
+      orderedPlans[0][1].acceptedAtEpochMs
+    ).match;
+    assert.equal(match.private.phase, PHASE.QUESTION_OPEN);
+    assert.equal(match.public.participants[orderedPlans[0][0]].answered, true);
+    assert.equal(match.public.participants[orderedPlans[1][0]].answered, false);
+    assert.equal(match.public.participants[orderedPlans[0][0]].answerId, undefined);
+    assert.equal(match.public.questionResult, null);
+    assert.equal(
+      match.public.currentQuestion.nextServerActionAtEpochMs,
+      orderedPlans[1][1].acceptedAtEpochMs
+    );
+
+    match = applyReconcile(
+      match,
+      players[0],
+      "timing-second-npc",
+      orderedPlans[1][1].acceptedAtEpochMs
+    ).match;
+    assert.equal(match.private.phase, PHASE.QUESTION_OPEN);
+    assert.equal(match.public.participants[orderedPlans[0][0]].answered, true);
+    assert.equal(match.public.participants[orderedPlans[1][0]].answered, true);
+    assert.equal(match.public.participants[orderedPlans[2][0]].answered, false);
+    assert.equal(match.public.currentQuestion.correctAnswerId, undefined);
   });
 });

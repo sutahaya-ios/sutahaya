@@ -70,6 +70,12 @@ function publicQuestion(privateState) {
     openedAtEpochMs: question.openedAtEpochMs,
     deadlineEpochMs: question.deadlineEpochMs,
   };
+  const nextServerActionAtEpochMs = nextPendingNPCActionEpochMs(privateState);
+  if (privateState.phase === PHASE.QUESTION_OPEN
+      && Number.isFinite(nextServerActionAtEpochMs)) {
+    // Clientはこの時刻にServer reconcileを起こすだけで、answered自体はServer投影を正とする。
+    projection.nextServerActionAtEpochMs = nextServerActionAtEpochMs;
+  }
   if (privateState.phase === PHASE.QUESTION_RESULT) {
     projection.correctAnswerId = question.correctAnswerId;
   }
@@ -306,20 +312,41 @@ function npcPlans(privateState, questionIndex, question) {
   }));
 }
 
-function applyDueNPCActions(privateState, nowEpochMs) {
+function nextPendingNPCActionEpochMs(privateState) {
+  const question = privateState.currentQuestion;
+  if (!question) return null;
+  const currentAnswers = acceptedAnswersForCurrentQuestion(privateState);
+  const pendingTimes = Object.entries(question.npcPlans || {}).flatMap(([uid, plan]) => (
+    privateState.participants[uid]?.active
+      && !currentAnswers[uid]
+      && Number.isFinite(plan.acceptedAtEpochMs)
+      ? [plan.acceptedAtEpochMs]
+      : []
+  ));
+  return pendingTimes.length > 0 ? Math.min(...pendingTimes) : null;
+}
+
+function applyDueNPCActions(privateState, nowEpochMs, limit = 1) {
   const question = privateState.currentQuestion;
   if (privateState.phase !== PHASE.QUESTION_OPEN || !question) return false;
   let changed = false;
+  let applied = 0;
   privateState.answerInbox ||= {};
   privateState.answerInbox[question.questionId] ||= {};
   question.answers ||= {};
-  for (const [uid, plan] of Object.entries(question.npcPlans || {})) {
+  const orderedPlans = Object.entries(question.npcPlans || {}).sort((left, right) => (
+    left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs
+      || left[0].localeCompare(right[0])
+  ));
+  for (const [uid, plan] of orderedPlans) {
     if (plan.acceptedAtEpochMs > nowEpochMs
         || plan.acceptedAtEpochMs > question.deadlineEpochMs
         || privateState.answerInbox[question.questionId][uid]) continue;
     privateState.answerInbox[question.questionId][uid] = plan;
     question.answers[uid] = plan;
     changed = true;
+    applied += 1;
+    if (applied >= limit) break;
   }
   return changed;
 }
@@ -658,11 +685,16 @@ function processReconcile(inputMatch, envelope, uid, nowEpochMs) {
     openQuestion(state, 0, nowEpochMs, state.stateVersion + 1);
     changed = true;
   } else if (state.phase === PHASE.QUESTION_OPEN) {
-    changed = applyDueNPCActions(state, nowEpochMs) || changed;
+    const reachedDeadline = nowEpochMs >= state.currentQuestion.deadlineEpochMs;
+    changed = applyDueNPCActions(
+      state,
+      nowEpochMs,
+      reachedDeadline ? Number.POSITIVE_INFINITY : 1
+    ) || changed;
     if (allActivePlayersAnswered(state)) {
       closeQuestion(state, nowEpochMs, "ALL_ANSWERED");
       changed = true;
-    } else if (nowEpochMs >= state.currentQuestion.deadlineEpochMs) {
+    } else if (reachedDeadline) {
       closeQuestion(state, nowEpochMs, "DEADLINE");
       changed = true;
     }

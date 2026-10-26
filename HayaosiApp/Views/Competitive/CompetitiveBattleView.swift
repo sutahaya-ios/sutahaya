@@ -185,9 +185,10 @@ private struct CompetitiveBattleView: View {
                     Text("\(participant.score)pt")
                         .font(.subheadline.bold())
                         .monospacedDigit()
-                    if state.phase == .questionOpen,
-                       participant.kind == .npc,
-                       participant.answered {
+                    if CompetitiveClientDisplay.showsAnswered(
+                        participant,
+                        phase: state.phase
+                    ) {
                         Label("回答済み", systemImage: "checkmark.circle.fill")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.orange)

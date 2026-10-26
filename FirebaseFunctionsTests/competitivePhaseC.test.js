@@ -15,6 +15,7 @@ const {
   get,
   getDatabase,
   goOffline,
+  onValue,
   ref,
   remove,
   serverTimestamp,
@@ -76,6 +77,28 @@ async function adminRequest(databasePath, method = "GET", body = undefined) {
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function waitForPublicState(client, matchId, predicate, description, timeoutMs = 10_000) {
+  return new Promise((resolve, reject) => {
+    const reference = ref(client.database, `competitiveV2/matches/${matchId}/public`);
+    let unsubscribe = () => {};
+    const timer = setTimeout(() => {
+      unsubscribe();
+      reject(new Error(`Timed out waiting for ${description}`));
+    }, timeoutMs);
+    unsubscribe = onValue(reference, (snapshot) => {
+      const value = snapshot.val();
+      if (!predicate(value)) return;
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(value);
+    }, (error) => {
+      clearTimeout(timer);
+      unsubscribe();
+      reject(error);
+    });
+  });
 }
 
 async function waitFor(predicate, description, timeoutMs = 10_000) {
@@ -330,6 +353,69 @@ describe("Competitive Phase C Emulator", () => {
       await joinReadyOpen(queued.clients, queued.sessions);
       await playTwentyQuestions(queued.clients, queued.sessions, queued.matchId);
     }
+  });
+
+  it("projects Human and multiple NPC answered states during QUESTION_OPEN", async () => {
+    const queued = await queueMatch(2);
+    await adminRequest(`competitiveV2/matches/${queued.matchId}/private/config`, "PATCH", {
+      countdownDurationMs: 1,
+      questionDurationMs: 1_000,
+      resultDurationMs: 1,
+      npcSkillInput: {
+        profileVersion: "phase-c-realtime-answered-test-1",
+        reactionBaseMs: 1,
+        attemptPermille: 1_000,
+        accuracyPermille: 500,
+      },
+    });
+    await joinReadyOpen(queued.clients, queued.sessions);
+
+    let privateState = await adminRequest(
+      `competitiveV2/matches/${queued.matchId}/private`
+    );
+    const humanUIDs = privateState.participantOrder.filter(
+      (uid) => privateState.participants[uid].kind === "HUMAN"
+    );
+    const orderedNPCPlans = Object.entries(privateState.currentQuestion.npcPlans)
+      .sort((left, right) => left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs);
+    assert.equal(humanUIDs.length, 2);
+    assert.equal(orderedNPCPlans.length, 2);
+    await delay(80);
+
+    const firstSeenByAllClients = queued.clients.map((client) => waitForPublicState(
+      client,
+      queued.matchId,
+      (state) => state?.phase === PHASE.QUESTION_OPEN
+        && state.participants?.[orderedNPCPlans[0][0]]?.answered === true
+        && state.participants?.[orderedNPCPlans[1][0]]?.answered === false,
+      "first NPC answered projection"
+    ));
+    await reconcile(queued.clients[0], queued.sessions[0], "first-npc-answered");
+    const firstStates = await Promise.all(firstSeenByAllClients);
+    for (const state of firstStates) {
+      assert.equal(state.questionResult == null, true);
+      assert.equal(state.currentQuestion.correctAnswerId, undefined);
+      assert.equal(state.participants[orderedNPCPlans[0][0]].answerId, undefined);
+      for (const uid of humanUIDs) assert.equal(state.participants[uid].answered, false);
+    }
+
+    const secondSeenByAllClients = queued.clients.map((client) => waitForPublicState(
+      client,
+      queued.matchId,
+      (state) => state?.phase === PHASE.QUESTION_OPEN
+        && state.participants?.[orderedNPCPlans[0][0]]?.answered === true
+        && state.participants?.[orderedNPCPlans[1][0]]?.answered === true,
+      "second NPC answered projection"
+    ));
+    await reconcile(queued.clients[1], queued.sessions[1], "second-npc-answered");
+    const secondStates = await Promise.all(secondSeenByAllClients);
+    for (const state of secondStates) {
+      assert.equal(state.questionResult == null, true);
+      assert.equal(state.currentQuestion.correctAnswerId, undefined);
+    }
+
+    privateState = await adminRequest(`competitiveV2/matches/${queued.matchId}/private`);
+    assert.equal(privateState.phase, PHASE.QUESTION_OPEN);
   });
 
   it("handles reconnect, timeout forfeit, presence Rules, and Room A to B fencing", async () => {

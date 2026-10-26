@@ -43,6 +43,35 @@ enum CompetitiveProjectionPolicy {
     }
 }
 
+enum CompetitiveReconcileSchedule {
+    static func dueEpochMS(
+        for state: CompetitivePublicState,
+        actorUID: String
+    ) -> Double? {
+        switch state.phase {
+        case .countdown:
+            return state.countdownEndsAtEpochMS
+        case .questionOpen:
+            guard let question = state.currentQuestion else { return nil }
+            let leaderUID = state.participants
+                .filter { $0.kind == .human && $0.active && $0.status == .connected }
+                .min { $0.slot < $1.slot }?
+                .uid
+            guard leaderUID == actorUID else { return question.deadlineEpochMS }
+            return min(
+                question.nextServerActionAtEpochMS ?? question.deadlineEpochMS,
+                question.deadlineEpochMS
+            )
+        case .questionResult:
+            return state.resultEndsAtEpochMS
+        case .nextQuestion:
+            return 0
+        case .created, .waitingPlayers, .matchFinished, .settlementPending, .settled:
+            return nil
+        }
+    }
+}
+
 enum CompetitiveSettlementRecoveryAction: Equatable {
     case none
     case refreshAndReconcile
@@ -124,6 +153,13 @@ enum CompetitiveClientDisplay {
         if delta > 0 { return "+\(delta)" }
         if delta == 0 { return "±0" }
         return "\(delta)"
+    }
+
+    static func showsAnswered(
+        _ participant: CompetitiveParticipant,
+        phase: CompetitivePhase
+    ) -> Bool {
+        phase == .questionOpen && participant.answered
     }
 
     static func canCancelQueue(_ state: CompetitiveMatchmakingState?) -> Bool {

@@ -25,6 +25,8 @@ struct CompetitiveQuestion: Equatable, Sendable {
     let choices: [CompetitiveChoice]
     let openedAtEpochMS: Double
     let deadlineEpochMS: Double
+    /// Server-owned NPC処理を進めるためのwake-up hint。回答結果そのものではない。
+    let nextServerActionAtEpochMS: Double?
     /// `QUESTION_RESULT`になった後だけServerから公開される。
     let correctAnswerId: String?
 }
@@ -200,6 +202,9 @@ struct CompetitivePublicState: Equatable, Sendable {
             choices: choices,
             openedAtEpochMS: openedAtEpochMS,
             deadlineEpochMS: deadlineEpochMS,
+            nextServerActionAtEpochMS: CompetitiveValue.double(
+                value["nextServerActionAtEpochMs"]
+            ),
             correctAnswerId: CompetitiveValue.string(value["correctAnswerId"])
         )
     }
