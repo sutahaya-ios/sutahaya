@@ -251,6 +251,40 @@ async function playTwentyQuestions(clients, sessions, matchId) {
     let state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     assert.equal(state.phase, PHASE.QUESTION_OPEN);
     assert.equal(state.currentQuestionIndex, questionIndex);
+    const npcUIDs = state.participantOrder.filter(
+      (uid) => state.participants[uid].kind === "NPC"
+    );
+    if (npcUIDs.length > 0) {
+      const existingPlans = state.currentQuestion.npcPlans || {};
+      const now = Date.now();
+      const acceleratedPlans = questionIndex === 2 ? {} : Object.fromEntries(
+        Object.entries(existingPlans).map(([uid, plan], index) => [uid, {
+          ...plan,
+          acceptedAtEpochMs: now + 10 + index * 10,
+        }])
+      );
+      if (questionIndex <= 1) {
+        const answerId = questionIndex === 0
+          ? state.currentQuestion.correctAnswerId
+          : state.currentQuestion.choices.find(
+            (choice) => choice.answerId !== state.currentQuestion.correctAnswerId
+          ).answerId;
+        acceleratedPlans[npcUIDs[0]] = {
+          uid: npcUIDs[0],
+          eventId: `phase-c-npc-outcome-${questionIndex}`,
+          questionId: state.currentQuestion.questionId,
+          answerId,
+          acceptedAtEpochMs: now + 10,
+          status: "ACCEPTED",
+          source: "SERVER_NPC",
+        };
+      }
+      await adminRequest(
+        `competitiveV2/matches/${matchId}/private/currentQuestion/npcPlans`,
+        "PUT",
+        acceleratedPlans
+      );
+    }
     await Promise.all(clients.map((client, index) => coreIntent(
       client,
       matchEnvelope(sessions[index], "submitAnswer", `${questionIndex}-${index}`, {
@@ -259,9 +293,14 @@ async function playTwentyQuestions(clients, sessions, matchId) {
         payload: { answerId: state.currentQuestion.correctAnswerId },
       })
     )));
-    if (clients.length < 4) await delay(210);
+    if (clients.length < 4) await delay(60);
     state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     if (state.phase === PHASE.QUESTION_OPEN) {
+      await adminRequest(
+        `competitiveV2/matches/${matchId}/private/currentQuestion/deadlineEpochMs`,
+        "PUT",
+        Date.now() - 1
+      );
       await reconcile(clients[0], sessions[0], `close-${questionIndex}`);
       state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     }
@@ -343,11 +382,12 @@ describe("Competitive Phase C Emulator", () => {
       assert.equal(participants.filter((participant) => participant.kind === "NPC").length, 4 - humanCount);
       await adminRequest(`competitiveV2/matches/${queued.matchId}/private/config`, "PATCH", {
         countdownDurationMs: 1,
-        questionDurationMs: 200,
+        questionDurationMs: 8_000,
         resultDurationMs: 1,
         npcSkillInput: {
-          profileVersion: "phase-c-fixed-test-1",
-          reactionBaseMs: 5,
+          profileVersion: "shared-seven-npc-v1",
+          strengthProfileId: "STRONG",
+          accuracyPermille: 600,
         },
       });
       await joinReadyOpen(queued.clients, queued.sessions);
@@ -359,12 +399,11 @@ describe("Competitive Phase C Emulator", () => {
     const queued = await queueMatch(2);
     await adminRequest(`competitiveV2/matches/${queued.matchId}/private/config`, "PATCH", {
       countdownDurationMs: 1,
-      questionDurationMs: 1_000,
+      questionDurationMs: 8_000,
       resultDurationMs: 1,
       npcSkillInput: {
-        profileVersion: "phase-c-realtime-answered-test-1",
-        reactionBaseMs: 1,
-        attemptPermille: 1_000,
+        profileVersion: "shared-seven-npc-v1",
+        strengthProfileId: "NORMAL",
         accuracyPermille: 500,
       },
     });
@@ -376,6 +415,25 @@ describe("Competitive Phase C Emulator", () => {
     const humanUIDs = privateState.participantOrder.filter(
       (uid) => privateState.participants[uid].kind === "HUMAN"
     );
+    const npcUIDs = privateState.participantOrder.filter(
+      (uid) => privateState.participants[uid].kind === "NPC"
+    );
+    const now = Date.now();
+    const controlledPlans = Object.fromEntries(npcUIDs.map((uid, index) => [uid, {
+      uid,
+      eventId: `phase-c-realtime-npc-${index}`,
+      questionId: privateState.currentQuestion.questionId,
+      answerId: privateState.currentQuestion.choices[index].answerId,
+      acceptedAtEpochMs: now + 100 + index * 200,
+      status: "ACCEPTED",
+      source: "SERVER_NPC",
+    }]));
+    await adminRequest(
+      `competitiveV2/matches/${queued.matchId}/private/currentQuestion/npcPlans`,
+      "PUT",
+      controlledPlans
+    );
+    privateState = await adminRequest(`competitiveV2/matches/${queued.matchId}/private`);
     const orderedNPCPlans = Object.entries(privateState.currentQuestion.npcPlans)
       .sort((left, right) => left[1].acceptedAtEpochMs - right[1].acceptedAtEpochMs);
     assert.equal(humanUIDs.length, 2);

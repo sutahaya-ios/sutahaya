@@ -1,14 +1,15 @@
 const { createHash } = require("node:crypto");
 
-const NPC_PROFILE_VERSION = "competitive-npc-profile-v2";
+const {
+  NPC_STRENGTH_PROFILE_VERSION,
+  attemptPermille,
+  nearestNPCStrengthProfile,
+  npcStrengthProfile,
+} = require("./npcStrengthProfiles");
+
+const NPC_PROFILE_VERSION = "competitive-npc-profile-v3";
 const NPC_PROFILE_CONFIG = Object.freeze({
-  accuracyOffsetsPermille: Object.freeze([-30, -10, 10, 30]),
-  attemptOffsetsPermille: Object.freeze([-15, -5, 5, 15]),
-  reactionOffsetsMs: Object.freeze([-300, -100, 100, 300]),
-  questionJitterMs: 100,
-  remainingTargetQuestionJitterMs: 400,
-  fastQuestionModulo: 45,
-  minimumAnswerElapsedMs: 100,
+  minimumAnswerElapsedMs: 1_200,
   deadlineSafetyMs: 100,
 });
 
@@ -23,9 +24,8 @@ function deterministicInteger(...parts) {
     .readUInt32BE(0);
 }
 
-function rotatedOffset(values, matchId, slot, namespace) {
-  const rotation = deterministicInteger(matchId, namespace) % values.length;
-  return values[(rotation + slot) % values.length];
+function deterministicUnit(...parts) {
+  return deterministicInteger(...parts) / 0x100000000;
 }
 
 function npcParticipants(participants) {
@@ -35,35 +35,40 @@ function npcParticipants(participants) {
     .sort((left, right) => left.slot - right.slot || left.uid.localeCompare(right.uid));
 }
 
-function buildNPCProfiles({ matchId, participants }) {
-  const npcs = npcParticipants(participants);
-  if (npcs.length === 0) return {};
-  return Object.fromEntries(npcs.map((participant) => [participant.uid, {
-    profileVersion: NPC_PROFILE_VERSION,
-    accuracyOffsetPermille: rotatedOffset(
-      NPC_PROFILE_CONFIG.accuracyOffsetsPermille,
-      matchId,
-      participant.slot,
-      "accuracy-profile"
-    ),
-    attemptOffsetPermille: rotatedOffset(
-      NPC_PROFILE_CONFIG.attemptOffsetsPermille,
-      matchId,
-      participant.slot,
-      "attempt-profile"
-    ),
-    reactionOffsetMs: rotatedOffset(
-      NPC_PROFILE_CONFIG.reactionOffsetsMs,
-      matchId,
-      participant.slot,
-      "reaction-profile"
-    ),
-  }]));
+function resolvedStrengthProfile(skillInput, profile = null) {
+  const profileId = profile?.strengthProfileId || skillInput?.strengthProfileId;
+  const exact = npcStrengthProfile(profileId);
+  if (exact) return exact;
+
+  // deploy境界で旧matchを壊さないため、旧private configは最も近い既存7体へ丸める。
+  return nearestNPCStrengthProfile(
+    Number.isFinite(skillInput?.accuracyPermille) ? skillInput.accuracyPermille : 500
+  );
 }
 
-function isFastNPCQuestion({ matchId, slot, questionIndex }) {
-  return deterministicInteger(matchId, slot, questionIndex, "fast-question")
-    % NPC_PROFILE_CONFIG.fastQuestionModulo === 0;
+function privateNPCProfile(strength) {
+  return {
+    profileVersion: NPC_PROFILE_VERSION,
+    strengthProfileVersion: NPC_STRENGTH_PROFILE_VERSION,
+    strengthProfileId: strength.id,
+    strengthProfileName: strength.name,
+    sourceNPCId: strength.sourceNPCId,
+    sourceNickname: strength.sourceNickname,
+    accuracyPermille: strength.accuracyPermille,
+    remainingRatio: strength.remainingRatio,
+    unansweredDenominator: strength.unansweredDenominator,
+    attemptPermille: attemptPermille(strength),
+  };
+}
+
+function buildNPCProfiles({ matchId, participants, skillInput }) {
+  const npcs = npcParticipants(participants);
+  if (npcs.length === 0) return {};
+  const strength = resolvedStrengthProfile(skillInput);
+  return Object.fromEntries(npcs.map((participant) => [
+    participant.uid,
+    privateNPCProfile(strength),
+  ]));
 }
 
 function answerElapsedMs({
@@ -71,41 +76,36 @@ function answerElapsedMs({
   slot,
   questionIndex,
   questionDurationMs,
-  skillInput,
   profile,
-  fastAnswer,
+  skillInput,
 }) {
-  const configuredNormal = skillInput?.normalAnswerElapsedMs;
-  const configuredFast = skillInput?.fastAnswerElapsedMs;
-  const remainingBased = Number.isFinite(skillInput?.answerRemainingMs)
-    ? questionDurationMs - skillInput.answerRemainingMs
-    : null;
-  const fallback = Number.isFinite(skillInput?.reactionBaseMs)
-    ? skillInput.reactionBaseMs
-    : 250;
-  const normalBase = Number.isFinite(configuredNormal)
-    ? configuredNormal
-    : (Number.isFinite(remainingBased) ? remainingBased : fallback);
-  const fastBase = Number.isFinite(configuredFast) ? configuredFast : normalBase;
-  const reactionOffset = Number.isFinite(profile?.reactionOffsetMs)
-    ? profile.reactionOffsetMs
-    : 0;
-  const jitterRange = Number.isFinite(skillInput?.answerRemainingMs)
-    ? NPC_PROFILE_CONFIG.remainingTargetQuestionJitterMs
-    : NPC_PROFILE_CONFIG.questionJitterMs;
-  const jitter = (deterministicInteger(matchId, slot, questionIndex, "timing-jitter")
-    % (jitterRange * 2 + 1)) - jitterRange;
-  const adjustedReactionOffset = fastAnswer
-    ? Math.round(reactionOffset / 2)
-    : reactionOffset;
-  return clamp(
-    (fastAnswer ? fastBase : normalBase) + adjustedReactionOffset + jitter,
-    NPC_PROFILE_CONFIG.minimumAnswerElapsedMs,
-    Math.max(
-      NPC_PROFILE_CONFIG.minimumAnswerElapsedMs,
-      questionDurationMs - NPC_PROFILE_CONFIG.deadlineSafetyMs
-    )
+  const strength = resolvedStrengthProfile(skillInput, profile);
+  const earliest = NPC_PROFILE_CONFIG.minimumAnswerElapsedMs;
+  const latest = questionDurationMs - NPC_PROFILE_CONFIG.deadlineSafetyMs;
+  if (latest < earliest) return null;
+
+  const target = clamp(
+    questionDurationMs * (1 - strength.remainingRatio),
+    earliest,
+    latest
   );
+  const jitterLimit = Math.max(0, Math.min(target - earliest, latest - target));
+  // 2つの独立uniform値の和で、平均付近が出やすく両端も残る三角分布にする。
+  const triangular = deterministicUnit(matchId, slot, questionIndex, "timing-a")
+    + deterministicUnit(matchId, slot, questionIndex, "timing-b") - 1;
+  return Math.round(clamp(target + triangular * jitterLimit, earliest, latest));
+}
+
+function shouldNPCAnswer({ matchId, slot, questionIndex, profile, skillInput }) {
+  const strength = resolvedStrengthProfile(skillInput, profile);
+  return deterministicInteger(matchId, slot, questionIndex, "answer-attempt")
+    % strength.unansweredDenominator !== 0;
+}
+
+function shouldNPCAnswerCorrectly({ matchId, slot, questionIndex, profile, skillInput }) {
+  const strength = resolvedStrengthProfile(skillInput, profile);
+  return deterministicInteger(matchId, slot, questionIndex, "answer-correctness")
+    % 1_000 < strength.accuracyPermille;
 }
 
 function createNPCAnswerPlan({
@@ -116,54 +116,44 @@ function createNPCAnswerPlan({
   skillInput,
   profile,
 }) {
-  const configuredAccuracy = skillInput?.accuracyPermille;
-  let answerId;
-  if (Number.isFinite(configuredAccuracy)) {
-    const attemptPermille = clamp(
-      (skillInput.attemptPermille ?? 920) + (profile?.attemptOffsetPermille ?? 0),
-      0,
-      1_000
-    );
-    const accuracyPermille = clamp(
-      configuredAccuracy + (profile?.accuracyOffsetPermille ?? 0),
-      0,
-      attemptPermille
-    );
-    const outcomeRoll = deterministicInteger(
-      matchId,
-      participant.slot,
-      questionIndex,
-      "answer-outcome"
-    ) % 1_000;
-    if (outcomeRoll >= attemptPermille) return null;
-    answerId = outcomeRoll < accuracyPermille
-      ? question.correctAnswerId
-      : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
-  } else {
-    // Phase Cの固定test inputとの後方互換。
-    const behavior = (questionIndex + participant.slot) % 3;
-    if (behavior === 2) return null;
-    answerId = behavior === 0
-      ? question.correctAnswerId
-      : question.choices.find((choice) => choice.answerId !== question.correctAnswerId).answerId;
-  }
-
-  const fastAnswer = isFastNPCQuestion({
+  if (!shouldNPCAnswer({
     matchId,
     slot: participant.slot,
     questionIndex,
     profile,
-  });
+    skillInput,
+  })) return null;
+
   const questionDurationMs = question.deadlineEpochMs - question.openedAtEpochMs;
   const elapsedMs = answerElapsedMs({
     matchId,
     slot: participant.slot,
     questionIndex,
     questionDurationMs,
-    skillInput,
     profile,
-    fastAnswer,
+    skillInput,
   });
+  if (!Number.isFinite(elapsedMs)) return null;
+
+  const isCorrect = shouldNPCAnswerCorrectly({
+    matchId,
+    slot: participant.slot,
+    questionIndex,
+    profile,
+    skillInput,
+  });
+  const wrongs = question.choices.filter(
+    (choice) => choice.answerId !== question.correctAnswerId
+  );
+  const wrongIndex = wrongs.length === 0
+    ? 0
+    : deterministicInteger(matchId, participant.slot, questionIndex, "wrong-choice")
+      % wrongs.length;
+  const answerId = isCorrect || wrongs.length === 0
+    ? question.correctAnswerId
+    : wrongs[wrongIndex].answerId;
+  const strength = resolvedStrengthProfile(skillInput, profile);
+
   return {
     uid: participant.uid,
     eventId: `npc-answer-${question.questionId}-${participant.uid}`,
@@ -172,8 +162,8 @@ function createNPCAnswerPlan({
     acceptedAtEpochMs: question.openedAtEpochMs + elapsedMs,
     status: "ACCEPTED",
     source: "SERVER_NPC",
-    npcProfileVersion: profile?.profileVersion || null,
-    fastAnswer,
+    npcProfileVersion: profile?.profileVersion || NPC_PROFILE_VERSION,
+    strengthProfileId: strength.id,
   };
 }
 
@@ -184,5 +174,7 @@ module.exports = {
   buildNPCProfiles,
   createNPCAnswerPlan,
   deterministicInteger,
-  isFastNPCQuestion,
+  resolvedStrengthProfile,
+  shouldNPCAnswer,
+  shouldNPCAnswerCorrectly,
 };

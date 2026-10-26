@@ -230,8 +230,9 @@ describe("Competitive Phase B matchmaking unit", () => {
     const result = claim(state, "rating-npc", 11_100);
     assert.equal(result.claimed.ratingContext.averageHumanRating, 1_200);
     assert.equal(result.claimed.ratingContext.npcSkillInput.sourceAverageHiddenRating, 1_200);
-    assert.ok(result.claimed.ratingContext.npcSkillInput.accuracyPermille > 0);
-    assert.ok(result.claimed.ratingContext.npcSkillInput.reactionBaseMs > 0);
+    assert.equal(result.claimed.ratingContext.npcSkillInput.strengthProfileId, "VERY_STRONG");
+    assert.equal(result.claimed.ratingContext.npcSkillInput.accuracyPermille, 750);
+    assert.equal(result.claimed.ratingContext.npcSkillInput.reactionBaseMs, undefined);
     assert.ok(result.claimed.participants
       .filter((participant) => participant.kind === "NPC")
       .every((participant) => participant.preMatchRating === 1_200));

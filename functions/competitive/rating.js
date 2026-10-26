@@ -1,3 +1,9 @@
+const {
+  NPC_STRENGTH_PROFILE_VERSION,
+  attemptPermille,
+  nearestNPCStrengthProfile,
+} = require("./npcStrengthProfiles");
+
 const RATING_CONFIG = Object.freeze({
   configVersion: "competitive-rating-d2-1",
   formulaVersion: "pairwise-elo-tier-weighted-v2",
@@ -38,34 +44,6 @@ const RATING_CONFIG = Object.freeze({
     PLATINUM: 5_000,
     RATING_BATTLE: 5_000,
   }),
-  npcAnswerRemainingMs: Object.freeze({
-    BRONZE: 3_000,
-    SILVER: null,
-    GOLD: null,
-    PLATINUM: null,
-    RATING_BATTLE: null,
-  }),
-  npcNormalAnswerElapsedMs: Object.freeze({
-    BRONZE: 5_000,
-    SILVER: 4_100,
-    GOLD: null,
-    PLATINUM: null,
-    RATING_BATTLE: null,
-  }),
-  npcFastAnswerElapsedMs: Object.freeze({
-    BRONZE: 3_000,
-    SILVER: 2_600,
-    GOLD: null,
-    PLATINUM: null,
-    RATING_BATTLE: null,
-  }),
-  npcReactionReferenceMs: Object.freeze({
-    BRONZE: 700,
-    SILVER: 610,
-    GOLD: null,
-    PLATINUM: null,
-    RATING_BATTLE: null,
-  }),
   difficultyRanges: Object.freeze({
     BRONZE: Object.freeze({ minimum: 1, maximum: 2 }),
     SILVER: Object.freeze({ minimum: 2, maximum: 3 }),
@@ -78,15 +56,10 @@ const RATING_CONFIG = Object.freeze({
   seasonEpochStartMs: Date.UTC(2026, 0, 5),
   seasonSettlementVersion: "competitive-season-d2-1",
   npcSkill: Object.freeze({
-    attemptPermille: 920,
     accuracyBasePermille: 620,
     accuracySlopePerRatingPoint: 0.35,
     minimumAccuracyPermille: 350,
     maximumAccuracyPermille: 900,
-    reactionBaseMs: 700,
-    reactionSlopePerRatingPoint: 0.45,
-    minimumReactionMs: 180,
-    maximumReactionMs: 1_100,
   }),
 });
 
@@ -368,35 +341,22 @@ function competitiveProjection(profile) {
 function npcSkillInputForRating(averageHiddenRating, config = RATING_CONFIG) {
   const offset = averageHiddenRating - config.initialRating;
   const npc = config.npcSkill;
-  const tier = tierForRating(averageHiddenRating, config);
-  const reactionBaseMs = Math.round(clamp(
-    npc.reactionBaseMs - offset * npc.reactionSlopePerRatingPoint,
-    npc.minimumReactionMs,
-    npc.maximumReactionMs
+  const selectionTargetAccuracyPermille = Math.round(clamp(
+    npc.accuracyBasePermille + offset * npc.accuracySlopePerRatingPoint,
+    npc.minimumAccuracyPermille,
+    npc.maximumAccuracyPermille
   ));
-  const reactionReferenceMs = config.npcReactionReferenceMs[tier];
-  const reactionAdjustmentMs = Number.isFinite(reactionReferenceMs)
-    ? reactionBaseMs - reactionReferenceMs
-    : 0;
-  const normalAnswerElapsedMs = config.npcNormalAnswerElapsedMs[tier];
-  const fastAnswerElapsedMs = config.npcFastAnswerElapsedMs[tier];
+  const strength = nearestNPCStrengthProfile(selectionTargetAccuracyPermille);
   return {
-    profileVersion: "phase-d2-rating-derived-1",
+    profileVersion: NPC_STRENGTH_PROFILE_VERSION,
     sourceAverageHiddenRating: Math.round(averageHiddenRating),
-    attemptPermille: npc.attemptPermille,
-    accuracyPermille: Math.round(clamp(
-      npc.accuracyBasePermille + offset * npc.accuracySlopePerRatingPoint,
-      npc.minimumAccuracyPermille,
-      npc.maximumAccuracyPermille
-    )),
-    reactionBaseMs,
-    answerRemainingMs: config.npcAnswerRemainingMs[tier] ?? null,
-    normalAnswerElapsedMs: Number.isFinite(normalAnswerElapsedMs)
-      ? normalAnswerElapsedMs + reactionAdjustmentMs
-      : null,
-    fastAnswerElapsedMs: Number.isFinite(fastAnswerElapsedMs)
-      ? fastAnswerElapsedMs + Math.round(reactionAdjustmentMs / 2)
-      : null,
+    selectionTargetAccuracyPermille,
+    strengthProfileId: strength.id,
+    sourceNPCId: strength.sourceNPCId,
+    accuracyPermille: strength.accuracyPermille,
+    remainingRatio: strength.remainingRatio,
+    unansweredDenominator: strength.unansweredDenominator,
+    attemptPermille: attemptPermille(strength),
   };
 }
 

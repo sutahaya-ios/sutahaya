@@ -3,7 +3,6 @@
 > - 更新日は各見出しに書く(冒頭に最終更新日を置くと必ず本文とズレるため置かない)
 > - **このファイルの上限は150行**(超えるとフックが警告する)。超えたら「最新更新」の古い日付の項目から `STATUS_ARCHIVE.md` へ移す。現在フェーズ・作業中宣言・次のタスク・決定事項メモは移動対象外
 > - 過去の経緯を調べるときだけ `STATUS_ARCHIVE.md` を読む
-
 現在フェーズ:**v1.0.1(4)を審査へ提出済み(2026年10月16日)。審査結果待ち**
 - v1.0.0は2026年10月7日に公開済み。1.0.1は却下対応ではなく通常のアップデート
 - 内容:問題切替時の回答世代ずれ修正(トキヤ)、対戦リザルトの表彰台、正誤フィードバックの○×、VS形式の開始画面と和太鼓の効果音、一人練習の問題数・制限時間の設定、一人練習への全画面広告、日本語の対応言語宣言
@@ -44,10 +43,10 @@
 ## 作業中宣言(着手前にここへ記入 → 完了したら消して「最新更新」へ)
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| TOKIYA-YAMAMOTO(Codex) | `HayaosiApp/Services/Battle/CPUAnswerStrategy.swift`・`functions/competitive/{npcStrengthProfiles,npc,rating,matchFactory,core}.js`・関連Swift/Backend tests | 既存7体のaccuracyを正とする共通NPC強度profile、回答速度分布、無回答率をFriend/Rankedへ統合 | 2026年10月26日 |
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
+- TOKIYA-YAMAMOTO(Codex, 2026年10月26日): **既存7体のNPC accuracyを共通7段階Profileへ統合**。Friend Battleの35/40/45/50/55/60/75%を変更せず超弱〜鬼強へ対応し、平均残り時間15/25/35/50/55/60/70%の三角分布、無回答率1/3〜1/30、最短1.2秒、deadline marginを追加。Online Rankedはhuman平均MMR由来の強さを必ず既存7段階へ丸め、回答有無・正誤・時刻を独立seedで決定。旧1/45 fast分岐は廃止。各Profile 10,000問simulation、Backend Unit 62件、Phase C Emulator 3件(1〜4 Human×20問・Realtime answered・Reconnect)、Swift CPUテストとSimulator Buildが成功。**Production deployは未実施。対象は`competitiveMatchmaking`・`competitiveIntent`・`competitiveReconcileMatch`**
 - TOKIYA-YAMAMOTO(Codex, 2026年10月26日): **Competitive NPCの回答速度をProductionで再調整**。固定の高速NPCを廃止し、全NPCが各問題で約1/45の低確率早答えを持つprofile v2へ更新。Bronze通常回答は残り3秒±0.8秒、早答えは残り5秒付近へ分散し、既存の正答率個体差・speed/accuracy独立・Server authoritative scoring・Realtime `answered`・回答中の正解非公開を維持。Backend Unit 58件成功。`competitiveMatchmaking`・`competitiveIntent`・`competitiveReconcileMatch`をProduction更新し、実機Bronze 20問で固定高速属性なし、低頻度早答え1回、NPC個体差、Realtime表示、SETTLED・Result、Function error 0件を確認。**Silverの実試合速度は未確認だが、同経路のUnitと既存設定はGREEN**
 - TOKIYA-YAMAMOTO(Codex, 2026年10月23日): **Competitive presenceのstale session削除blockerをLocal修正**。Client deleteをRulesで拒否し、online/offlineとも`matchId`・`sessionId`・`sessionEpoch`を保持、onDisconnectはServer timestamp付きoffline tombstoneへ変更。triggerは既存状態機械へ正規化して接続。Phase C Emulator 2件でdelete/別UID/stale session・epoch/Room A→B fencing/15秒grace/timeout/server cleanup、Swift XCTest 8件、settlement unit 20件が成功。**Production deployは未実施**
 - TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase E Client/UI MVPをLocal実装**。対戦ホームのランク戦入口、Server projection由来のTier/Rating・公開Stats、Queue/NPC補充check、4人20問画面、表示問題に固定した回答送信、Reconnect/Forfeit、結果・昇降格・再戦、Room A/B stale guardを追加。通常Tierのhidden MMRと回答受付中の正解は非公開。Backend Unit 49件、Swift XCTest 10件、Phase D-2 Emulator 2件、Simulator Debug Build/起動が成功。**ユーザー操作E2E・Production deploy/E2Eは別Gate**

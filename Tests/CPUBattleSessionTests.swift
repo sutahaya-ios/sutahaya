@@ -104,6 +104,44 @@ final class CPUBattleSessionTests: XCTestCase {
 
     // MARK: - 初期状態
 
+    func test_既存7体の正答率を強度順Profileへ対応付ける() {
+        let ordered = CPUProfile.strengthOrderedRoster
+
+        XCTAssertEqual(ordered.map(\.strength.rawValue), [
+            "超弱", "弱", "ちょい弱", "普通", "ちょい強", "強", "鬼強"
+        ])
+        XCTAssertEqual(ordered.map(\.id), [
+            "cpu-weak", "cpu-c", "cpu-a", "cpu-b", "cpu-normal", "cpu-d", "cpu-strong"
+        ])
+        XCTAssertEqual(ordered.map(\.correctProbability), [
+            0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.75
+        ])
+        XCTAssertEqual(ordered.map { $0.strength.remainingTimeRatio }, [
+            0.15, 0.25, 0.35, 0.50, 0.55, 0.60, 0.70
+        ])
+        XCTAssertEqual(ordered.map { $0.strength.unansweredDenominator }, [
+            3, 5, 8, 15, 20, 25, 30
+        ])
+    }
+
+    func test_CPU回答時刻は1秒2未満にならずdeadline前に収まる() throws {
+        let question = RoomState.QuestionPayload(
+            id: "timing",
+            text: "timing",
+            choices: ["correct", "wrong"],
+            answer: "correct"
+        )
+        let profile = try XCTUnwrap(CPUProfile.strengthOrderedRoster.last)
+        let earliest = CPUAnswerStrategy(random: { $0.lowerBound })
+            .progressivePlan(for: profile, question: question, timeLimit: 8)
+        let latest = CPUAnswerStrategy(random: { $0.upperBound })
+            .progressivePlan(for: profile, question: question, timeLimit: 8)
+
+        XCTAssertGreaterThanOrEqual(earliest.delay, CPUAnswerStrategy.minimumAnswerDelay)
+        XCTAssertLessThanOrEqual(latest.delay, 8 - CPUAnswerStrategy.deadlineSafetyMargin)
+        XCTAssertNotEqual(earliest.delay, latest.delay, "回答時刻は固定値にしない")
+    }
+
     func test_開始前はロビー待機でゲームが無い() {
         let timer = ManualTimer()
         let session = makeSession(cpuCount: 2, timer: timer)

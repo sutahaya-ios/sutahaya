@@ -271,6 +271,7 @@ function npcPlans(privateState, questionIndex, question) {
   privateState.config.npcProfiles ||= buildNPCProfiles({
     matchId: privateState.matchId,
     participants: privateState.participants,
+    skillInput: privateState.config?.npcSkillInput,
   });
   return Object.fromEntries(privateState.participantOrder.flatMap((uid) => {
     const participant = privateState.participants[uid];

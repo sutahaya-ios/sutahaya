@@ -11,6 +11,7 @@ const {
 } = require("./constants");
 const {
   RATING_CONFIG,
+  npcSkillInputForRating,
   questionDurationMsForTier,
   questionSelectionBoundary,
 } = require("./rating");
@@ -84,11 +85,13 @@ function buildCompetitiveMatch({
       status: PARTICIPANT_STATUS.CONNECTED,
     }];
   }));
-  const resolvedNPCSkillInput = npcSkillInput || {
-    profileVersion: "phase-c-fixed-test-1",
-    reactionBaseMs: 250,
-  };
-  const npcProfiles = buildNPCProfiles({ matchId, participants });
+  const resolvedNPCSkillInput = npcSkillInput
+    || npcSkillInputForRating(RATING_CONFIG.initialRating);
+  const npcProfiles = buildNPCProfiles({
+    matchId,
+    participants,
+    skillInput: resolvedNPCSkillInput,
+  });
 
   return {
     private: {

@@ -203,15 +203,18 @@ describe("Competitive Phase D-2 rating", () => {
     assert.equal(tierForRating(RATING_CONFIG.ratingBattleThreshold - 1), TIER.PLATINUM);
   });
 
-  it("uses eight seconds and a three-second remaining answer target for Bronze", () => {
+  it("uses the seven existing NPC profiles for duration-independent skill input", () => {
     assert.equal(questionDurationMsForTier(TIER.BRONZE), 8_000);
     assert.equal(questionDurationMsForTier(TIER.SILVER), 5_000);
-    assert.equal(npcSkillInputForRating(1_000).answerRemainingMs, 3_000);
-    assert.equal(npcSkillInputForRating(1_000).normalAnswerElapsedMs, 5_000);
-    assert.equal(npcSkillInputForRating(1_000).fastAnswerElapsedMs, 3_000);
-    assert.equal(npcSkillInputForRating(1_200).answerRemainingMs, null);
-    assert.equal(npcSkillInputForRating(1_200).normalAnswerElapsedMs, 4_100);
-    assert.equal(npcSkillInputForRating(1_200).fastAnswerElapsedMs, 2_600);
+    assert.equal(npcSkillInputForRating(1_000).strengthProfileId, "STRONG");
+    assert.equal(npcSkillInputForRating(1_000).accuracyPermille, 600);
+    assert.equal(npcSkillInputForRating(1_000).remainingRatio, 0.60);
+    assert.equal(npcSkillInputForRating(1_000).unansweredDenominator, 25);
+    assert.equal(npcSkillInputForRating(1_200).strengthProfileId, "VERY_STRONG");
+    assert.equal(npcSkillInputForRating(1_200).accuracyPermille, 750);
+    assert.equal(npcSkillInputForRating(1_200).remainingRatio, 0.70);
+    assert.equal(npcSkillInputForRating(1_200).unansweredDenominator, 30);
+    assert.equal(npcSkillInputForRating(1_000).fastAnswerElapsedMs, undefined);
   });
 
   it("supports promotion and demotion without a second rating engine", () => {

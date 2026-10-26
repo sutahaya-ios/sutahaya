@@ -446,11 +446,11 @@ describe("Competitive Core unit", () => {
       displayName: `NPC ${slot}`,
     }))];
     let match = buildTestMatch({
-      matchId: "match-unit",
+      matchId: "npc-outcome-9",
       players: mixedPlayers,
       createdAtEpochMs: 1_000,
       countdownDurationMs: 1,
-      questionDurationMs: 1_000,
+      questionDurationMs: 8_000,
     });
     match = applyReconcile(match, players[0], "npc-created", 1_001).match;
     match = applyClient(match, players[0], envelope("joinMatch", players[0], "npc-join", {
@@ -458,7 +458,7 @@ describe("Competitive Core unit", () => {
     }), 1_002).match;
     match = applyClient(match, players[0], envelope("ready", players[0], "npc-ready"), 1_003).match;
     match = applyReconcile(match, players[0], "npc-open", 1_004).match;
-    match = applyReconcile(match, players[0], "npc-deadline", 2_005).match;
+    match = applyReconcile(match, players[0], "npc-deadline", 9_005).match;
 
     const result = match.private.currentQuestion.result;
     assert.ok(result.correctUIDs.some((uid) => uid.startsWith("npc:")));
@@ -477,10 +477,7 @@ describe("Competitive Core unit", () => {
       matchId: "match-unit",
       players: mixedPlayers,
       createdAtEpochMs: 1_000,
-      npcSkillInput: {
-        ...npcSkillInputForRating(1_000),
-        attemptPermille: 1_000,
-      },
+      npcSkillInput: npcSkillInputForRating(1_000),
     });
     assert.equal(match.private.config.countdownDurationMs, 3_000);
     assert.equal(match.private.config.questionDurationMs, 8_000);
@@ -499,11 +496,9 @@ describe("Competitive Core unit", () => {
     ));
     for (const [, plan] of orderedPlans) {
       const elapsedMs = plan.acceptedAtEpochMs - question.openedAtEpochMs;
-      if (plan.fastAnswer) {
-        assert.ok(elapsedMs >= 2_300 && elapsedMs <= 3_700);
-      } else {
-        assert.ok(elapsedMs >= 4_200 && elapsedMs <= 5_800);
-      }
+      assert.ok(elapsedMs >= 1_200 && elapsedMs <= 7_900);
+      assert.equal(plan.fastAnswer, undefined);
+      assert.equal(plan.strengthProfileId, "STRONG");
     }
 
     assert.equal(
