@@ -45,6 +45,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/rating.js`・`functions/competitive/core.js`・Competitive Backend/Emulator関連テスト | **Competitive NPCの個体差と回答速度を改善**。human平均MMR由来の基準強度、既存scoring、Matchmaking補充条件、Realtime answered/securityを維持し、決定論的な個体profile・低頻度高速タイプ・Bronze/Silverの自然な回答速度を追加する | 2026年10月26日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月26日): **Competitive QUESTION_OPEN中のNPC回答を個別Realtime反映するLocal修正を実施**。Server privateのNPC計画から次のauthority action時刻だけをpublic hintとして出し、接続中Humanの最小slot端末がServer reconcileを起動。ServerがNPC回答を1人ずつ確定してHumanと共通の`participants/{uid}/answered`へ投影し、choice・正誤・delta・correct answerはRESULTまで非公開を維持。Core Unit 13件、2 Human＋2 NPCを含むPhase C Emulator 3件、Swift XCTest 16件、Simulator/実機向けDebug Buildが成功。**Productionは未deployのため実機Realtime E2Eは未確認**
