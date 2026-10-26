@@ -44,7 +44,7 @@
 ## 作業中宣言(着手前にここへ記入 → 完了したら消して「最新更新」へ)
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
-| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/npc.js`・`FirebaseFunctionsTests/competitiveNPC.unit.test.js` | Competitive NPCの高速個体固定を廃止し、低確率の早答えと通常回答の±0.8秒分散へ調整 | 2026年10月26日 |
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/npc.js`・`FirebaseFunctionsTests/competitiveNPC.unit.test.js`・`FirebaseFunctionsTests/competitiveCore.unit.test.js` | Competitive NPCの高速個体固定を廃止し、低確率の早答えと通常回答の±0.8秒分散へ調整 | 2026年10月26日 |
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
