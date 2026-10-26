@@ -44,6 +44,7 @@
 ## 作業中宣言(着手前にここへ記入 → 完了したら消して「最新更新」へ)
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
+| TOKIYA-YAMAMOTO(Codex) | `HayaosiApp/Services/Battle/CPUAnswerStrategy.swift`・`functions/competitive/{npcStrengthProfiles,npc,rating,matchFactory,core}.js`・関連Swift/Backend tests | 既存7体のaccuracyを正とする共通NPC強度profile、回答速度分布、無回答率をFriend/Rankedへ統合 | 2026年10月26日 |
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
