@@ -43,6 +43,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/{core.js,settlement.js,matchmakingCore.js,matchmakingHandlers.js,handlers.js}`・関連Competitive tests | **Explicit Forfeit後のACTIVE_MATCH_EXISTSを解消**。即時session/lease解放、強制4位Penaltyと残存Player通常順位の分離、Human 0時のNPC-only Room cleanup、5秒後new session、Room A/B fencingを確認する | 2026年10月28日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月28日): **Explicit Forfeitの即時退出とServer強制5秒CooldownをLocal / Emulator実装**。棄権受理時にrating/statsを冪等確定し旧session・presenceを解放、Clientはlistener/timer/復元状態を破棄して即Homeへ戻る。Server時刻基準で5秒未満の再Queueを拒否し、再起動後も残り時間を復元、5秒後は旧Match進行中でも新sessionId/sessionEpochで参加可能。duplicate Forfeitで延長・二重減点せず、Room A/B fencingと通常切断の15秒Reconnectを維持。Backend Unit 66件、Phase C Emulator 3件、Swift XCTest 21件、Simulator Buildが成功。**Production deployは未実施。対象は`competitiveIntent`・`competitiveMatchmaking`・`competitiveReconcileMatch`**
@@ -92,7 +93,6 @@
 - Codex(たける側): **学習タブをピン留め式「マイボード」へ刷新**。初期状態は空で、`pinnedStudyCategories`へ追加順のカテゴリrawValue配列を保存する。2列カードにアイコン・説明・習得率を表示し、編集時は遷移を止めて左上の赤いマイナスから解除できる。追加シートは実装済み3教材を先に並べ、追加後も閉じずに「追加済み」へ切替。未実装教材は`UpcomingMaterial`へ分離し、英検・数学・漢検・SPIを淡色の非操作カードとして表示する。Viewはボード・追加シート・各カードへ分割。xcodegen実行、Simulator向けビルド成功。iPhone 17 Simulatorで学習タブ→教材を追加→中学英単語を追加→閉じる→マイボード表示を確認し、近日カードの「乞うご期待」がButtonではないこともアクセシビリティ要素で確認。ユニットテストは指示どおり未実行
 - TOKIYA-YAMAMOTO(Codex): **待機中のルーム画面を添付デザインへ刷新し、通常の全画面遷移へ調整**。ルームIDと共有、参加人数と横並びメンバー、ホスト表示、4項目の対戦設定カード、ホストの設定変更、画面下へ固定した対戦開始ボタンを白背景・青アクセント・角丸カードで再構成。オンラインメニューをシートから通常のNavigation遷移へ変更し、左上の戻るで退出して前画面へ戻る経路を維持。ルームIDをsemiboldへ少し細くし、主要セクションの縦余白だけを広げた。ルームの最大8人、フレンド招待、ホスト/ゲスト権限、Firebase・同期・対戦開始処理は変更なし。プレイヤー画像はルームデータに無いためイニシャル表示。Simulator向けbuild成功。iPhone 17 Pro Simulatorで全画面表示、戻るボタン、ルームID、余白を確認。**共有・設定変更・対戦開始のタップ操作は未検証**
 - Codex(たける側): **問題0件のカテゴリ・難易度を選んだ際の案内を追加**。共通カードにカテゴリ名・星と「この範囲の問題は順次追加しています」「他の難易度を選んでください」を表示し、CPU対戦・ルーム作成では開始ボタン自体を出さず、ルーム作成処理にも0件ガードを追加。学習ヒートマップでは0件セルをタップ不可のまま、該当難易度をまとめてグリッド下へ表示する。収録データテストは各難易度の存在を必須とせず、カテゴリごとの1語以上・ID/単語重複なしだけを維持。Simulator向けビルド成功、全75テスト成功。iPhone 17 SimulatorでCPU対戦・ルーム作成のTOEIC ★2に案内が表示され、開始ボタンが存在しないことを確認
-- TOKIYA-YAMAMOTO(Codex): **Codex開発フローをFAST/NORMAL/STRICTの3段階へ整理**。`docs/MODULE_MAP.md`を最小探索の起点として追加し、`scripts/preflight.sh`でorigin/mainとの差・未commit変更・作業中宣言・競合可能性、`scripts/verify.sh`でリスク別のbuild・関連テスト・Rulesテスト、`scripts/finish-task.sh`で差分確認と人間向けGitコマンド表示を自動化。スクリプトはcommit・pushを実行しない。`CLAUDE.md`と`docs/CODING.md`を最小探索・変更リスクに応じた検証へ更新。Bash構文、help、fetchを省略したpreflight、FAST/NORMAL/STRICTのdry-runに成功。GitHub ActionsはPrivateリポジトリのmacOS実行時間を消費し得るため未追加
 ---
 
 ## 次のタスク(優先順)

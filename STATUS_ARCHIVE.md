@@ -8,6 +8,7 @@
 ## 過去の更新(2026年10月22日・Competitive v2)
 
 - TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase D-1をLocal / Emulatorまで実装**。単一hidden MMRのpairwise Elo-style、Bronze/Silver/Gold/Platinum/Rating Battle、冪等かつatomicなsettlement、勝率・最高連勝・累計勝利、4週間Seasonとsoft reset、human平均MMR由来のNPC強度、未確定difficultyBand境界を追加。暫定tuning値はServer configへ集約。Rating Unit 13件、Matchmaking Unit 13件、Core Unit 11件、Swift XCTest 3件、Phase D-1 Emulator 1件(2 human+2 NPC・20問)、Phase C Emulator 2件、Core Emulator 4件が成功。**Production deploy・commit・pushは未実施。正式tuning・Silver以上のNPC待機・difficulty mappingは未決定**
+- TOKIYA-YAMAMOTO(Codex): **Codex開発フローをFAST/NORMAL/STRICTの3段階へ整理**。`docs/MODULE_MAP.md`を最小探索の起点として追加し、`scripts/preflight.sh`でorigin/mainとの差・未commit変更・作業中宣言・競合可能性、`scripts/verify.sh`でリスク別のbuild・関連テスト・Rulesテスト、`scripts/finish-task.sh`で差分確認と人間向けGitコマンド表示を自動化。スクリプトはcommit・pushを実行しない。`CLAUDE.md`と`docs/CODING.md`を最小探索・変更リスクに応じた検証へ更新。Bash構文、help、fetchを省略したpreflight、FAST/NORMAL/STRICTのdry-runに成功。GitHub ActionsはPrivateリポジトリのmacOS実行時間を消費し得るため未追加
 
 ---
 
