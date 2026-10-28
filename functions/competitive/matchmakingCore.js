@@ -1,5 +1,6 @@
 const { createHash } = require("node:crypto");
 const {
+  EXPLICIT_FORFEIT_COOLDOWN_MS,
   PARTICIPANT_KIND,
   PLAYER_COUNT,
   PROTOCOL_VERSION,
@@ -107,6 +108,27 @@ function processJoinQueue(input, intent, uid, {
   const duplicate = existingResult(profile, intent, uid);
   if (duplicate) return { state, ack: duplicate, changed: false };
 
+  const cooldown = profile?.explicitForfeitCooldown;
+  if (Number.isFinite(cooldown?.cooldownEndsAtEpochMs)
+      && nowEpochMs < cooldown.cooldownEndsAtEpochMs) {
+    const result = rejected(intent, "FORFEIT_COOLDOWN_ACTIVE", {
+      sessionId: cooldown.sessionId,
+      sessionEpoch: cooldown.sessionEpoch,
+      matchmakingState: "NOT_QUEUED",
+      forfeitCompletedAtEpochMs: cooldown.forfeitCompletedAtEpochMs,
+      cooldownEndsAtEpochMs: cooldown.cooldownEndsAtEpochMs,
+      serverNowEpochMs: nowEpochMs,
+      cooldownDurationMs: EXPLICIT_FORFEIT_COOLDOWN_MS,
+    });
+    saveResult(profile, intent, uid, result, nowEpochMs);
+    state.public[uid] = publicProjection(uid, profile.currentSession, nowEpochMs, {
+      state: "NOT_QUEUED",
+      forfeitCompletedAtEpochMs: cooldown.forfeitCompletedAtEpochMs,
+      cooldownEndsAtEpochMs: cooldown.cooldownEndsAtEpochMs,
+    }, profile);
+    return { state, ack: result, changed: true };
+  }
+
   if (profile?.currentSession
       && [SESSION_STATE.MATCH_FOUND, SESSION_STATE.WAITING_PLAYERS]
         .includes(profile.currentSession.state)) {
@@ -142,6 +164,7 @@ function processJoinQueue(input, intent, uid, {
   profile.protocolVersion = PROTOCOL_VERSION;
   profile.lastSessionEpoch = nextEpoch;
   profile.currentSession = session;
+  delete profile.explicitForfeitCooldown;
   profile.matchmaking = { bucket: QUEUE_BUCKET, source: "HIDDEN_MMR_PHASE_D2" };
   profile.updatedAtEpochMs = nowEpochMs;
   state.private.profiles[uid] = profile;

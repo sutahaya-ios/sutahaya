@@ -22,7 +22,10 @@ const {
   tierForCompetitiveProfile,
   tierForRating,
 } = require("../functions/competitive/rating");
-const { settleCompetitiveRoot } = require("../functions/competitive/settlement");
+const {
+  completeExplicitForfeitInRoot,
+  settleCompetitiveRoot,
+} = require("../functions/competitive/settlement");
 
 function ratingPlayer(uid, rating, rank, overrides = {}) {
   return {
@@ -387,6 +390,93 @@ describe("Competitive Phase D-2 stats, promotion and season", () => {
 });
 
 describe("Competitive Phase D-2 settlement", () => {
+  it("settles Explicit Forfeit immediately, releases its session and preserves a five-second cooldown", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p1.forfeitReason = "EXPLICIT_FORFEIT";
+    const result = completeExplicitForfeitInRoot(root, "match-rating", "p1", now);
+    const profileValue = result.root.matchmaking.private.profiles.p1;
+    const settlement = result.settlement;
+
+    assert.equal(result.status, "SETTLED");
+    assert.equal(settlement.forfeitCompletedAtEpochMs, now);
+    assert.equal(settlement.cooldownEndsAtEpochMs, now + 5_000);
+    assert.ok(settlement.playerResult.ratingDelta < 0);
+    assert.equal(settlement.playerResult.won, false);
+    assert.equal(profileValue.competitive.stats.matchesPlayed, 1);
+    assert.equal(profileValue.competitive.stats.totalWins, 0);
+    assert.equal(profileValue.currentSession.state, "FINISHED");
+    assert.equal(profileValue.currentSession.matchId, null);
+    assert.equal(result.root.matchmaking.public.p1.state, "NOT_QUEUED");
+    assert.equal(result.root.matchmaking.public.p1.cooldownEndsAtEpochMs, now + 5_000);
+    assert.equal(
+      result.root.matches["match-rating"].private.participants.p1.forfeitCompletedAtEpochMs,
+      now
+    );
+  });
+
+  it("does not extend cooldown or double-apply rating on duplicate Explicit Forfeit", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p1.forfeitReason = "EXPLICIT_FORFEIT";
+    const first = completeExplicitForfeitInRoot(root, "match-rating", "p1", now);
+    const rating = first.root.matchmaking.private.profiles.p1.competitive.hiddenRating;
+    const matches = first.root.matchmaking.private.profiles.p1.competitive.stats.matchesPlayed;
+    const duplicate = completeExplicitForfeitInRoot(
+      first.root,
+      "match-rating",
+      "p1",
+      now + 4_000
+    );
+
+    assert.equal(duplicate.status, "ALREADY_SETTLED");
+    assert.equal(duplicate.changed, false);
+    assert.equal(duplicate.settlement.cooldownEndsAtEpochMs, now + 5_000);
+    assert.equal(duplicate.root.matchmaking.private.profiles.p1.competitive.hiddenRating, rating);
+    assert.equal(
+      duplicate.root.matchmaking.private.profiles.p1.competitive.stats.matchesPlayed,
+      matches
+    );
+  });
+
+  it("final settlement never re-penalizes a forfeiter or overwrites its newer session", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"], ranks: [4, 1, 2, 3] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p1.forfeitReason = "EXPLICIT_FORFEIT";
+    const immediate = completeExplicitForfeitInRoot(root, "match-rating", "p1", now);
+    const rating = immediate.root.matchmaking.private.profiles.p1.competitive.hiddenRating;
+    const matches = immediate.root.matchmaking.private.profiles.p1.competitive.stats.matchesPlayed;
+    immediate.root.matchmaking.private.profiles.p1.currentSession = {
+      sessionId: "session-new",
+      sessionEpoch: 2,
+      state: "QUEUED",
+      matchId: null,
+      protocolVersion: PROTOCOL_VERSION,
+    };
+    immediate.root.matchmaking.public.p1 = {
+      uid: "p1",
+      state: "QUEUED",
+      sessionId: "session-new",
+      sessionEpoch: 2,
+      protocolVersion: PROTOCOL_VERSION,
+      updatedAtEpochMs: now + 5_000,
+    };
+    immediate.root.matches["match-rating"].private.phase = PHASE.SETTLEMENT_PENDING;
+
+    const settled = settleCompetitiveRoot(immediate.root, "match-rating", now + 20_000);
+    assert.equal(settled.status, "SETTLED");
+    assert.equal(settled.root.matchmaking.private.profiles.p1.competitive.hiddenRating, rating);
+    assert.equal(settled.root.matchmaking.private.profiles.p1.competitive.stats.matchesPlayed, matches);
+    assert.equal(
+      settled.root.matchmaking.private.profiles.p1.currentSession.sessionId,
+      "session-new"
+    );
+    assert.equal(settled.root.matchmaking.public.p1.state, "QUEUED");
+  });
+
   it("settles rating, tiers, stats, session release and presence atomically", () => {
     const root = settlementRoot({ ratings: [1_195, 1_195, 1_195, 1_195] });
     const result = settleCompetitiveRoot(root, "match-rating", RATING_CONFIG.seasonEpochStartMs + 2);

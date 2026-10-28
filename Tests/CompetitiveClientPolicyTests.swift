@@ -249,6 +249,115 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertEqual(offline["disconnectedAtEpochMs"] as? Int, 456)
     }
 
+    func test_ExplicitForfeitはAcceptedとAcceptedDuplicateだけ成功扱いにする() throws {
+        let accepted = try XCTUnwrap(intentAck(status: "ACCEPTED"))
+        let duplicate = try XCTUnwrap(
+            intentAck(status: "DUPLICATE", originalStatus: "ACCEPTED")
+        )
+        let rejected = try XCTUnwrap(intentAck(status: "REJECTED"))
+
+        XCTAssertTrue(CompetitiveExplicitForfeitPolicy.wasAccepted(accepted))
+        XCTAssertTrue(CompetitiveExplicitForfeitPolicy.wasAccepted(duplicate))
+        XCTAssertFalse(CompetitiveExplicitForfeitPolicy.wasAccepted(rejected))
+    }
+
+    func test_ExplicitForfeit済みSessionは再起動後も復元対象外() throws {
+        let suiteName = "CompetitiveClientPolicyTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = CompetitiveExplicitForfeitStore(defaults: defaults)
+        let activeSession = session()
+        let marker = CompetitiveExplicitForfeitMarker(session: activeSession)
+
+        store.save(marker)
+        let restoredMarker = try XCTUnwrap(
+            CompetitiveExplicitForfeitStore(defaults: defaults).load()
+        )
+
+        XCTAssertEqual(restoredMarker, marker)
+        XCTAssertTrue(
+            CompetitiveExplicitForfeitPolicy.suppresses(
+                session: activeSession,
+                marker: restoredMarker
+            )
+        )
+        XCTAssertEqual(
+            CompetitiveClientScreen.resolve(matchmakingState: .notQueued, hasActiveMatch: false),
+            .home
+        )
+    }
+
+    func test_ExplicitForfeit済みRoomAはRoomBとReconnectを妨げない() {
+        let roomA = session()
+        let marker = CompetitiveExplicitForfeitMarker(session: roomA)
+        let roomB = CompetitiveSession(
+            uid: roomA.uid,
+            matchId: "match-c",
+            sessionId: "session-c",
+            sessionEpoch: roomA.sessionEpoch + 1,
+            assignmentTicket: "ticket-c"
+        )
+
+        XCTAssertTrue(
+            CompetitiveExplicitForfeitPolicy.suppresses(session: roomA, marker: marker)
+        )
+        XCTAssertFalse(
+            CompetitiveExplicitForfeitPolicy.suppresses(session: roomB, marker: marker)
+        )
+    }
+
+    func test_SettlementReleaseまたは新SessionでForfeitMarkerを解除する() throws {
+        let marker = CompetitiveExplicitForfeitMarker(session: session())
+        let waiting = try XCTUnwrap(matchmakingProjection())
+        let released = try XCTUnwrap(matchmakingProjection(state: "NOT_QUEUED"))
+        let nextSession = try XCTUnwrap(
+            matchmakingProjection(
+                sessionId: "session-c",
+                sessionEpoch: 3,
+                matchId: "match-c"
+            )
+        )
+
+        XCTAssertFalse(
+            CompetitiveExplicitForfeitPolicy.isReleased(marker: marker, projection: waiting)
+        )
+        XCTAssertTrue(
+            CompetitiveExplicitForfeitPolicy.isReleased(marker: marker, projection: released)
+        )
+        XCTAssertTrue(
+            CompetitiveExplicitForfeitPolicy.isReleased(marker: marker, projection: nextSession)
+        )
+    }
+
+    func test_ExplicitForfeitCooldownはServer時刻補正込みで秒数を表示する() throws {
+        let projection = try XCTUnwrap(
+            matchmakingProjection(
+                state: "NOT_QUEUED",
+                matchId: nil,
+                forfeitCompletedAtEpochMS: 1_000,
+                cooldownEndsAtEpochMS: 6_000
+            )
+        )
+        XCTAssertEqual(projection.forfeitCompletedAtEpochMS, 1_000)
+        XCTAssertEqual(projection.cooldownEndsAtEpochMS, 6_000)
+        XCTAssertEqual(
+            CompetitiveForfeitCooldownPolicy.remainingSeconds(
+                cooldownEndsAtEpochMS: projection.cooldownEndsAtEpochMS,
+                clientNowEpochMS: 2_100,
+                serverTimeOffsetMS: 900
+            ),
+            3
+        )
+        XCTAssertEqual(
+            CompetitiveForfeitCooldownPolicy.remainingSeconds(
+                cooldownEndsAtEpochMS: projection.cooldownEndsAtEpochMS,
+                clientNowEpochMS: 5_100,
+                serverTimeOffsetMS: 900
+            ),
+            0
+        )
+    }
+
     private func profile(
         tier: CompetitiveTier,
         ratingBattle: Bool,
@@ -366,5 +475,47 @@ final class CompetitiveClientPolicyTests: XCTestCase {
             answered: answered,
             score: 0
         )
+    }
+
+    private func intentAck(
+        status: String,
+        originalStatus: String? = nil
+    ) -> CompetitiveIntentAck? {
+        var value: [String: Any] = [
+            "intentId": UUID().uuidString,
+            "status": status,
+            "retryable": false,
+        ]
+        if let originalStatus { value["originalStatus"] = originalStatus }
+        return CompetitiveIntentAck(value: value)
+    }
+
+    private func matchmakingProjection(
+        state: String = "WAITING_PLAYERS",
+        sessionId: String = "session-b",
+        sessionEpoch: Int = 2,
+        matchId: String? = "match-b",
+        forfeitCompletedAtEpochMS: Double? = nil,
+        cooldownEndsAtEpochMS: Double? = nil
+    ) -> CompetitiveMatchmakingProjection? {
+        var value: [String: Any] = [
+            "uid": "player-1",
+            "state": state,
+            "sessionId": sessionId,
+            "sessionEpoch": sessionEpoch,
+            "protocolVersion": CompetitiveService.protocolVersion,
+            "updatedAtEpochMs": 1_000,
+        ]
+        if let matchId {
+            value["matchId"] = matchId
+            value["assignmentTicket"] = "ticket"
+        }
+        if let forfeitCompletedAtEpochMS {
+            value["forfeitCompletedAtEpochMs"] = forfeitCompletedAtEpochMS
+        }
+        if let cooldownEndsAtEpochMS {
+            value["cooldownEndsAtEpochMs"] = cooldownEndsAtEpochMS
+        }
+        return CompetitiveMatchmakingProjection(databaseValue: value)
     }
 }

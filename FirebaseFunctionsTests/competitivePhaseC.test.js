@@ -732,14 +732,41 @@ describe("Competitive Phase C Emulator", () => {
       questionId: roomBOpen.currentQuestion.questionId,
       stateVersion: roomBOpen.stateVersion,
       payload: { answerId: roomBOpen.currentQuestion.correctAnswerId },
-    }))).rejectionCode, "NOT_ACTIVE_PLAYER");
+    }))).rejectionCode, "STALE_ACTIVE_MATCH_SESSION");
     assert.equal(
       (await coreIntent(client, matchEnvelope(sessionB, "reconnect", "after-forfeit"))).rejectionCode,
-      "PLAYER_FORFEITED"
+      "STALE_ACTIVE_MATCH_SESSION"
     );
+    const releasedProjection = await projection(client);
+    assert.equal(releasedProjection.state, "NOT_QUEUED");
+    assert.ok(releasedProjection.cooldownEndsAtEpochMs > releasedProjection.updatedAtEpochMs);
+    const earlyRequeue = await matchmaking(client, {
+      intentId: `requeue-early-${randomUUID()}`,
+      type: "joinQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-emulator",
+      payload: {},
+    });
+    assert.equal(earlyRequeue.rejectionCode, "FORFEIT_COOLDOWN_ACTIVE");
+
+    await adminRequest(
+      `competitiveV2/matchmaking/private/profiles/${client.uid}/explicitForfeitCooldown/cooldownEndsAtEpochMs`,
+      "PUT",
+      Date.now() - 1
+    );
+    const requeue = await matchmaking(client, {
+      intentId: `requeue-after-cooldown-${randomUUID()}`,
+      type: "joinQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-emulator",
+      payload: {},
+    });
+    assert.equal(requeue.status, "ACCEPTED");
+    assert.notEqual(requeue.sessionId, sessionB.sessionId);
+    assert.ok(requeue.sessionEpoch > sessionB.sessionEpoch);
     assert.equal(
-      (await finishMatchFromCurrentState(client, sessionB, sessionB.matchId)).phase,
-      PHASE.SETTLED
+      (await adminRequest(`competitiveV2/matches/${sessionB.matchId}/private`)).phase,
+      PHASE.QUESTION_OPEN
     );
     assert.equal(await adminRequest(
       `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`

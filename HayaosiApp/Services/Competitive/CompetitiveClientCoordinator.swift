@@ -14,8 +14,10 @@ final class CompetitiveClientCoordinator {
     private(set) var isForfeitSending = false
     private(set) var isSettlementRecoveryDelayed = false
     private(set) var resultReadySessionKey: CompetitiveSessionKey?
+    private(set) var explicitForfeitMarker: CompetitiveExplicitForfeitMarker?
     var userMessage: String?
 
+    private let explicitForfeitStore = CompetitiveExplicitForfeitStore()
     private var preparationTask: Task<Void, Never>?
     private var reconcileTask: Task<Void, Never>?
     private var settlementRecoveryTask: Task<Void, Never>?
@@ -29,12 +31,38 @@ final class CompetitiveClientCoordinator {
         activeSession.map { CompetitiveSessionKey(session: $0) }
     }
 
+    var forfeitCooldownEndsAtEpochMS: Double? {
+        matchmakingService?.state?.cooldownEndsAtEpochMS
+    }
+
+    var serverTimeOffsetMS: Double {
+        matchmakingService?.serverTimeOffsetMS ?? 0
+    }
+
+    var screenMatchmakingState: CompetitiveMatchmakingState? {
+        guard let projection = matchmakingService?.state else { return nil }
+        if let session = projection.competitiveSession,
+           CompetitiveExplicitForfeitPolicy.suppresses(
+               session: session,
+               marker: explicitForfeitMarker
+           ) {
+            return .notQueued
+        }
+        return projection.state
+    }
+
     func start() async {
         guard matchmakingService == nil, !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
             let uid = try await AuthService.shared.ensureAuthenticated()
+            let savedMarker = explicitForfeitStore.load()
+            if savedMarker?.uid == uid {
+                explicitForfeitMarker = savedMarker
+            } else if savedMarker != nil {
+                explicitForfeitStore.clear()
+            }
             let service = CompetitiveMatchmakingService(uid: uid)
             matchmakingService = service
             service.observeMatchmakingState()
@@ -62,7 +90,19 @@ final class CompetitiveClientCoordinator {
     }
 
     func handleMatchmakingProjection() {
-        guard let session = matchmakingService?.state?.competitiveSession else { return }
+        let projection = matchmakingService?.state
+        if let marker = explicitForfeitMarker,
+           CompetitiveExplicitForfeitPolicy.isReleased(
+               marker: marker,
+               projection: projection
+           ) {
+            clearExplicitForfeitMarker()
+        }
+        guard let session = projection?.competitiveSession,
+              !CompetitiveExplicitForfeitPolicy.suppresses(
+                  session: session,
+                  marker: explicitForfeitMarker
+              ) else { return }
         activate(session)
     }
 
@@ -102,6 +142,10 @@ final class CompetitiveClientCoordinator {
         guard let battleService, let activeSession else { return }
         let expectedKey = CompetitiveSessionKey(session: activeSession)
         guard activeSessionKey == expectedKey,
+              !CompetitiveExplicitForfeitPolicy.suppresses(
+                  session: activeSession,
+                  marker: explicitForfeitMarker
+              ),
               battleService.state?.matchId == activeSession.matchId else { return }
 
         preparationTask?.cancel()
@@ -147,7 +191,9 @@ final class CompetitiveClientCoordinator {
         do {
             let result = try await battleService.forfeit()
             guard activeSessionKey == expectedKey else { return }
-            if result.status == .rejected {
+            if CompetitiveExplicitForfeitPolicy.wasAccepted(result) {
+                completeExplicitForfeit(expectedKey: expectedKey)
+            } else if result.status == .rejected {
                 userMessage = CompetitiveClientDisplay.rejectionMessage(result.rejectionCode)
             }
         } catch {
@@ -158,7 +204,12 @@ final class CompetitiveClientCoordinator {
 
     func retryConnection() async {
         guard let battleService,
-              let expectedKey = activeSessionKey else { return }
+              let session = activeSession,
+              let expectedKey = activeSessionKey,
+              !CompetitiveExplicitForfeitPolicy.suppresses(
+                  session: session,
+                  marker: explicitForfeitMarker
+              ) else { return }
         userMessage = nil
         battleService.startListening()
         do {
@@ -232,7 +283,11 @@ final class CompetitiveClientCoordinator {
 
     private func activate(_ session: CompetitiveSession) {
         let newKey = CompetitiveSessionKey(session: session)
-        guard activeSessionKey != newKey else { return }
+        guard activeSessionKey != newKey,
+              !CompetitiveExplicitForfeitPolicy.suppresses(
+                  session: session,
+                  marker: explicitForfeitMarker
+              ) else { return }
         preparationTask?.cancel()
         reconcileTask?.cancel()
         settlementRecoveryTask?.cancel()
@@ -245,6 +300,35 @@ final class CompetitiveClientCoordinator {
         let service = CompetitiveService(session: session)
         battleService = service
         service.startListening()
+    }
+
+    private func completeExplicitForfeit(expectedKey: CompetitiveSessionKey) {
+        guard let session = activeSession,
+              CompetitiveSessionKey(session: session) == expectedKey else { return }
+        let marker = CompetitiveExplicitForfeitMarker(session: session)
+        explicitForfeitStore.save(marker)
+        explicitForfeitMarker = marker
+
+        preparationTask?.cancel()
+        preparationTask = nil
+        reconcileTask?.cancel()
+        reconcileTask = nil
+        settlementRecoveryTask?.cancel()
+        settlementRecoveryTask = nil
+        settledProfileRefreshTask?.cancel()
+        settledProfileRefreshTask = nil
+        battleService?.stopListening(cancelPresenceDisconnect: true)
+        battleService = nil
+        activeSession = nil
+        resultReadySessionKey = nil
+        isPreparingMatch = false
+        isSubmittingAnswer = false
+        isSettlementRecoveryDelayed = false
+    }
+
+    private func clearExplicitForfeitMarker() {
+        explicitForfeitStore.clear()
+        explicitForfeitMarker = nil
     }
 
     private func prepareMatchIfNeeded(expectedKey: CompetitiveSessionKey) async {

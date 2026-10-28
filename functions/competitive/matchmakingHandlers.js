@@ -6,7 +6,10 @@ const { processReconcile } = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
 const { buildCompetitiveMatch } = require("./matchFactory");
 const { validateMatchmakingIntent } = require("./matchmakingContract");
-const { settleCompetitiveRoot } = require("./settlement");
+const {
+  completeExplicitForfeitInRoot,
+  settleCompetitiveRoot,
+} = require("./settlement");
 const {
   claimNextMatch,
   finalizeClaim,
@@ -181,6 +184,8 @@ function ackWithProjection(original, projection) {
     matchmakingState: projection.state,
     matchId: projection.matchId ?? null,
     assignmentTicket: projection.assignmentTicket ?? null,
+    forfeitCompletedAtEpochMs: projection.forfeitCompletedAtEpochMs ?? null,
+    cooldownEndsAtEpochMs: projection.cooldownEndsAtEpochMs ?? null,
   };
 }
 
@@ -259,8 +264,29 @@ async function settleFinishedMatch(matchId, nowEpochMs) {
   return computation;
 }
 
+async function completeExplicitForfeit(matchId, uid, nowEpochMs) {
+  const reference = competitiveRootRef();
+  const initial = await reference.get();
+  const initialValue = initial.exists() ? initial.val() : {};
+  let firstAttempt = true;
+  let computation = null;
+  const transaction = await reference.transaction((current) => {
+    if (current === null && firstAttempt) current = initialValue;
+    firstAttempt = false;
+    computation = completeExplicitForfeitInRoot(current, matchId, uid, nowEpochMs);
+    return computation.changed ? computation.root : undefined;
+  }, undefined, false);
+  if (!computation) throw new Error("EXPLICIT_FORFEIT_TRANSACTION_NOT_EVALUATED");
+  if (!transaction.committed
+      && !["ALREADY_SETTLED", "SETTLED"].includes(computation.status)) {
+    throw new Error(`EXPLICIT_FORFEIT_NOT_COMMITTED:${computation.status}`);
+  }
+  return computation;
+}
+
 module.exports = {
   attemptMatchmaking,
+  completeExplicitForfeit,
   competitiveMatchmaking,
   finalizeMatch,
   releaseFinishedMatchSessions,

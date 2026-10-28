@@ -1,6 +1,6 @@
 import Foundation
 
-struct CompetitiveSessionKey: Equatable, Hashable, Sendable {
+struct CompetitiveSessionKey: Codable, Equatable, Hashable, Sendable {
     let matchId: String
     let sessionId: String
     let sessionEpoch: Int
@@ -9,6 +9,78 @@ struct CompetitiveSessionKey: Equatable, Hashable, Sendable {
         matchId = session.matchId
         sessionId = session.sessionId
         sessionEpoch = session.sessionEpoch
+    }
+}
+
+struct CompetitiveExplicitForfeitMarker: Codable, Equatable, Sendable {
+    let uid: String
+    let sessionKey: CompetitiveSessionKey
+
+    init(session: CompetitiveSession) {
+        uid = session.uid
+        sessionKey = CompetitiveSessionKey(session: session)
+    }
+}
+
+struct CompetitiveExplicitForfeitStore {
+    private static let storageKey = "competitive.explicitForfeitSession"
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> CompetitiveExplicitForfeitMarker? {
+        guard let data = defaults.data(forKey: Self.storageKey) else { return nil }
+        return try? JSONDecoder().decode(CompetitiveExplicitForfeitMarker.self, from: data)
+    }
+
+    func save(_ marker: CompetitiveExplicitForfeitMarker) {
+        guard let data = try? JSONEncoder().encode(marker) else { return }
+        defaults.set(data, forKey: Self.storageKey)
+    }
+
+    func clear() {
+        defaults.removeObject(forKey: Self.storageKey)
+    }
+}
+
+enum CompetitiveExplicitForfeitPolicy {
+    static func wasAccepted(_ acknowledgement: CompetitiveIntentAck) -> Bool {
+        acknowledgement.status == .accepted
+            || (acknowledgement.status == .duplicate
+                && acknowledgement.originalStatus == .accepted)
+    }
+
+    static func suppresses(
+        session: CompetitiveSession,
+        marker: CompetitiveExplicitForfeitMarker?
+    ) -> Bool {
+        guard let marker else { return false }
+        return marker.uid == session.uid
+            && marker.sessionKey == CompetitiveSessionKey(session: session)
+    }
+
+    static func isReleased(
+        marker: CompetitiveExplicitForfeitMarker,
+        projection: CompetitiveMatchmakingProjection?
+    ) -> Bool {
+        guard let projection, projection.uid == marker.uid else { return false }
+        return projection.state == .notQueued
+            || projection.sessionId != marker.sessionKey.sessionId
+            || projection.sessionEpoch != marker.sessionKey.sessionEpoch
+    }
+}
+
+enum CompetitiveForfeitCooldownPolicy {
+    static func remainingSeconds(
+        cooldownEndsAtEpochMS: Double?,
+        clientNowEpochMS: Double,
+        serverTimeOffsetMS: Double
+    ) -> Int {
+        guard let cooldownEndsAtEpochMS else { return 0 }
+        let serverNowEpochMS = clientNowEpochMS + serverTimeOffsetMS
+        return max(0, Int(ceil((cooldownEndsAtEpochMS - serverNowEpochMS) / 1_000)))
     }
 }
 
@@ -179,6 +251,8 @@ enum CompetitiveClientDisplay {
             "対戦情報が更新されました。現在の状態を読み直してください"
         case "MATCH_ALREADY_ASSIGNED", "ACTIVE_MATCH_EXISTS":
             "すでに進行中の対戦があります"
+        case "FORFEIT_COOLDOWN_ACTIVE":
+            "棄権後の再参加待機中です"
         case "QUESTION_NOT_OPEN", "STALE_QUESTION", "STALE_STATE_VERSION":
             "この問題の回答受付は終了しました"
         case "ALREADY_ANSWERED":

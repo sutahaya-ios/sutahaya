@@ -106,9 +106,13 @@ final class CompetitiveService {
         return state
     }
 
-    func stopListening() {
+    func stopListening(cancelPresenceDisconnect: Bool = false) {
         if let publicReference, let publicObserver {
             publicReference.removeObserver(withHandle: publicObserver)
+        }
+        if cancelPresenceDisconnect {
+            presenceReference?.cancelDisconnectOperations()
+            presenceReference = nil
         }
         publicReference = nil
         publicObserver = nil
@@ -338,12 +342,15 @@ final class CompetitiveService {
 final class CompetitiveMatchmakingService {
     private(set) var state: CompetitiveMatchmakingProjection?
     private(set) var listeningError: Error?
+    private(set) var serverTimeOffsetMS: Double = 0
 
     private let uid: String
     private let database: DatabaseReference
     private let functions: Functions
     @ObservationIgnored nonisolated(unsafe) private var projectionReference: DatabaseReference?
     @ObservationIgnored nonisolated(unsafe) private var projectionObserver: DatabaseHandle?
+    @ObservationIgnored nonisolated(unsafe) private var serverTimeReference: DatabaseReference?
+    @ObservationIgnored nonisolated(unsafe) private var serverTimeObserver: DatabaseHandle?
     @ObservationIgnored nonisolated(unsafe) private var npcFillTask: Task<Void, Never>?
 
     init(
@@ -360,6 +367,9 @@ final class CompetitiveMatchmakingService {
         if let projectionReference, let projectionObserver {
             projectionReference.removeObserver(withHandle: projectionObserver)
         }
+        if let serverTimeReference, let serverTimeObserver {
+            serverTimeReference.removeObserver(withHandle: serverTimeObserver)
+        }
         npcFillTask?.cancel()
     }
 
@@ -375,6 +385,13 @@ final class CompetitiveMatchmakingService {
         } withCancel: { [weak self] error in
             MainActor.assumeIsolated {
                 self?.listeningError = error
+            }
+        }
+        let timeReference = database.child(".info/serverTimeOffset")
+        serverTimeReference = timeReference
+        serverTimeObserver = timeReference.observe(.value) { [weak self] snapshot in
+            MainActor.assumeIsolated {
+                self?.serverTimeOffsetMS = (snapshot.value as? NSNumber)?.doubleValue ?? 0
             }
         }
     }
@@ -397,6 +414,11 @@ final class CompetitiveMatchmakingService {
         }
         projectionReference = nil
         projectionObserver = nil
+        if let serverTimeReference, let serverTimeObserver {
+            serverTimeReference.removeObserver(withHandle: serverTimeObserver)
+        }
+        serverTimeReference = nil
+        serverTimeObserver = nil
         state = nil
         listeningError = nil
         npcFillTask?.cancel()
@@ -516,6 +538,9 @@ final class CompetitiveMatchmakingService {
         let response = try await functions.httpsCallable("competitiveMatchmaking").call(envelope)
         guard let ack = CompetitiveMatchmakingAck(value: response.data) else {
             throw CompetitiveServiceError.invalidAck
+        }
+        if let serverNowEpochMs = ack.serverNowEpochMs {
+            serverTimeOffsetMS = serverNowEpochMs - Date().timeIntervalSince1970 * 1_000
         }
         return ack
     }

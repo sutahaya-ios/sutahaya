@@ -366,6 +366,8 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
     let assignmentTicket: String?
     let queuedAtEpochMS: Double?
     let nextCheckAfterMS: Int?
+    let forfeitCompletedAtEpochMS: Double?
+    let cooldownEndsAtEpochMS: Double?
     let updatedAtEpochMS: Double
     let competitive: CompetitiveProfileProjection?
 
@@ -402,6 +404,10 @@ struct CompetitiveMatchmakingProjection: Equatable, Sendable {
         self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
         self.queuedAtEpochMS = CompetitiveValue.double(value["queuedAtEpochMs"])
         self.nextCheckAfterMS = CompetitiveValue.int(value["nextCheckAfterMs"])
+        self.forfeitCompletedAtEpochMS = CompetitiveValue.double(
+            value["forfeitCompletedAtEpochMs"]
+        )
+        self.cooldownEndsAtEpochMS = CompetitiveValue.double(value["cooldownEndsAtEpochMs"])
         self.updatedAtEpochMS = updatedAtEpochMS
         self.competitive = Self.competitiveProfile(value["competitive"])
     }
@@ -487,6 +493,9 @@ struct CompetitiveMatchmakingAck: Equatable, Sendable {
     let matchId: String?
     let assignmentTicket: String?
     let nextCheckAfterMs: Int?
+    let forfeitCompletedAtEpochMs: Double?
+    let cooldownEndsAtEpochMs: Double?
+    let serverNowEpochMs: Double?
 
     init?(value rawValue: Any) {
         guard let value = CompetitiveValue.dictionary(rawValue),
@@ -507,6 +516,11 @@ struct CompetitiveMatchmakingAck: Equatable, Sendable {
         self.matchId = CompetitiveValue.string(value["matchId"])
         self.assignmentTicket = CompetitiveValue.string(value["assignmentTicket"])
         self.nextCheckAfterMs = CompetitiveValue.int(value["nextCheckAfterMs"])
+        self.forfeitCompletedAtEpochMs = CompetitiveValue.double(
+            value["forfeitCompletedAtEpochMs"]
+        )
+        self.cooldownEndsAtEpochMs = CompetitiveValue.double(value["cooldownEndsAtEpochMs"])
+        self.serverNowEpochMs = CompetitiveValue.double(value["serverNowEpochMs"])
     }
 }
 

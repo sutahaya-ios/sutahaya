@@ -3,6 +3,8 @@ import SwiftUI
 struct CompetitiveHomeView: View {
     let profile: CompetitiveProfileProjection?
     let isLoading: Bool
+    let cooldownEndsAtEpochMS: Double?
+    let serverTimeOffsetMS: Double
     let onStart: () -> Void
 
     var body: some View {
@@ -15,22 +17,34 @@ struct CompetitiveHomeView: View {
             .padding(20)
         }
         .safeAreaInset(edge: .bottom) {
-            Button(action: onStart) {
-                HStack(spacing: 8) {
-                    if isLoading { ProgressView().tint(.white) }
-                    Text(isLoading ? "参加中…" : "対戦相手を探す")
-                        .font(.headline)
+            TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                let remaining = CompetitiveForfeitCooldownPolicy.remainingSeconds(
+                    cooldownEndsAtEpochMS: cooldownEndsAtEpochMS,
+                    clientNowEpochMS: context.date.timeIntervalSince1970 * 1_000,
+                    serverTimeOffsetMS: serverTimeOffsetMS
+                )
+                Button(action: onStart) {
+                    HStack(spacing: 8) {
+                        if isLoading { ProgressView().tint(.white) }
+                        Text(buttonTitle(remainingSeconds: remaining))
+                            .font(.headline)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52)
                 }
-                .frame(maxWidth: .infinity, minHeight: 52)
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoading || remaining > 0)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(isLoading)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(.bar)
         }
         .navigationTitle("ランク戦")
         .background(Color(.systemGroupedBackground))
+    }
+
+    private func buttonTitle(remainingSeconds: Int) -> String {
+        if remainingSeconds > 0 { return "再戦まで \(remainingSeconds)秒" }
+        return isLoading ? "参加中…" : "対戦相手を探す"
     }
 
     private var rankCard: some View {

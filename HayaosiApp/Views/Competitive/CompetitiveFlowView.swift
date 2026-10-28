@@ -10,6 +10,8 @@ struct CompetitiveFlowView: View {
                 CompetitiveHomeView(
                     profile: coordinator.profile,
                     isLoading: coordinator.isLoading || coordinator.isQueueOperationInFlight,
+                    cooldownEndsAtEpochMS: coordinator.forfeitCooldownEndsAtEpochMS,
+                    serverTimeOffsetMS: coordinator.serverTimeOffsetMS,
                     onStart: { Task { await coordinator.joinQueue() } }
                 )
             case .matchmaking:
@@ -43,7 +45,7 @@ struct CompetitiveFlowView: View {
 
     private var screen: CompetitiveClientScreen {
         CompetitiveClientScreen.resolve(
-            matchmakingState: coordinator.matchmakingService?.state?.state,
+            matchmakingState: coordinator.screenMatchmakingState,
             hasActiveMatch: coordinator.battleService != nil
         )
     }

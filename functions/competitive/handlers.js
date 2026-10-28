@@ -20,6 +20,7 @@ const {
 } = require("./core");
 const { FUNCTION_OPTIONS } = require("./functionOptions");
 const {
+  completeExplicitForfeit,
   releaseFinishedMatchSessions,
   settleFinishedMatch,
 } = require("./matchmakingHandlers");
@@ -624,6 +625,18 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
     }
+    const duplicate = envelope.type === "submitAnswer"
+      ? null
+      : existingIntentOutcome(match, envelope, uid);
+    if (envelope.type === "forfeit"
+        && duplicate?.originalStatus === "ACCEPTED") {
+      const acceptedAt = match.private.participants[uid].forfeitedAtEpochMs || Date.now();
+      await completeExplicitForfeit(envelope.matchId, uid, acceptedAt);
+      await removeForfeitedPresence(envelope.matchId, uid);
+      const ack = withDiagnostics(duplicate, invocation, acceptedAt);
+      logOutcome("intent", envelope, uid, ack, Boolean(request.app));
+      return ack;
+    }
     const activeSessionError = await preflightActiveSession(match, envelope, uid);
     if (activeSessionError) {
       const ack = withDiagnostics(
@@ -633,13 +646,7 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
     }
-    const duplicate = envelope.type === "submitAnswer"
-      ? null
-      : existingIntentOutcome(match, envelope, uid);
     if (duplicate) {
-      if (envelope.type === "forfeit" && duplicate.originalStatus === "ACCEPTED") {
-        await removeForfeitedPresence(envelope.matchId, uid);
-      }
       const ack = withDiagnostics(duplicate, invocation);
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;
@@ -664,6 +671,7 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
     const committed = await commitClientIntent(envelope, uid, now, null);
     if (envelope.type === "forfeit" && committed.status === "ACCEPTED") {
+      await completeExplicitForfeit(envelope.matchId, uid, now);
       await removeForfeitedPresence(envelope.matchId, uid);
     }
     const ack = withDiagnostics(

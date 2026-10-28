@@ -9,6 +9,7 @@ const QUESTION_COUNT = 20;
 const MAX_BODY_BYTES = 4_096;
 const MAX_ID_LENGTH = 128;
 const RECONNECT_GRACE_MS = 15_000;
+const EXPLICIT_FORFEIT_COOLDOWN_MS = 5_000;
 
 const PARTICIPANT_KIND = Object.freeze({
   HUMAN: "HUMAN",
@@ -35,6 +36,7 @@ const PHASE = Object.freeze({
 
 module.exports = {
   CONFIG_VERSION,
+  EXPLICIT_FORFEIT_COOLDOWN_MS,
   MAX_BODY_BYTES,
   MAX_ID_LENGTH,
   PHASE,

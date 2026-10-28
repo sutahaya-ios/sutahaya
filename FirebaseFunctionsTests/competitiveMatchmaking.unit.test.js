@@ -104,6 +104,46 @@ describe("Competitive Phase B matchmaking unit", () => {
     assert.equal(staleCancel.state.private.queue.p1.sessionEpoch, 2);
   });
 
+  it("enforces Explicit Forfeit cooldown on the server and creates a new session after five seconds", () => {
+    const initial = addPlayer({}, "p1", 0).state;
+    const profile = initial.private.profiles.p1;
+    profile.currentSession.state = SESSION_STATE.FINISHED;
+    profile.currentSession.matchId = null;
+    delete initial.private.queue.p1;
+    profile.explicitForfeitCooldown = {
+      matchId: "match-old",
+      sessionId: profile.currentSession.sessionId,
+      sessionEpoch: profile.currentSession.sessionEpoch,
+      forfeitCompletedAtEpochMs: 1_000,
+      cooldownEndsAtEpochMs: 6_000,
+    };
+
+    const early = processJoinQueue(initial, joinIntent("p1", "cooldown-early"), "p1", {
+      nowEpochMs: 5_999,
+      generatedSessionId: "session-too-early",
+      accountType: "ANONYMOUS",
+    });
+    assert.equal(early.ack.rejectionCode, "FORFEIT_COOLDOWN_ACTIVE");
+    assert.equal(early.ack.cooldownEndsAtEpochMs, 6_000);
+    assert.equal(early.state.private.queue.p1, undefined);
+
+    const accepted = processJoinQueue(
+      early.state,
+      joinIntent("p1", "cooldown-complete"),
+      "p1",
+      {
+        nowEpochMs: 6_000,
+        generatedSessionId: "session-new",
+        accountType: "ANONYMOUS",
+      }
+    );
+    assert.equal(accepted.ack.status, "ACCEPTED");
+    assert.equal(accepted.ack.sessionId, "session-new");
+    assert.equal(accepted.ack.sessionEpoch, 2);
+    assert.equal(accepted.state.private.profiles.p1.explicitForfeitCooldown, undefined);
+    assert.equal(accepted.state.public.p1.cooldownEndsAtEpochMs, undefined);
+  });
+
   it("atomically claims four humans and creates one fenced pending match", () => {
     const result = claim(addPlayers(4), "match-1");
     assert.equal(result.claimed.participants.length, 4);

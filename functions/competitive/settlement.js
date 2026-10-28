@@ -1,4 +1,9 @@
-const { PARTICIPANT_KIND, PHASE, SETTLEMENT_VERSION } = require("./constants");
+const {
+  EXPLICIT_FORFEIT_COOLDOWN_MS,
+  PARTICIPANT_KIND,
+  PHASE,
+  SETTLEMENT_VERSION,
+} = require("./constants");
 const {
   RATING_CONFIG,
   TIER,
@@ -13,6 +18,131 @@ const {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value ?? {}));
+}
+
+function completeExplicitForfeitInRoot(
+  input,
+  matchId,
+  uid,
+  nowEpochMs,
+  config = RATING_CONFIG
+) {
+  const root = clone(input);
+  const match = root.matches?.[matchId];
+  const participant = match?.private?.participants?.[uid];
+  if (!participant || participant.kind === PARTICIPANT_KIND.NPC) {
+    return { root, changed: false, status: "PARTICIPANT_NOT_FOUND" };
+  }
+  if (!participant.forfeited || participant.forfeitReason !== "EXPLICIT_FORFEIT") {
+    return { root, changed: false, status: "FORFEIT_NOT_CONFIRMED" };
+  }
+
+  root.matchmaking ||= {};
+  root.matchmaking.private ||= {};
+  root.matchmaking.private.profiles ||= {};
+  root.matchmaking.private.explicitForfeitSettlements ||= {};
+  root.matchmaking.private.explicitForfeitSettlements[matchId] ||= {};
+  root.matchmaking.public ||= {};
+
+  const existing = root.matchmaking.private.explicitForfeitSettlements[matchId][uid];
+  if (existing?.status === "SETTLED") {
+    return { root, changed: false, status: "ALREADY_SETTLED", settlement: existing };
+  }
+
+  const profile = root.matchmaking.private.profiles[uid];
+  const session = profile?.currentSession;
+  if (!profile || !session
+      || session.matchId !== matchId
+      || session.sessionId !== participant.sessionId
+      || session.sessionEpoch !== participant.sessionEpoch) {
+    throw new Error("EXPLICIT_FORFEIT_SESSION_FENCE_MISMATCH");
+  }
+
+  const competitive = ensureCompetitiveProfile(profile, nowEpochMs, config);
+  const ratingPlayers = match.private.participantOrder.map((candidateUID) => {
+    const candidate = match.private.participants[candidateUID];
+    const candidateRating = candidateUID === uid
+      ? competitive.hiddenRating
+      : candidate.preMatchRating;
+    const rating = Number.isFinite(candidateRating)
+      ? candidateRating
+      : config.initialRating;
+    return {
+      uid: candidateUID,
+      kind: candidate.kind || PARTICIPANT_KIND.HUMAN,
+      rating,
+      preMatchTier: candidate.preMatchTier || tierForRating(rating, config),
+      rank: candidateUID === uid ? match.private.participantOrder.length : 1,
+      forfeited: candidateUID === uid,
+    };
+  });
+  const target = ratingPlayers.find((candidate) => candidate.uid === uid);
+  const ratingChange = calculatePairwiseRatingChanges(ratingPlayers, config)[uid];
+  competitive.hiddenRating = ratingChange.newRating;
+  const won = applyStats(competitive, target);
+  applyPlatinumSeasonStats(competitive, target);
+  competitive.currentTier = tierForCompetitiveProfile(competitive, config, {
+    preserveCurrentRatingBattle: target.preMatchTier === TIER.RATING_BATTLE,
+  });
+  competitive.ratingBattle = competitive.currentTier === TIER.RATING_BATTLE;
+  competitive.updatedAtEpochMs = nowEpochMs;
+
+  const cooldownEndsAtEpochMs = nowEpochMs + EXPLICIT_FORFEIT_COOLDOWN_MS;
+  session.state = "FINISHED";
+  session.matchId = null;
+  session.updatedAtEpochMs = nowEpochMs;
+  profile.explicitForfeitCooldown = {
+    matchId,
+    sessionId: participant.sessionId,
+    sessionEpoch: participant.sessionEpoch,
+    forfeitCompletedAtEpochMs: nowEpochMs,
+    cooldownEndsAtEpochMs,
+  };
+  profile.updatedAtEpochMs = nowEpochMs;
+
+  const playerResult = {
+    rank: target.rank,
+    forfeited: true,
+    won,
+    mmrBefore: ratingChange.preMatchRating,
+    rawDelta: ratingChange.rawDelta,
+    lossMultiplier: ratingChange.lossMultiplier,
+    humanWeight: ratingChange.humanWeight,
+    finalDelta: ratingChange.finalDelta,
+    ratingDelta: ratingChange.finalDelta,
+    mmrAfter: ratingChange.newRating,
+    currentTier: competitive.currentTier,
+    ratingBattle: competitive.ratingBattle,
+    stats: { ...competitive.stats },
+    seasonId: competitive.season.seasonId,
+    platinumSeasonMatches: competitive.season.platinumSeasonMatches,
+    platinumSeasonWins: competitive.season.platinumSeasonWins,
+  };
+  const settlement = {
+    status: "SETTLED",
+    matchId,
+    uid,
+    sessionId: participant.sessionId,
+    sessionEpoch: participant.sessionEpoch,
+    forfeitCompletedAtEpochMs: nowEpochMs,
+    cooldownEndsAtEpochMs,
+    playerResult,
+  };
+  root.matchmaking.private.explicitForfeitSettlements[matchId][uid] = settlement;
+  root.matchmaking.public[uid] = {
+    uid,
+    state: "NOT_QUEUED",
+    sessionId: participant.sessionId,
+    sessionEpoch: participant.sessionEpoch,
+    protocolVersion: session.protocolVersion,
+    updatedAtEpochMs: nowEpochMs,
+    forfeitCompletedAtEpochMs: nowEpochMs,
+    cooldownEndsAtEpochMs,
+    competitive: competitiveProjection(profile),
+  };
+  participant.forfeitCompletedAtEpochMs = nowEpochMs;
+  participant.forfeitSettlementApplied = true;
+  return { root, changed: true, status: "SETTLED", settlement };
 }
 
 function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFIG) {
@@ -38,7 +168,10 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
   const participants = match.private.participantOrder.map((uid) => {
     const participant = match.private.participants[uid];
     const isHuman = participant.kind !== PARTICIPANT_KIND.NPC;
-    let rating = participant.preMatchRating;
+    const explicitForfeitSettlement = root.matchmaking.private
+      .explicitForfeitSettlements?.[matchId]?.[uid];
+    let rating = explicitForfeitSettlement?.playerResult?.mmrBefore
+      ?? participant.preMatchRating;
     let profile = null;
     if (isHuman) {
       profile = root.matchmaking.private.profiles[uid];
@@ -58,14 +191,16 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
         };
         root.matchmaking.private.profiles[uid] = profile;
       }
-      const session = profile?.currentSession;
-      if (!profile || !session
-          || session.matchId !== matchId
-          || session.sessionId !== participant.sessionId
-          || session.sessionEpoch !== participant.sessionEpoch) {
-        throw new Error("SETTLEMENT_SESSION_FENCE_MISMATCH");
+      if (!explicitForfeitSettlement) {
+        const session = profile?.currentSession;
+        if (!profile || !session
+            || session.matchId !== matchId
+            || session.sessionId !== participant.sessionId
+            || session.sessionEpoch !== participant.sessionEpoch) {
+          throw new Error("SETTLEMENT_SESSION_FENCE_MISMATCH");
+        }
+        rating = ensureCompetitiveProfile(profile, nowEpochMs, config).hiddenRating;
       }
-      rating = ensureCompetitiveProfile(profile, nowEpochMs, config).hiddenRating;
     }
     if (!Number.isFinite(rating)) rating = config.initialRating;
     return {
@@ -76,6 +211,7 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
         || (isHuman ? profile.competitive.currentTier : tierForRating(rating, config)),
       rank: match.private.matchResult.ranks[uid],
       forfeited: Boolean(participant.forfeited),
+      explicitForfeitSettlement,
     };
   });
   const changes = calculatePairwiseRatingChanges(participants, config);
@@ -83,6 +219,14 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
 
   for (const participant of participants) {
     if (participant.kind === PARTICIPANT_KIND.NPC) continue;
+    if (participant.explicitForfeitSettlement) {
+      playerResults[participant.uid] = {
+        ...participant.explicitForfeitSettlement.playerResult,
+        rank: participant.rank,
+        forfeited: true,
+      };
+      continue;
+    }
     const profile = root.matchmaking.private.profiles[participant.uid];
     const competitive = profile.competitive;
     const ratingChange = changes[participant.uid];
@@ -201,4 +345,4 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
   return { root, changed: true, status: "SETTLED", settlement };
 }
 
-module.exports = { settleCompetitiveRoot };
+module.exports = { completeExplicitForfeitInRoot, settleCompetitiveRoot };
