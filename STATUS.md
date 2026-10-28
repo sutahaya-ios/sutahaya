@@ -10,7 +10,6 @@
 - **公開後にAdMobのapp-ads.txt「アップデートを確認」を押す。** マーケティングURL`https://sutahaya-ios.github.io/`がストアへ反映されるのは公開後のため、それまで確認は通らない
 - **AdMobのアプリ承認は「要審査」のまま。** 承認されるまで広告配信が制限される
 - 実機2台での通信対戦検証はトキヤが実施済み(2026年9月6日・たける報告)。**同時押しでの進行停止・切断・再入室の個別結果はここに未記入。トキヤが追記すること**
-
 ---
 ## リリース計画
 
@@ -44,6 +43,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `HayaosiApp/Services/Competitive/CompetitiveClientCoordinator.swift`・`CompetitiveClientPolicy.swift`・`CompetitiveService.swift`・`Tests/CompetitiveClientPolicyTests.swift` | **Explicit Forfeit後にBattleから即時退出できない不具合を修正**。Server受理後のClient teardown、旧session復元抑止、stale callback guard、再Queueと15秒Reconnect回帰を確認する | 2026年10月28日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月26日): **既存7体のNPC accuracyを共通7段階Profileへ統合**。Friend Battleの35/40/45/50/55/60/75%を変更せず超弱〜鬼強へ対応し、平均残り時間15/25/35/50/55/60/70%の三角分布、無回答率1/3〜1/30、最短1.2秒、deadline marginを追加。Online Rankedはhuman平均MMR由来の強さを必ず既存7段階へ丸め、回答有無・正誤・時刻を独立seedで決定。旧1/45 fast分岐は廃止。各Profile 10,000問simulation、Backend Unit 62件、Phase C Emulator 3件(1〜4 Human×20問・Realtime answered・Reconnect)、Swift CPUテストとSimulator Buildが成功。**Production deployは未実施。対象は`competitiveMatchmaking`・`competitiveIntent`・`competitiveReconcileMatch`**
