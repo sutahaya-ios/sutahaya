@@ -9,6 +9,11 @@ struct BattleLobbyView: View {
     private static let appStoreLabel = "アプリはこちら"
     private static let inviteLabelSeparator = ":"
     private static let inviteLineSeparator = "\n"
+    private static let avatarSize: CGFloat = 76
+    private static let avatarSymbolSize: CGFloat = 29
+    private static let memberNameWidth: CGFloat = 82
+    private static let startControlHeight: CGFloat = 58
+    private static let startControlCornerRadius: CGFloat = 17
 
     let session: any BattleSession
     let onChangeSettings: () -> Void
@@ -126,9 +131,9 @@ struct BattleLobbyView: View {
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
-                    .font(.system(size: 29, weight: .semibold))
+                    .font(.system(size: Self.avatarSymbolSize, weight: .semibold))
                     .foregroundStyle(.blue)
-                    .frame(width: 76, height: 76)
+                    .frame(width: Self.avatarSize, height: Self.avatarSize)
                     .background(Color.blue.opacity(0.08), in: Circle())
                     .overlay {
                         Circle()
@@ -138,7 +143,7 @@ struct BattleLobbyView: View {
                 Text("NPC追加")
                     .font(.body)
                     .foregroundStyle(.primary)
-                    .frame(width: 82)
+                    .frame(width: Self.memberNameWidth)
             }
         }
         .buttonStyle(.plain)
@@ -152,7 +157,7 @@ struct BattleLobbyView: View {
                     .fill(Color.blue.opacity(0.12))
                 if player.id.hasPrefix("cpu-") {
                     Image(systemName: "desktopcomputer")
-                        .font(.system(size: 29, weight: .medium))
+                        .font(.system(size: Self.avatarSymbolSize, weight: .medium))
                         .foregroundStyle(.blue)
                 } else {
                     Text(initials(for: player.nickname))
@@ -160,12 +165,12 @@ struct BattleLobbyView: View {
                         .foregroundStyle(.blue)
                 }
             }
-            .frame(width: 76, height: 76)
+            .frame(width: Self.avatarSize, height: Self.avatarSize)
 
             Text(player.nickname)
                 .font(.body)
                 .lineLimit(1)
-                .frame(width: 82)
+                .frame(width: Self.memberNameWidth)
 
             if player.id == state.hostID && session.isOnline {
                 Text("ホスト")
@@ -327,8 +332,8 @@ struct BattleLobbyView: View {
                     Text("対戦開始")
                         .font(.title3.bold())
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 58)
-                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 17))
+                        .frame(maxWidth: .infinity, minHeight: Self.startControlHeight)
+                        .background(Color.blue, in: RoundedRectangle(cornerRadius: Self.startControlCornerRadius))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(LobbyPrimaryButtonStyle())
@@ -343,8 +348,8 @@ struct BattleLobbyView: View {
                 Label("ホストの開始を待っています…", systemImage: "hourglass")
                     .font(.headline)
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 58)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 17))
+                    .frame(maxWidth: .infinity, minHeight: Self.startControlHeight)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Self.startControlCornerRadius))
             }
         }
         .padding(.horizontal, 24)

@@ -70,8 +70,7 @@ struct BattleView: View {
             captureLiveScoreBaseIfPossible()
         }
         .onChange(of: questionKey) { _, _ in
-            pendingAnswer = nil
-            isAwaitingHostResult = false
+            clearPendingAnswer()
             answerErrorMessage = nil
             answerFeedbackTask?.cancel()
             answerFeedback = nil
@@ -83,15 +82,13 @@ struct BattleView: View {
             }
             if !oldIDs.contains(session.myID), newIDs.contains(session.myID),
                let questionIndex = session.state?.game?.questionIndex {
-                pendingAnswer = nil
-                isAwaitingHostResult = false
+                clearPendingAnswer()
                 showAnswerFeedback(isCorrect: false, for: questionIndex)
             }
         }
         .onChange(of: myAnswerChoice) { _, newChoice in
             if newChoice != nil {
-                pendingAnswer = nil
-                isAwaitingHostResult = false
+                clearPendingAnswer()
                 answerErrorMessage = nil
             }
         }
@@ -258,33 +255,7 @@ struct BattleView: View {
     /// 文字送り型の操作エリア。4択は最初から出ていて、押した瞬間が回答になる
     private func progressiveChoiceArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
         VStack(spacing: 10) {
-            if let answerErrorMessage {
-                Label(answerErrorMessage, systemImage: "wifi.exclamationmark")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.red)
-            } else if game.failedIDs.contains(session.myID) {
-                Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.red)
-            } else if myAnswer(in: game) != nil {
-                Label("回答しました", systemImage: "checkmark.circle")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.orange)
-            } else if pendingAnswer?.questionIndex == game.questionIndex {
-                Label {
-                    if isAwaitingHostResult {
-                        Text("ホストの判定を待っています…")
-                    } else {
-                        // 送信中stateと表示領域は維持し、瞬間的な文言だけ見せない。
-                        Text("回答を送信中…")
-                            .hidden()
-                    }
-                } icon: {
-                    Image(systemName: isAwaitingHostResult ? "hourglass" : "arrow.up.circle")
-                }
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.orange)
-            }
+            answerStatusLabel(game: game)
 
             // 回答権はFirebase補正時刻で短周期に再評価し、
             // 相手の回答更新を待たずに開始時刻を跨げるようにする。
@@ -294,41 +265,79 @@ struct BattleView: View {
                     myChoice: myAnswer(in: game)?.choice ?? pendingAnswer?.choice,
                     canAnswer: session.canAnswer(at: timeline.date) && pendingAnswer == nil
                 ) { choice in
-                    Haptics.impact(.heavy)
-                    let displayedQuestion = DisplayedQuestionContext(
-                        questionID: question.id,
-                        questionIndex: game.questionIndex
-                    )
-                    let pending = PendingAnswer(
-                        displayedQuestion: displayedQuestion,
-                        choice: choice
-                    )
-                    pendingAnswer = pending
-                    isAwaitingHostResult = false
-                    answerErrorMessage = nil
-                    session.submitAnswer(
-                        choice,
-                        displayedQuestion: displayedQuestion,
-                        visibleCount: session.visibleCharacterCount(at: .now)
-                    ) { outcome in
-                        guard pendingAnswer == pending else { return }
-                        switch outcome {
-                        case .accepted:
-                            pendingAnswer = nil
-                            isAwaitingHostResult = false
-                        case .awaitingHostResult:
-                            isAwaitingHostResult = true
-                        case .rejected:
-                            pendingAnswer = nil
-                            isAwaitingHostResult = false
-                            if questionKey?.index == pending.questionIndex {
-                                answerErrorMessage = "制限時間を過ぎたか、通信により回答が受理されませんでした"
-                            }
-                        }
-                    }
+                    submit(choice, to: question, questionIndex: game.questionIndex)
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func answerStatusLabel(game: RoomState.Game) -> some View {
+        if let answerErrorMessage {
+            Label(answerErrorMessage, systemImage: "wifi.exclamationmark")
+                .font(.subheadline.bold())
+                .foregroundStyle(.red)
+        } else if game.failedIDs.contains(session.myID) {
+            Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
+                .font(.subheadline.bold())
+                .foregroundStyle(.red)
+        } else if myAnswer(in: game) != nil {
+            Label("回答しました", systemImage: "checkmark.circle")
+                .font(.subheadline.bold())
+                .foregroundStyle(.orange)
+        } else if pendingAnswer?.questionIndex == game.questionIndex {
+            Label {
+                if isAwaitingHostResult {
+                    Text("ホストの判定を待っています…")
+                } else {
+                    // 送信中stateと表示領域は維持し、瞬間的な文言だけ見せない。
+                    Text("回答を送信中…")
+                        .hidden()
+                }
+            } icon: {
+                Image(systemName: isAwaitingHostResult ? "hourglass" : "arrow.up.circle")
+            }
+                .font(.subheadline.bold())
+                .foregroundStyle(.orange)
+        }
+    }
+
+    private func submit(_ choice: String, to question: RoomState.QuestionPayload, questionIndex: Int) {
+        Haptics.impact(.heavy)
+        let displayedQuestion = DisplayedQuestionContext(
+            questionID: question.id,
+            questionIndex: questionIndex
+        )
+        let pending = PendingAnswer(
+            displayedQuestion: displayedQuestion,
+            choice: choice
+        )
+        pendingAnswer = pending
+        isAwaitingHostResult = false
+        answerErrorMessage = nil
+        session.submitAnswer(
+            choice,
+            displayedQuestion: displayedQuestion,
+            visibleCount: session.visibleCharacterCount(at: .now)
+        ) { outcome in
+            guard pendingAnswer == pending else { return }
+            switch outcome {
+            case .accepted:
+                clearPendingAnswer()
+            case .awaitingHostResult:
+                isAwaitingHostResult = true
+            case .rejected:
+                clearPendingAnswer()
+                if questionKey?.index == pending.questionIndex {
+                    answerErrorMessage = "制限時間を過ぎたか、通信により回答が受理されませんでした"
+                }
+            }
+        }
+    }
+
+    private func clearPendingAnswer() {
+        pendingAnswer = nil
+        isAwaitingHostResult = false
     }
 
     private func myAnswer(in game: RoomState.Game) -> RoomState.Answer? {
