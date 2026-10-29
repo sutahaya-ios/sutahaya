@@ -11,11 +11,13 @@ struct QuestionTextView: View {
 
     private static let tickInterval: TimeInterval = 0.05
     private static let minimumHeight: CGFloat = 120
+    private static let instructionSpacing: CGFloat = 16
 
     let text: String
     let mode: Mode
     /// 単語は大きく等幅で、SPIの問題文は読みやすい本文サイズで出す
     var isSingleWord = true
+    var format: QuestionFormat? = nil
 
     var body: some View {
         Group {
@@ -33,15 +35,48 @@ struct QuestionTextView: View {
     }
 
     /// 表示中はまだ続きがあることをカーソルで示す
+    @ViewBuilder
     private func questionText(_ visible: String, isComplete: Bool) -> some View {
-        (Text(visible) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
-            .font(isSingleWord
-                  ? .system(size: 40, weight: .bold, design: .rounded)
-                  : .system(.title3, weight: .semibold))
-            .monospaced(isSingleWord)
-            .multilineTextAlignment(isSingleWord ? .center : .leading)
-            .frame(maxWidth: .infinity, alignment: isSingleWord ? .center : .leading)
+        if !isSingleWord, let newline = visible.firstIndex(of: "\n") {
+            let instruction = String(visible[..<newline])
+            let body = String(visible[visible.index(after: newline)...])
+            let isProminent = format?.usesProminentCenteredBody == true
+            VStack(alignment: .leading, spacing: Self.instructionSpacing) {
+                Text(highlightedInstruction(instruction))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                (Text(body) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
+                    .font(isProminent ? .title.bold() : .title3.weight(.semibold))
+                    .multilineTextAlignment(isProminent ? .center : .leading)
+                    .frame(maxWidth: .infinity, alignment: isProminent ? .center : .leading)
+            }
             .contentTransition(.identity)
+        } else {
+            (Text(visible) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
+                .font(isSingleWord
+                      ? .system(size: 40, weight: .bold, design: .rounded)
+                      : .system(.title3, weight: .semibold))
+                .monospaced(isSingleWord)
+                .multilineTextAlignment(isSingleWord ? .center : .leading)
+                .frame(maxWidth: .infinity, alignment: isSingleWord ? .center : .leading)
+                .contentTransition(.identity)
+        }
+    }
+
+    /// 並び替えなどの指示に含まれる、回答すべき位置だけを強調する。
+    private func highlightedInstruction(_ instruction: String) -> AttributedString {
+        var styled = AttributedString(instruction)
+        var searchRange = instruction.startIndex..<instruction.endIndex
+        while let match = instruction.range(of: "[0-9０-９]+番目", options: .regularExpression, range: searchRange) {
+            if let range = Range(match, in: styled) {
+                styled[range].foregroundColor = .accentColor
+                styled[range].font = .subheadline.bold()
+            }
+            searchRange = match.upperBound..<instruction.endIndex
+        }
+        return styled
     }
 }
 

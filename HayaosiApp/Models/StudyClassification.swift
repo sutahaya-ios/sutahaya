@@ -63,6 +63,16 @@ enum QuestionFormat: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// 短い語句を比較する形式では、本文を大きく中央に配置する。
+    var usesProminentCenteredBody: Bool {
+        switch self {
+        case .twoWordRelation, .wordMeaning, .wordUsage, .kanjiCompound:
+            return true
+        case .sentenceOrder, .fillBlank, .reading:
+            return false
+        }
+    }
+
     var displayName: String {
         switch self {
         case .twoWordRelation: return "二語の関係"

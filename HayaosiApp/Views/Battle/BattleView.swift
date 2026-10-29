@@ -33,7 +33,8 @@ struct BattleView: View {
                     QuestionTextView(
                         text: question.text,
                         mode: revealMode(game: game),
-                        isSingleWord: genre.usesProgressiveReveal
+                        isSingleWord: genre.usesProgressiveReveal,
+                        format: format(for: question)
                     )
 
                     if let table = table(for: question) {
@@ -122,6 +123,11 @@ struct BattleView: View {
     /// アプリの版が違って見つからない場合は、表なしで出題する
     private func table(for question: RoomState.QuestionPayload) -> QuestionTable? {
         allQuestions.first { $0.id == question.id }?.table
+    }
+
+    /// 形式も端末内の問題から取得し、見つからなければ標準の本文表示にする。
+    private func format(for question: RoomState.QuestionPayload) -> QuestionFormat? {
+        allQuestions.first { $0.id == question.id }?.format
     }
 
     /// 出題中は文字送りを進め、発表に入ったら全文を出す。

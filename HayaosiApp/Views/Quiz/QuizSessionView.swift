@@ -170,7 +170,8 @@ struct QuizSessionView: View {
             QuestionTextView(
                 text: entry.question.text,
                 mode: .full,
-                isSingleWord: entry.question.genre.usesProgressiveReveal
+                isSingleWord: entry.question.genre.usesProgressiveReveal,
+                format: entry.question.format
             )
             .fixedSize(horizontal: false, vertical: true)
 
