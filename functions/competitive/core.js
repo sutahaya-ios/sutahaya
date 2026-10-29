@@ -412,14 +412,15 @@ function closeQuestion(privateState, nowEpochMs, closeReason) {
 }
 
 function finishMatch(privateState, nowEpochMs) {
-  const activeUIDs = privateState.participantOrder.filter(
-    (uid) => !privateState.participants[uid].forfeited
-  );
   const forfeitedUIDs = privateState.participantOrder.filter(
     (uid) => privateState.participants[uid].forfeited
   );
-  const activeRanked = rankedScores(privateState.scores, activeUIDs);
-  const forfeitedRank = activeRanked.length + 1;
+  const normalRanked = rankedScores(privateState.scores, privateState.participantOrder);
+  const normalRanks = Object.fromEntries(
+    normalRanked.map((entry) => [entry.uid, entry.rank])
+  );
+  const activeRanked = normalRanked.filter((entry) => !forfeitedUIDs.includes(entry.uid));
+  const forfeitedRank = privateState.participantOrder.length;
   const ranked = [
     ...activeRanked,
     ...forfeitedUIDs.map((uid) => ({
@@ -434,6 +435,7 @@ function finishMatch(privateState, nowEpochMs) {
     outcome: "COMPLETED",
     finalScores: Object.fromEntries(ranked.map((entry) => [entry.uid, entry.score])),
     ranks: Object.fromEntries(ranked.map((entry) => [entry.uid, entry.rank])),
+    normalRanks,
     winnerUIDs: activeRanked.filter((entry) => entry.rank === 1).map((entry) => entry.uid),
     forfeitedUIDs,
     finishedAtEpochMs: nowEpochMs,
@@ -780,6 +782,7 @@ module.exports = {
   activeParticipantUIDs,
   allActivePlayersAnswered,
   existingIntentOutcome,
+  finishMatch,
   intentFingerprint,
   processClientIntent,
   processPresenceSignal,

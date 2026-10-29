@@ -408,12 +408,50 @@ describe("Competitive Phase D-2 settlement", () => {
     assert.equal(profileValue.competitive.stats.totalWins, 0);
     assert.equal(profileValue.currentSession.state, "FINISHED");
     assert.equal(profileValue.currentSession.matchId, null);
+    assert.equal(profileValue.currentSession.leaseExpiresAtEpochMs, now);
     assert.equal(result.root.matchmaking.public.p1.state, "NOT_QUEUED");
     assert.equal(result.root.matchmaking.public.p1.cooldownEndsAtEpochMs, now + 5_000);
     assert.equal(
       result.root.matches["match-rating"].private.participants.p1.forfeitCompletedAtEpochMs,
       now
     );
+  });
+
+  it("deletes an NPC-only room after its last human explicitly forfeits", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"], npcSlots: [1, 2, 3] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p1.active = false;
+    root.matches["match-rating"].private.participants.p1.forfeitReason = "EXPLICIT_FORFEIT";
+    root.clocks = { "match-rating": { pending: 1 } };
+    root.answerIntentClaims = { "match-rating": { pending: 1 } };
+
+    const result = completeExplicitForfeitInRoot(root, "match-rating", "p1", now);
+
+    assert.equal(result.settlement.roomCleanedUp, true);
+    assert.equal(result.root.matches["match-rating"], undefined);
+    assert.equal(result.root.presence["match-rating"], undefined);
+    assert.equal(result.root.clocks["match-rating"], undefined);
+    assert.equal(result.root.answerIntentClaims["match-rating"], undefined);
+    assert.equal(
+      result.root.matchmaking.private.explicitForfeitSettlements["match-rating"].p1.status,
+      "SETTLED"
+    );
+    assert.equal(result.root.matchmaking.private.profiles.p1.currentSession.state, "FINISHED");
+  });
+
+  it("keeps the room when another human remains after Explicit Forfeit", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"], npcSlots: [2, 3] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p1.active = false;
+    root.matches["match-rating"].private.participants.p1.forfeitReason = "EXPLICIT_FORFEIT";
+
+    const result = completeExplicitForfeitInRoot(root, "match-rating", "p1", now);
+
+    assert.equal(result.settlement.roomCleanedUp, undefined);
+    assert.ok(result.root.matches["match-rating"]);
+    assert.equal(result.root.matches["match-rating"].private.phase, PHASE.QUESTION_OPEN);
   });
 
   it("does not extend cooldown or double-apply rating on duplicate Explicit Forfeit", () => {
@@ -475,6 +513,35 @@ describe("Competitive Phase D-2 settlement", () => {
       "session-new"
     );
     assert.equal(settled.root.matchmaking.public.p1.state, "QUEUED");
+  });
+
+  it("settles remaining players by normal score rank without compacting around a forfeiter", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p3"], ranks: [1, 2, 4, 4] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    root.matches["match-rating"].private.participants.p3.active = false;
+    root.matches["match-rating"].private.participants.p3.forfeitReason = "EXPLICIT_FORFEIT";
+    const immediate = completeExplicitForfeitInRoot(root, "match-rating", "p3", now);
+    immediate.root.matches["match-rating"].private.phase = PHASE.SETTLEMENT_PENDING;
+    immediate.root.matches["match-rating"].private.matchResult = {
+      ranks: { p1: 1, p2: 2, p3: 4, p4: 4 },
+      normalRanks: { p1: 1, p2: 2, p3: 3, p4: 4 },
+      forfeitedUIDs: ["p3"],
+    };
+
+    const settled = settleCompetitiveRoot(immediate.root, "match-rating", now + 20_000);
+    const baseline = settleCompetitiveRoot(
+      settlementRoot({ ranks: [1, 2, 3, 4] }),
+      "match-rating",
+      now + 20_000
+    );
+
+    assert.equal(settled.settlement.playerResults.p3.rank, 4);
+    assert.equal(settled.settlement.playerResults.p4.rank, 4);
+    assert.equal(
+      settled.settlement.playerResults.p4.ratingDelta,
+      baseline.settlement.playerResults.p4.ratingDelta
+    );
   });
 
   it("settles rating, tiers, stats, session release and presence atomically", () => {

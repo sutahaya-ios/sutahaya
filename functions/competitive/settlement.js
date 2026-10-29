@@ -28,15 +28,6 @@ function completeExplicitForfeitInRoot(
   config = RATING_CONFIG
 ) {
   const root = clone(input);
-  const match = root.matches?.[matchId];
-  const participant = match?.private?.participants?.[uid];
-  if (!participant || participant.kind === PARTICIPANT_KIND.NPC) {
-    return { root, changed: false, status: "PARTICIPANT_NOT_FOUND" };
-  }
-  if (!participant.forfeited || participant.forfeitReason !== "EXPLICIT_FORFEIT") {
-    return { root, changed: false, status: "FORFEIT_NOT_CONFIRMED" };
-  }
-
   root.matchmaking ||= {};
   root.matchmaking.private ||= {};
   root.matchmaking.private.profiles ||= {};
@@ -47,6 +38,15 @@ function completeExplicitForfeitInRoot(
   const existing = root.matchmaking.private.explicitForfeitSettlements[matchId][uid];
   if (existing?.status === "SETTLED") {
     return { root, changed: false, status: "ALREADY_SETTLED", settlement: existing };
+  }
+
+  const match = root.matches?.[matchId];
+  const participant = match?.private?.participants?.[uid];
+  if (!participant || participant.kind === PARTICIPANT_KIND.NPC) {
+    return { root, changed: false, status: "PARTICIPANT_NOT_FOUND" };
+  }
+  if (!participant.forfeited || participant.forfeitReason !== "EXPLICIT_FORFEIT") {
+    return { root, changed: false, status: "FORFEIT_NOT_CONFIRMED" };
   }
 
   const profile = root.matchmaking.private.profiles[uid];
@@ -90,7 +90,9 @@ function completeExplicitForfeitInRoot(
   const cooldownEndsAtEpochMs = nowEpochMs + EXPLICIT_FORFEIT_COOLDOWN_MS;
   session.state = "FINISHED";
   session.matchId = null;
+  session.leaseExpiresAtEpochMs = nowEpochMs;
   session.updatedAtEpochMs = nowEpochMs;
+  delete session.assignmentTicket;
   profile.explicitForfeitCooldown = {
     matchId,
     sessionId: participant.sessionId,
@@ -142,6 +144,22 @@ function completeExplicitForfeitInRoot(
   };
   participant.forfeitCompletedAtEpochMs = nowEpochMs;
   participant.forfeitSettlementApplied = true;
+  const activeHumanCount = match.private.participantOrder.filter((candidateUID) => {
+    const candidate = match.private.participants[candidateUID];
+    return candidate?.kind !== PARTICIPANT_KIND.NPC
+      && candidate?.active !== false
+      && !candidate?.forfeited;
+  }).length;
+  if (activeHumanCount === 0) {
+    delete root.matches[matchId];
+    if (root.presence) delete root.presence[matchId];
+    if (root.clocks) delete root.clocks[matchId];
+    if (root.answerIntentClaims) delete root.answerIntentClaims[matchId];
+    if (root.matchmaking.private.pendingMatches) {
+      delete root.matchmaking.private.pendingMatches[matchId];
+    }
+    settlement.roomCleanedUp = true;
+  }
   return { root, changed: true, status: "SETTLED", settlement };
 }
 
@@ -214,7 +232,17 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
       explicitForfeitSettlement,
     };
   });
-  const changes = calculatePairwiseRatingChanges(participants, config);
+  const ratingParticipants = participants.map((participant) => ({
+    ...participant,
+    rank: participant.explicitForfeitSettlement
+      ? match.private.matchResult.normalRanks?.[participant.uid] ?? participant.rank
+      : participant.rank,
+    // The explicit forfeiter's forced-last penalty was already applied immediately.
+    // Keep its normal score rank here only as an opponent for the remaining players,
+    // so their ranks are not compacted or improved by the early departure.
+    forfeited: participant.explicitForfeitSettlement ? false : participant.forfeited,
+  }));
+  const changes = calculatePairwiseRatingChanges(ratingParticipants, config);
   const playerResults = {};
 
   for (const participant of participants) {

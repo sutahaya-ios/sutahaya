@@ -109,6 +109,22 @@ function processJoinQueue(input, intent, uid, {
   if (duplicate) return { state, ack: duplicate, changed: false };
 
   const cooldown = profile?.explicitForfeitCooldown;
+  const forfeitedSession = profile?.currentSession;
+  const forfeitedSessionMatches = cooldown
+    && forfeitedSession
+    && forfeitedSession.sessionId === cooldown.sessionId
+    && forfeitedSession.sessionEpoch === cooldown.sessionEpoch;
+  if (forfeitedSessionMatches) {
+    forfeitedSession.state = SESSION_STATE.FINISHED;
+    forfeitedSession.matchId = null;
+    forfeitedSession.leaseExpiresAtEpochMs = nowEpochMs;
+    forfeitedSession.updatedAtEpochMs = nowEpochMs;
+    delete forfeitedSession.assignmentTicket;
+    if (state.private.queue[uid]?.sessionId === forfeitedSession.sessionId
+        && state.private.queue[uid]?.sessionEpoch === forfeitedSession.sessionEpoch) {
+      delete state.private.queue[uid];
+    }
+  }
   if (Number.isFinite(cooldown?.cooldownEndsAtEpochMs)
       && nowEpochMs < cooldown.cooldownEndsAtEpochMs) {
     const result = rejected(intent, "FORFEIT_COOLDOWN_ACTIVE", {

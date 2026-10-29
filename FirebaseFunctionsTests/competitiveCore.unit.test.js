@@ -7,6 +7,7 @@ const { PROTOCOL_VERSION, PHASE } = require("../functions/competitive/constants"
 const { validateClientIntent } = require("../functions/competitive/contract");
 const {
   acceptedAnswersForCurrentQuestion,
+  finishMatch,
   processClientIntent,
   processPresenceSignal,
   processReconcile,
@@ -437,6 +438,24 @@ describe("Competitive Core unit", () => {
     assert.equal(match.private.phase, PHASE.QUESTION_RESULT);
     assert.deepEqual(match.private.currentQuestion.result.correctUIDs, ["p2", "p3", "p4"]);
     assert.ok(!match.private.currentQuestion.result.unansweredUIDs.includes("p1"));
+  });
+
+  it("keeps remaining score ranks uncompressed while an explicit forfeiter is forced last", () => {
+    const match = openMatch();
+    match.private.scores = { p1: 100, p2: 80, p3: 60, p4: 40 };
+    match.private.participants.p3.active = false;
+    match.private.participants.p3.forfeited = true;
+    match.private.participants.p3.forfeitReason = "EXPLICIT_FORFEIT";
+
+    finishMatch(match.private, 9_000);
+
+    assert.deepEqual(match.private.matchResult.normalRanks, {
+      p1: 1, p2: 2, p3: 3, p4: 4,
+    });
+    assert.deepEqual(match.private.matchResult.ranks, {
+      p1: 1, p2: 2, p3: 4, p4: 4,
+    });
+    assert.deepEqual(match.private.matchResult.winnerUIDs, ["p1"]);
   });
 
   it("uses server-owned NPC actions with correct, wrong, and unanswered outcomes", () => {

@@ -96,6 +96,13 @@ function activeSessionRef(uid) {
   );
 }
 
+async function readExplicitForfeitSettlement(matchId, uid) {
+  const snapshot = await getDatabase().ref(
+    `${ROOT_PATH}/matchmaking/private/explicitForfeitSettlements/${matchId}/${uid}`
+  ).get();
+  return snapshot.exists() ? snapshot.val() : null;
+}
+
 async function removeForfeitedPresence(matchId, uid) {
   await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}/${uid}`).remove();
 }
@@ -612,6 +619,23 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
   try {
     const match = await readMatch(envelope.matchId);
     if (!match) {
+      if (envelope.type === "forfeit") {
+        const settlement = await readExplicitForfeitSettlement(envelope.matchId, uid);
+        if (settlement?.status === "SETTLED") {
+          const acceptedAt = settlement.forfeitCompletedAtEpochMs;
+          const ack = withDiagnostics({
+            intentId: envelope.intentId,
+            status: "DUPLICATE",
+            originalStatus: "ACCEPTED",
+            serverSequence: null,
+            publicStateVersion: null,
+            rejectionCode: null,
+            retryable: false,
+          }, invocation, acceptedAt);
+          logOutcome("intent", envelope, uid, ack, Boolean(request.app));
+          return ack;
+        }
+      }
       const ack = withDiagnostics(rejection(envelope.intentId, "UNKNOWN_MATCH"), invocation);
       logOutcome("intent", envelope, uid, ack, Boolean(request.app));
       return ack;

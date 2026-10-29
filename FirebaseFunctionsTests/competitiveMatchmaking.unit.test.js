@@ -107,8 +107,9 @@ describe("Competitive Phase B matchmaking unit", () => {
   it("enforces Explicit Forfeit cooldown on the server and creates a new session after five seconds", () => {
     const initial = addPlayer({}, "p1", 0).state;
     const profile = initial.private.profiles.p1;
-    profile.currentSession.state = SESSION_STATE.FINISHED;
-    profile.currentSession.matchId = null;
+    profile.currentSession.state = SESSION_STATE.WAITING_PLAYERS;
+    profile.currentSession.matchId = "match-old";
+    profile.currentSession.assignmentTicket = "ticket-old";
     delete initial.private.queue.p1;
     profile.explicitForfeitCooldown = {
       matchId: "match-old",
@@ -126,6 +127,9 @@ describe("Competitive Phase B matchmaking unit", () => {
     assert.equal(early.ack.rejectionCode, "FORFEIT_COOLDOWN_ACTIVE");
     assert.equal(early.ack.cooldownEndsAtEpochMs, 6_000);
     assert.equal(early.state.private.queue.p1, undefined);
+    assert.equal(early.state.private.profiles.p1.currentSession.state, SESSION_STATE.FINISHED);
+    assert.equal(early.state.private.profiles.p1.currentSession.matchId, null);
+    assert.equal(early.state.private.profiles.p1.currentSession.assignmentTicket, undefined);
 
     const accepted = processJoinQueue(
       early.state,

@@ -698,9 +698,7 @@ describe("Competitive Phase C Emulator", () => {
       presencePayload(sessionB, true)
     ));
     assert.equal((await adminRequest(roomBPresencePath)).connected, true);
-    const scoreBefore = (await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
-    )) || 0;
+    const roomBOpen = await adminRequest(`competitiveV2/matches/${sessionB.matchId}/private`);
     const explicitForfeitEnvelope = matchEnvelope(sessionB, "forfeit", "explicit");
     const explicitForfeit = await coreIntent(client, explicitForfeitEnvelope);
     assert.equal(explicitForfeit.status, "ACCEPTED");
@@ -710,32 +708,20 @@ describe("Competitive Phase C Emulator", () => {
       ref(client.database, roomBPresencePath),
       presencePayload(sessionB, true)
     ));
-    const roomBParticipant = await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/private/participants/${client.uid}`
+    assert.equal(await adminRequest(`competitiveV2/matches/${sessionB.matchId}`), null);
+    const explicitSettlement = await adminRequest(
+      `competitiveV2/matchmaking/private/explicitForfeitSettlements/${sessionB.matchId}/${client.uid}`
     );
-    assert.equal(roomBParticipant.status, "FORFEITED");
-    assert.equal(roomBParticipant.forfeitReason, "EXPLICIT_FORFEIT");
-    assert.equal(roomBParticipant.joined, undefined);
-    assert.equal(roomBParticipant.ready, undefined);
-    assert.equal(roomBParticipant.sessionId, sessionB.sessionId);
-    assert.equal(await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/public/participants/${client.uid}`
-    ), null);
-    assert.ok((await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/public/forfeitedUIDs`
-    )).includes(client.uid));
-    assert.equal(await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
-    ), scoreBefore);
-    const roomBOpen = await adminRequest(`competitiveV2/matches/${sessionB.matchId}/private`);
+    assert.equal(explicitSettlement.status, "SETTLED");
+    assert.equal(explicitSettlement.roomCleanedUp, true);
     assert.equal((await coreIntent(client, matchEnvelope(sessionB, "submitAnswer", "after-forfeit", {
       questionId: roomBOpen.currentQuestion.questionId,
       stateVersion: roomBOpen.stateVersion,
       payload: { answerId: roomBOpen.currentQuestion.correctAnswerId },
-    }))).rejectionCode, "STALE_ACTIVE_MATCH_SESSION");
+    }))).rejectionCode, "UNKNOWN_MATCH");
     assert.equal(
       (await coreIntent(client, matchEnvelope(sessionB, "reconnect", "after-forfeit"))).rejectionCode,
-      "STALE_ACTIVE_MATCH_SESSION"
+      "UNKNOWN_MATCH"
     );
     const releasedProjection = await projection(client);
     assert.equal(releasedProjection.state, "NOT_QUEUED");
@@ -764,12 +750,63 @@ describe("Competitive Phase C Emulator", () => {
     assert.equal(requeue.status, "ACCEPTED");
     assert.notEqual(requeue.sessionId, sessionB.sessionId);
     assert.ok(requeue.sessionEpoch > sessionB.sessionEpoch);
+    assert.equal(await adminRequest(`competitiveV2/matches/${sessionB.matchId}`), null);
+  });
+
+  it("allows a forfeiter to requeue after cooldown while the old human match continues", async () => {
+    const roomA = await queueMatch(2);
+    await adminRequest(`competitiveV2/matches/${roomA.matchId}/private/config`, "PATCH", {
+      countdownDurationMs: 1,
+      questionDurationMs: 8_000,
+      resultDurationMs: 1,
+    });
+    await joinReadyOpen(roomA.clients, roomA.sessions);
+    const client = roomA.clients[0];
+    const oldSession = roomA.sessions[0];
+    const otherUID = roomA.clients[1].uid;
+    const open = await adminRequest(`competitiveV2/matches/${roomA.matchId}/private`);
+
+    const forfeited = await coreIntent(
+      client,
+      matchEnvelope(oldSession, "forfeit", "human-room-forfeit")
+    );
+    assert.equal(forfeited.status, "ACCEPTED");
+    const continuing = await adminRequest(`competitiveV2/matches/${roomA.matchId}/private`);
+    assert.equal(continuing.phase, PHASE.QUESTION_OPEN);
+    assert.equal(continuing.participants[otherUID].active, true);
+    assert.equal(continuing.participants[client.uid].forfeited, true);
+
+    const early = await matchmaking(client, {
+      intentId: `human-room-early-${randomUUID()}`,
+      type: "joinQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-emulator",
+      payload: {},
+    });
+    assert.equal(early.rejectionCode, "FORFEIT_COOLDOWN_ACTIVE");
+    await adminRequest(
+      `competitiveV2/matchmaking/private/profiles/${client.uid}/explicitForfeitCooldown/cooldownEndsAtEpochMs`,
+      "PUT",
+      Date.now() - 1
+    );
+    const requeue = await matchmaking(client, {
+      intentId: `human-room-requeue-${randomUUID()}`,
+      type: "joinQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-emulator",
+      payload: {},
+    });
+    assert.equal(requeue.status, "ACCEPTED");
+    assert.notEqual(requeue.sessionId, oldSession.sessionId);
+    assert.ok(requeue.sessionEpoch > oldSession.sessionEpoch);
     assert.equal(
-      (await adminRequest(`competitiveV2/matches/${sessionB.matchId}/private`)).phase,
+      (await adminRequest(`competitiveV2/matches/${roomA.matchId}/private`)).phase,
       PHASE.QUESTION_OPEN
     );
-    assert.equal(await adminRequest(
-      `competitiveV2/matches/${sessionB.matchId}/private/scores/${client.uid}`
-    ), scoreBefore);
+    assert.equal((await coreIntent(client, matchEnvelope(oldSession, "submitAnswer", "old-room", {
+      questionId: open.currentQuestion.questionId,
+      stateVersion: open.stateVersion,
+      payload: { answerId: open.currentQuestion.correctAnswerId },
+    }))).rejectionCode, "STALE_ACTIVE_MATCH_SESSION");
   });
 });
