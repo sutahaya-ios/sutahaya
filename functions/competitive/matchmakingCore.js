@@ -98,6 +98,21 @@ function publicProjection(uid, session, nowEpochMs, extra = {}, profile = null) 
   };
 }
 
+function isInterruptedExplicitForfeit(profile, participant, matchId) {
+  const session = profile?.currentSession;
+  return Boolean(
+    session
+      && [SESSION_STATE.MATCH_FOUND, SESSION_STATE.WAITING_PLAYERS].includes(session.state)
+      && session.matchId === matchId
+      && participant
+      && participant.kind !== PARTICIPANT_KIND.NPC
+      && participant.forfeited === true
+      && participant.forfeitReason === "EXPLICIT_FORFEIT"
+      && participant.sessionId === session.sessionId
+      && participant.sessionEpoch === session.sessionEpoch
+  );
+}
+
 function processJoinQueue(input, intent, uid, {
   nowEpochMs,
   generatedSessionId,
@@ -444,6 +459,7 @@ module.exports = {
   SESSION_STATE,
   claimNextMatch,
   finalizeClaim,
+  isInterruptedExplicitForfeit,
   processCancelQueue,
   processCheckQueue,
   processJoinQueue,

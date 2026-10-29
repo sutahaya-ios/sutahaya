@@ -809,4 +809,62 @@ describe("Competitive Phase C Emulator", () => {
       payload: { answerId: open.currentQuestion.correctAnswerId },
     }))).rejectionCode, "STALE_ACTIVE_MATCH_SESSION");
   });
+
+  it("recovers a previously interrupted Explicit Forfeit before evaluating a new queue join", async () => {
+    const roomA = await queueMatch(2);
+    await adminRequest(`competitiveV2/matches/${roomA.matchId}/private/config`, "PATCH", {
+      countdownDurationMs: 1,
+      questionDurationMs: 8_000,
+      resultDurationMs: 1,
+    });
+    await joinReadyOpen(roomA.clients, roomA.sessions);
+    const client = roomA.clients[0];
+    const oldSession = roomA.sessions[0];
+    const otherUID = roomA.clients[1].uid;
+    const completedAtEpochMs = Date.now() - 6_000;
+    const profileBefore = await adminRequest(
+      `competitiveV2/matchmaking/private/profiles/${client.uid}`
+    );
+
+    await adminRequest(
+      `competitiveV2/matches/${roomA.matchId}/private/participants/${client.uid}`,
+      "PATCH",
+      {
+        active: false,
+        forfeited: true,
+        forfeitReason: "EXPLICIT_FORFEIT",
+        forfeitedAtEpochMs: completedAtEpochMs,
+        status: "FORFEITED",
+      }
+    );
+
+    const requeue = await matchmaking(client, {
+      intentId: `interrupted-forfeit-requeue-${randomUUID()}`,
+      type: "joinQueue",
+      protocolVersion: PROTOCOL_VERSION,
+      clientBuild: "phase-c-emulator",
+      payload: {},
+    });
+    assert.equal(requeue.status, "ACCEPTED");
+    assert.notEqual(requeue.sessionId, oldSession.sessionId);
+    assert.ok(requeue.sessionEpoch > oldSession.sessionEpoch);
+
+    const [settlement, profileAfter, continuing] = await Promise.all([
+      adminRequest(
+        `competitiveV2/matchmaking/private/explicitForfeitSettlements/${roomA.matchId}/${client.uid}`
+      ),
+      adminRequest(`competitiveV2/matchmaking/private/profiles/${client.uid}`),
+      adminRequest(`competitiveV2/matches/${roomA.matchId}/private`),
+    ]);
+    assert.equal(settlement.status, "SETTLED");
+    assert.equal(settlement.forfeitCompletedAtEpochMs, completedAtEpochMs);
+    assert.equal(profileAfter.currentSession.sessionId, requeue.sessionId);
+    assert.ok(
+      profileAfter.competitive.stats.matchesPlayed
+        > profileBefore.competitive.stats.matchesPlayed
+    );
+    assert.equal(continuing.phase, PHASE.QUESTION_OPEN);
+    assert.equal(continuing.participants[otherUID].active, true);
+    assert.equal(continuing.participants[client.uid].status, "FORFEITED");
+  });
 });

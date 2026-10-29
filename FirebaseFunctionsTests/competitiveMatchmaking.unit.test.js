@@ -10,6 +10,7 @@ const {
   SESSION_STATE,
   claimNextMatch,
   finalizeClaim,
+  isInterruptedExplicitForfeit,
   processCancelQueue,
   processCheckQueue,
   processJoinQueue,
@@ -146,6 +147,37 @@ describe("Competitive Phase B matchmaking unit", () => {
     assert.equal(accepted.ack.sessionEpoch, 2);
     assert.equal(accepted.state.private.profiles.p1.explicitForfeitCooldown, undefined);
     assert.equal(accepted.state.public.p1.cooldownEndsAtEpochMs, undefined);
+  });
+
+  it("recognizes only the current fenced session as an interrupted Explicit Forfeit", () => {
+    const profile = {
+      currentSession: {
+        state: SESSION_STATE.WAITING_PLAYERS,
+        matchId: "match-old",
+        sessionId: "session-old",
+        sessionEpoch: 7,
+      },
+    };
+    const participant = {
+      kind: "HUMAN",
+      forfeited: true,
+      forfeitReason: "EXPLICIT_FORFEIT",
+      sessionId: "session-old",
+      sessionEpoch: 7,
+    };
+
+    assert.equal(isInterruptedExplicitForfeit(profile, participant, "match-old"), true);
+    assert.equal(isInterruptedExplicitForfeit(profile, {
+      ...participant,
+      sessionEpoch: 6,
+    }, "match-old"), false);
+    assert.equal(isInterruptedExplicitForfeit({
+      currentSession: { ...profile.currentSession, matchId: "match-new" },
+    }, participant, "match-old"), false);
+    assert.equal(isInterruptedExplicitForfeit(profile, {
+      ...participant,
+      forfeitReason: "RECONNECT_TIMEOUT",
+    }, "match-old"), false);
   });
 
   it("atomically claims four humans and creates one fenced pending match", () => {

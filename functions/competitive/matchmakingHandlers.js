@@ -13,6 +13,7 @@ const {
 const {
   claimNextMatch,
   finalizeClaim,
+  isInterruptedExplicitForfeit,
   processCancelQueue,
   processCheckQueue,
   processJoinQueue,
@@ -175,6 +176,28 @@ async function projectionFor(uid) {
   return (await matchmakingRef().child(`public/${uid}`).get()).val();
 }
 
+async function recoverInterruptedExplicitForfeit(uid) {
+  const profile = (await matchmakingRef().child(`private/profiles/${uid}`).get()).val();
+  const matchId = profile?.currentSession?.matchId;
+  if (typeof matchId !== "string" || matchId.length === 0) return false;
+
+  const participant = (await matchRef(matchId).child(`private/participants/${uid}`).get()).val();
+  if (!isInterruptedExplicitForfeit(profile, participant, matchId)) return false;
+
+  const completedAtEpochMs = Number.isFinite(participant.forfeitedAtEpochMs)
+    ? participant.forfeitedAtEpochMs
+    : Date.now();
+  try {
+    const result = await completeExplicitForfeit(matchId, uid, completedAtEpochMs);
+    if (!["SETTLED", "ALREADY_SETTLED"].includes(result.status)) return false;
+  } catch (error) {
+    if (error?.message === "EXPLICIT_FORFEIT_SESSION_FENCE_MISMATCH") return false;
+    throw error;
+  }
+  await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}/${uid}`).remove();
+  return true;
+}
+
 function ackWithProjection(original, projection) {
   if (!projection) return original;
   return {
@@ -198,6 +221,7 @@ const competitiveMatchmaking = onCall(FUNCTION_OPTIONS, async (request) => {
   try {
     let outcome;
     if (intent.type === "joinQueue") {
+      await recoverInterruptedExplicitForfeit(uid);
       outcome = await transactMatchmaking((current) => processJoinQueue(
         current,
         intent,
