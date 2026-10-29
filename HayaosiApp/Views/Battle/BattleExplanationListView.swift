@@ -14,7 +14,12 @@ struct BattleExplanationListView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 ForEach(Array(questions.enumerated()), id: \.element.id) { index, question in
-                    explanationCard(question, index: index)
+                    // 解説なしの問題を除いた通し番号なので、元の出題番号とは区別する。
+                    QuestionExplanationCard(
+                        question: question,
+                        title: "解説 \(index + 1)",
+                        correctAnswer: correctAnswers[question.id]
+                    )
                 }
             }
             .padding(20)
@@ -25,44 +30,6 @@ struct BattleExplanationListView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func explanationCard(_ question: Question, index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // 解説なしの問題を除いた通し番号なので、元の出題番号とは区別する。
-            Text("解説 \(index + 1)")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text(question.text)
-                .font(.headline)
-                .fixedSize(horizontal: false, vertical: true)
-            if let table = question.table {
-                QuestionTableView(table: table)
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                Label("正解", systemImage: "checkmark.circle.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.blue)
-                Text(correctAnswers[question.id] ?? question.answer)
-                    .font(.title3.bold())
-                    .textSelection(.enabled)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(Color.blue.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 10) {
-                Label("解説", systemImage: "text.book.closed")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(question.explanation)
-                    .font(.body)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(20)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
-    }
 }
 
 #Preview {

@@ -10,6 +10,8 @@ struct QuizSessionView: View {
     /// 不正解のほうが長いのは、正答を読む時間が要るため
     private static let correctFeedbackDuration: TimeInterval = 0.7
     private static let wrongFeedbackDuration: TimeInterval = 1.6
+    private static let answerFeedbackDuration: TimeInterval = 1.2
+    private static let nextButtonVerticalPadding: CGFloat = 12
 
     let mode: PlayMode
     private let showsInterstitial: Bool
@@ -19,6 +21,9 @@ struct QuizSessionView: View {
     @State private var session: QuizSession
     @State private var hasRecorded = false
     @State private var showAbortDialog = false
+    @State private var showsAnswerFeedback = false
+    @State private var showsExplanation = false
+    @State private var advancesAfterExplanation = false
     @State private var sessionStartedAt: Date?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -51,6 +56,14 @@ struct QuizSessionView: View {
                 questionBody(entry: entry)
             }
         }
+        .overlay {
+            if session.phase == .feedback, showsAnswerFeedback,
+               let entry = session.currentEntry {
+                AnswerFeedbackSymbol(isCorrect: entry.isCorrect)
+                    .allowsHitTesting(false)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+            }
+        }
         .navigationBarBackButtonHidden(session.phase != .finished)
         .toolbar {
             if session.phase != .finished {
@@ -68,11 +81,27 @@ struct QuizSessionView: View {
         } message: {
             Text("ここまでの解答は記録されません")
         }
+        .sheet(isPresented: $showsExplanation, onDismiss: finishExplanation) {
+            if let entry = session.currentEntry {
+                QuizExplanationSheet(
+                    question: entry.question,
+                    questionNumber: session.currentIndex + 1,
+                    userAnswer: entry.selectedChoice.map { .selected($0) } ?? .timedOut
+                ) {
+                    advancesAfterExplanation = true
+                    showsExplanation = false
+                }
+                .presentationDetents([.large])
+            }
+        }
         .onReceive(timer) { _ in
             session.tick(Self.tickInterval)
         }
         .task(id: session.phase) {
             await advanceAfterFeedback()
+        }
+        .task(id: session.phase) {
+            await animateAnswerFeedback()
         }
         .onAppear {
             if sessionStartedAt == nil {
@@ -107,6 +136,20 @@ struct QuizSessionView: View {
     }
 
     private func questionBody(entry: QuizSession.Entry) -> some View {
+        ScrollView {
+            questionContent(entry: entry)
+                .padding()
+        }
+        // 長い問題を読んだあとも、次問は問題番号から表示する。
+        .id(session.currentIndex)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if session.phase == .feedback && !entry.question.explanation.isEmpty {
+                feedbackButtons
+            }
+        }
+    }
+
+    private func questionContent(entry: QuizSession.Entry) -> some View {
         VStack(spacing: 20) {
             HStack {
                 Text("第\(session.currentIndex + 1)問 / \(session.totalCount)問")
@@ -124,19 +167,16 @@ struct QuizSessionView: View {
                         : TimerBarStyle.normalTint
                 )
 
-            Spacer()
-
             QuestionTextView(
                 text: entry.question.text,
                 mode: .full,
                 isSingleWord: entry.question.genre.usesProgressiveReveal
             )
+            .fixedSize(horizontal: false, vertical: true)
 
             if let table = entry.question.table {
                 QuestionTableView(table: table)
             }
-
-            Spacer()
 
             VStack(spacing: 12) {
                 ForEach(entry.shuffledChoices, id: \.self) { choice in
@@ -146,40 +186,56 @@ struct QuizSessionView: View {
                     }
                 }
             }
-
-            if session.phase == .feedback {
-                feedbackFooter(entry: entry)
-            }
         }
-        .padding()
     }
 
-    @ViewBuilder
-    private func feedbackFooter(entry: QuizSession.Entry) -> some View {
-        VStack(spacing: 14) {
-            if entry.didTimeout {
-                Label("時間切れ", systemImage: "clock.badge.xmark")
-                    .foregroundStyle(.red)
-                    .font(.headline)
-            } else if entry.isCorrect {
-                Label("正解!", systemImage: "circle")
-                    .foregroundStyle(.green)
-                    .font(.headline)
-            } else {
-                Label("不正解", systemImage: "xmark")
-                    .foregroundStyle(.red)
-                    .font(.headline)
+    /// ○×の表示後、タブバーの上から解説と次問を選べるようにする。
+    private var feedbackButtons: some View {
+        HStack(spacing: 12) {
+            Button {
+                showsExplanation = true
+            } label: {
+                Label("解説", systemImage: "text.book.closed")
             }
+            .buttonStyle(.bordered)
 
-            if !entry.question.explanation.isEmpty {
-                QuestionExplanationView(explanation: entry.question.explanation)
-
-                Button("次へ") {
-                    session.advance()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+            Button {
+                session.advance()
+            } label: {
+                Text("次へ")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+        }
+        .disabled(showsAnswerFeedback)
+        .controlSize(.large)
+        .padding(.horizontal)
+        .padding(.vertical, Self.nextButtonVerticalPadding)
+        .background(.bar)
+    }
+
+    /// シートが閉じきってから進め、次問の制限時間を開始する。
+    private func finishExplanation() {
+        guard advancesAfterExplanation else { return }
+        advancesAfterExplanation = false
+        session.advance()
+    }
+
+    /// 自動進行とは独立して消す。次問への遷移・画面退出時はtaskがキャンセルされる。
+    private func animateAnswerFeedback() async {
+        showsAnswerFeedback = false
+        guard session.phase == .feedback else { return }
+        withAnimation(BattleAnimation.reveal) {
+            showsAnswerFeedback = true
+        }
+        do {
+            try await Task.sleep(for: .seconds(Self.answerFeedbackDuration))
+        } catch {
+            return
+        }
+        guard !Task.isCancelled else { return }
+        withAnimation(BattleAnimation.reveal) {
+            showsAnswerFeedback = false
         }
     }
 
