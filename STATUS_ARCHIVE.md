@@ -5,6 +5,25 @@
 
 ---
 
+## 過去の更新(2026年10月30日・整理分)
+
+- Claude(たける側): **制限時間バーを滑らかなミント表示にし、単語練習の「次の問題へ」を廃止**(たけるの指示で今回はClaudeが実装まで担当)。`Views/Components/TimerBarStyle.swift`へバーの色・更新間隔・警告色の閾値を集約し、対戦・練習の両方から参照する。バーの段差は**更新頻度そのものが10fpsだったこと**が原因で、`.linear`での補間では消えなかった。対戦は`TimelineView(.periodic(by: 0.1))`を`.animation`へ変えて画面のリフレッシュレートで引き直し、練習は`tick`の間隔を0.1秒から1/60秒へ変えて表示と判定を同じ値で動かす。補間指定と`.id`は不要になったため削除した。対戦の`tickInterval`は文字送り専用として0.1秒のまま残している。**警告色の閾値を`min(5秒, 制限時間×0.3)`へ変更**:既定の制限時間が5秒のため固定5秒では常時赤になり、ミントがほとんど見えなかった。これに伴い参照が消えた`BattleAnimation.urgentThreshold`を削除。練習は正誤表示のあと自動で次へ進む(正解0.7秒・不正解1.6秒)よう`.task(id:)`で待ち、「次の問題へ/結果を見る」ボタンを廃止。**選択肢の`.disabled`が正答の緑・誤答の赤を消していた不具合も修正**(`.allowsHitTesting`へ変更。`QuizSession.select`側に既存のガードがあるため状態は動かない)。ボタン廃止で参照が消えた`QuizSession.isLastQuestion`も削除した
+  - 検証:xcodegen実行、Simulator向けビルド成功。iPhone 17 Proでライト/ダーク両方を確認。練習は不正解時に正答が緑・選んだ誤答が赤で表示され、ボタンを押さずに次問へ進むこと、時間切れでも正答が緑になることを確認。ダークでCPU対戦(中学英単語★1・4問)をロビーからリザルトまで通し、バーがミントで段差なく減ることを確認。**滑らかさはSimulatorの録画をフレーム単位で計測して確認**:練習は24フレーム中23回、対戦は19回バー幅が変化し(3〜9pxずつ)、毎フレーム更新されている。`QuizSessionTests`10件成功、他のテストクラスは未実行
+- Codex(たける側): **英単語4択の誤答候補を意味要素単位で重複除外**。「、」「・」をカッコ外だけで分割し、全角・半角スペースと空要素を除いた集合に共通要素があれば候補から外す。カッコ内の区切りと活用差は維持し、候補が3件未満でも集まった分だけ使う。既存端末へ再投入するため`QuestionSeeder.dataVersion`を9へ更新。指定の`QuestionSeederDistractorTests` 5件成功、Simulator向けビルド成功。全テストとSimulator画面確認は指示どおり未実施
+- Codex(たける側): **学習タブをピン留め式「マイボード」へ刷新**。初期状態は空で、`pinnedStudyCategories`へ追加順のカテゴリrawValue配列を保存する。2列カードにアイコン・説明・習得率を表示し、編集時は遷移を止めて左上の赤いマイナスから解除できる。追加シートは実装済み3教材を先に並べ、追加後も閉じずに「追加済み」へ切替。未実装教材は`UpcomingMaterial`へ分離し、英検・数学・漢検・SPIを淡色の非操作カードとして表示する。Viewはボード・追加シート・各カードへ分割。xcodegen実行、Simulator向けビルド成功。iPhone 17 Simulatorで学習タブ→教材を追加→中学英単語を追加→閉じる→マイボード表示を確認し、近日カードの「乞うご期待」がButtonではないこともアクセシビリティ要素で確認。ユニットテストは指示どおり未実行
+
+## 過去の更新(2026年10月29日・整理分)
+
+- TOKIYA-YAMAMOTO(Codex): **待機中のルーム画面を添付デザインへ刷新し、通常の全画面遷移へ調整**。ルームIDと共有、参加人数と横並びメンバー、ホスト表示、4項目の対戦設定カード、ホストの設定変更、画面下へ固定した対戦開始ボタンを白背景・青アクセント・角丸カードで再構成。オンラインメニューをシートから通常のNavigation遷移へ変更し、左上の戻るで退出して前画面へ戻る経路を維持。ルームIDをsemiboldへ少し細くし、主要セクションの縦余白だけを広げた。ルームの最大8人、フレンド招待、ホスト/ゲスト権限、Firebase・同期・対戦開始処理は変更なし。プレイヤー画像はルームデータに無いためイニシャル表示。Simulator向けbuild成功。iPhone 17 Pro Simulatorで全画面表示、戻るボタン、ルームID、余白を確認。**共有・設定変更・対戦開始のタップ操作は未検証**
+
+## 過去の更新(2026年10月24日・整理分)
+
+- Codex(たける側): **問題0件のカテゴリ・難易度を選んだ際の案内を追加**。共通カードにカテゴリ名・星と「この範囲の問題は順次追加しています」「他の難易度を選んでください」を表示し、CPU対戦・ルーム作成では開始ボタン自体を出さず、ルーム作成処理にも0件ガードを追加。学習ヒートマップでは0件セルをタップ不可のまま、該当難易度をまとめてグリッド下へ表示する。収録データテストは各難易度の存在を必須とせず、カテゴリごとの1語以上・ID/単語重複なしだけを維持。Simulator向けビルド成功、全75テスト成功。iPhone 17 SimulatorでCPU対戦・ルーム作成のTOEIC ★2に案内が表示され、開始ボタンが存在しないことを確認
+- TOKIYA-YAMAMOTO(Codex): **Codex開発フローをFAST/NORMAL/STRICTの3段階へ整理**。`docs/MODULE_MAP.md`を最小探索の起点として追加し、`scripts/preflight.sh`でorigin/mainとの差・未commit変更・作業中宣言・競合可能性、`scripts/verify.sh`でリスク別のbuild・関連テスト・Rulesテスト、`scripts/finish-task.sh`で差分確認と人間向けGitコマンド表示を自動化。スクリプトはcommit・pushを実行しない。`CLAUDE.md`と`docs/CODING.md`を最小探索・変更リスクに応じた検証へ更新。Bash構文、help、fetchを省略したpreflight、FAST/NORMAL/STRICTのdry-runに成功。GitHub ActionsはPrivateリポジトリのmacOS実行時間を消費し得るため未追加
+- TOKIYA-YAMAMOTO(Codex): **実機2台PvPで2問目以降の回答権が相手の回答まで復帰しない不具合、端末間の進行差、同時押し反復時の誤ったホスト退出判定を修正**。Firebaseサーバーの共有開始時刻を端末のローカル時計で比較していたため、時計差が回答可否・文字送り・残り時間・ホストタイマーの差として現れていた。RTDBの`.info/serverTimeOffset`を観測し、開始合図を含む全時間判定をFirebase補正時刻に統一。回答権は短周期に再評価し、問題切替時に送信中・送信エラー・前問の誤答演出を解除。さらに、一時的な接続断でも`onDisconnect`が即座に`closed`を書き込むため、生存中のホストは再接続時に監視を再登録して直前状態を復元し、参加者は3秒後も`closed`のままの場合だけ退出として扱うようにした。明示退出は復元対象外。`failed`・`answers`の問題番号による前問除外と問題送り時の削除、得点・回答順、Firebase構造・ルールは維持。PvPリザルトでは「間違えた問題を復習」を非表示にしたが、学習履歴・復習リストへの保存は維持。Simulator向けbuildと`HostDisconnectPolicyTests`・`BattleStartTimingTests`・`BattleScoringTests`・`CPUBattleSessionTests`の計34件に成功。**修正版の実機2台で1〜3問目を双方が回答できること、表示進行が揃うこと、同時押し反復時にルームが維持されること、実際のホスト切断時だけルームが終了すること、PvP終了後に一人学習の復習リストへ誤答が残ることは未検証**
+
+---
+
 ## 過去の更新(2026年10月22日・Competitive v2)
 
 - TOKIYA-YAMAMOTO(Codex, 2026年10月22日): **Competitive v2 Phase D-1をLocal / Emulatorまで実装**。単一hidden MMRのpairwise Elo-style、Bronze/Silver/Gold/Platinum/Rating Battle、冪等かつatomicなsettlement、勝率・最高連勝・累計勝利、4週間Seasonとsoft reset、human平均MMR由来のNPC強度、未確定difficultyBand境界を追加。暫定tuning値はServer configへ集約。Rating Unit 13件、Matchmaking Unit 13件、Core Unit 11件、Swift XCTest 3件、Phase D-1 Emulator 1件(2 human+2 NPC・20問)、Phase C Emulator 2件、Core Emulator 4件が成功。**Production deploy・commit・pushは未実施。正式tuning・Silver以上のNPC待機・difficulty mappingは未決定**
