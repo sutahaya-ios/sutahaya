@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 選択したレベルの習得率を確認し、復習またはランダム練習へ進む
+/// 選択したレベル・形式の習得率を確認し、復習またはランダム練習へ進む
 struct CategoryHeatmapView: View {
     private static let controlSpacing: CGFloat = 10
     private static let cornerRadius: CGFloat = 16
@@ -13,6 +13,7 @@ struct CategoryHeatmapView: View {
     @Query private var questions: [Question]
     @Query private var reviewItems: [ReviewItem]
     @State private var selectedDifficulty: StudyDifficulty = .one
+    @State private var selectedFormat: QuestionFormat?
     @State private var quizQuestions: [Question] = []
     @State private var isPracticing = false
     @State private var sessionTimeLimit = QuizDefaults.timeLimit
@@ -33,7 +34,8 @@ struct CategoryHeatmapView: View {
             records: records,
             questions: questions,
             category: category,
-            difficulty: selectedDifficulty
+            difficulty: selectedDifficulty,
+            format: selectedFormat
         )
         let reviewItemCount = ReviewListFilter.filter(
             reviewItems: reviewItems,
@@ -44,15 +46,20 @@ struct CategoryHeatmapView: View {
         ScrollView {
             VStack(spacing: 24) {
                 DifficultyProficiencyRing(
-                    difficulty: selectedDifficulty,
+                    title: scopeTitle,
                     proficiencyRate: proficiency.progress
                 )
                 .padding(.vertical, 16)
 
-                difficultySelector
+                if !category.formats.isEmpty {
+                    QuestionFormatSelector(formats: category.formats, selection: $selectedFormat)
+                } else if usesDifficultyLevels {
+                    difficultySelector
+                }
                 practiceActions(reviewItemCount: reviewItemCount)
 
-                if practiceQuestions.isEmpty {
+                // 案内文が「他の難易度を選ぶ」ことを促すため、レベルを選べる教材だけに出す
+                if usesDifficultyLevels && practiceQuestions.isEmpty {
                     QuestionAvailabilityNotice(
                         category: category,
                         difficulties: [selectedDifficulty]
@@ -62,6 +69,8 @@ struct CategoryHeatmapView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
         }
+        // 画面に収まるときは動かさない。小さい端末で操作部がはみ出したときだけスクロールさせる
+        .scrollBounceBehavior(.basedOnSize)
         .navigationTitle(category.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $isPracticing) {
@@ -132,7 +141,7 @@ struct CategoryHeatmapView: View {
             .buttonStyle(.plain)
             .disabled(practiceQuestions.isEmpty)
             .opacity(practiceQuestions.isEmpty ? 0.4 : 1)
-            .accessibilityHint("レベル\(selectedDifficulty.rawValue)から最大\(questionCount)問、1問\(Int(timeLimit))秒で出題します")
+            .accessibilityHint("\(scopeTitle)から最大\(questionCount)問、1問\(Int(timeLimit))秒で出題します")
 
             NavigationLink {
                 ReviewListView(category: category)
@@ -196,8 +205,20 @@ struct CategoryHeatmapView: View {
             ? storedTimeLimit : category.defaultTimeLimit
     }
 
+    private var usesDifficultyLevels: Bool {
+        category.genre.usesDifficultyLevels
+    }
+
+    /// リングと読み上げに出す出題範囲の名前
+    private var scopeTitle: String {
+        if !category.formats.isEmpty {
+            return selectedFormat?.displayName ?? "すべて"
+        }
+        return usesDifficultyLevels ? "レベル\(selectedDifficulty.rawValue)" : "全問"
+    }
+
     private var practiceQuestions: [Question] {
-        questions.matching(category: category, difficulty: selectedDifficulty)
+        questions.matching(category: category, difficulty: selectedDifficulty, format: selectedFormat)
     }
 
     private func startPractice() {
@@ -212,12 +233,12 @@ private struct DifficultyProficiencyRing: View {
     private static let diameter: CGFloat = 172
     private static let lineWidth: CGFloat = 10
 
-    let difficulty: StudyDifficulty
+    let title: String
     let proficiencyRate: Double
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("レベル\(difficulty.rawValue)")
+            Text(title)
                 .font(.title3.weight(.semibold))
 
             ZStack {
@@ -246,7 +267,7 @@ private struct DifficultyProficiencyRing: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("レベル\(difficulty.rawValue)、習得率\(rateText)")
+        .accessibilityLabel("\(title)、習得率\(rateText)")
     }
 
     private var progress: Double {

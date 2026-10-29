@@ -36,6 +36,14 @@ enum Genre: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// ★でレベル分けするか。SPIは分野ごとに難しさの軸が違い1本の★に並ばないため、全問から出す
+    var usesDifficultyLevels: Bool {
+        switch self {
+        case .englishWord: return true
+        case .spi: return false
+        }
+    }
+
     var categories: [StudyCategory] {
         StudyCategory.allCases.filter { $0.genre == self }
     }

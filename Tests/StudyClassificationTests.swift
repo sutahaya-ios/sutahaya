@@ -22,17 +22,19 @@ final class StudyClassificationTests: XCTestCase {
         id: String,
         word: String,
         category: StudyCategory,
-        difficulty: StudyDifficulty
+        difficulty: StudyDifficulty,
+        format: QuestionFormat? = nil
     ) -> Question {
         let question = Question(
             id: id,
-            genre: .englishWord,
+            genre: category.genre,
             type: .multipleChoice,
             text: word,
             choices: ["a", "b", "c", "d"],
             answer: "a",
             category: category,
-            difficulty: difficulty
+            difficulty: difficulty,
+            formatRaw: format?.rawValue
         )
         ModelContext(container).insert(question)
         return question
@@ -85,6 +87,17 @@ final class StudyClassificationTests: XCTestCase {
         XCTAssertEqual(questions.matching(category: nil, difficulty: nil).count, 2)
     }
 
+    func test_SPIはレベル指定があっても全問を対象にする() {
+        let questions = [
+            makeQuestion(id: "spi_v_0001", word: "医師：病院", category: .spiVerbal, difficulty: .one),
+            makeQuestion(id: "spi_v_0002", word: "妥当", category: .spiVerbal, difficulty: .three),
+            makeQuestion(id: "jh_0001", word: "book", category: .juniorHigh, difficulty: .one)
+        ]
+
+        XCTAssertEqual(questions.matching(category: .spiVerbal, difficulty: .five).count, 2)
+        XCTAssertEqual(questions.matching(category: .juniorHigh, difficulty: .five).count, 0)
+    }
+
     func test_オンライン対戦設定をデータベース値へ保存して復元する() {
         let original = RoomState.Settings(
             questionCount: 10,
@@ -101,6 +114,63 @@ final class StudyClassificationTests: XCTestCase {
         XCTAssertEqual(restored.genre, .englishWord)
         XCTAssertEqual(restored.wordCategory, .toeic)
         XCTAssertEqual(restored.wordDifficulty, .three)
+    }
+
+    func test_SPIの形式で絞り込みnilなら全形式を対象にする() {
+        let questions = [
+            makeQuestion(id: "meaning", word: "妥当", category: .spiVerbal, difficulty: .one, format: .wordMeaning),
+            makeQuestion(id: "reading", word: "本文", category: .spiVerbal, difficulty: .three, format: .reading),
+            makeQuestion(id: "nonverbal", word: "計算", category: .spiNonVerbal, difficulty: .one)
+        ]
+
+        XCTAssertEqual(
+            questions.matching(category: .spiVerbal, difficulty: .five, format: .wordMeaning).map(\.id),
+            ["meaning"]
+        )
+        XCTAssertEqual(questions.matching(category: .spiVerbal, difficulty: .five, format: nil).count, 2)
+        XCTAssertTrue(questions.matching(category: .spiNonVerbal, difficulty: nil, format: .wordMeaning).isEmpty)
+    }
+
+    func test_習得率は選択した形式の問題と解答履歴だけで計算する() {
+        let questions = [
+            makeQuestion(id: "meaning1", word: "妥当", category: .spiVerbal, difficulty: .one, format: .wordMeaning),
+            makeQuestion(id: "meaning2", word: "簡潔", category: .spiVerbal, difficulty: .three, format: .wordMeaning),
+            makeQuestion(id: "reading", word: "本文", category: .spiVerbal, difficulty: .one, format: .reading)
+        ]
+        let records = [
+            AnswerRecord(questionID: "meaning1", isCorrect: true, mode: .practice),
+            AnswerRecord(questionID: "meaning2", isCorrect: false, mode: .practice),
+            AnswerRecord(questionID: "reading", isCorrect: true, mode: .practice)
+        ]
+
+        let summary = CategoryProficiencySummary.calculate(
+            records: records, questions: questions, category: .spiVerbal,
+            difficulty: .five, format: .wordMeaning
+        )
+
+        XCTAssertEqual(summary.totalWordCount, 2)
+        XCTAssertEqual(summary.masteredWordCount, 1)
+        XCTAssertEqual(summary.proficiencyRate, 0.5)
+    }
+
+    func test_ルームの形式を保存して復元できる() {
+        let original = RoomState.Settings(
+            questionCount: 10, timeLimit: 60, genre: .spi,
+            wordCategory: .spiVerbal, wordDifficulty: .one, questionFormat: .wordMeaning
+        )
+
+        XCTAssertEqual(original.databaseValue["questionFormat"] as? String, "word_meaning")
+        XCTAssertEqual(RoomState.Settings(databaseValue: original.databaseValue).questionFormat, .wordMeaning)
+    }
+
+    func test_ルームの形式が未指定または未知ならnilになる() {
+        let settings = RoomState.Settings(questionCount: 10, timeLimit: 60, genre: .spi)
+        XCTAssertNil(settings.databaseValue["questionFormat"])
+        XCTAssertNil(RoomState.Settings(databaseValue: settings.databaseValue).questionFormat)
+
+        var unknownValue = settings.databaseValue
+        unknownValue["questionFormat"] = "unknown_format"
+        XCTAssertNil(RoomState.Settings(databaseValue: unknownValue).questionFormat)
     }
 
     func test_分類設定がない旧オンラインルームは全問題を対象にする() {

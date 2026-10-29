@@ -68,19 +68,23 @@ struct RoomState {
         /// 英単語のカテゴリと難易度。nilは分類設定のない旧ルームとの互換用
         let wordCategory: StudyCategory?
         let wordDifficulty: StudyDifficulty?
+        /// 出題形式。nilは全形式(旧ルームを含む)
+        let questionFormat: QuestionFormat?
 
         init(
             questionCount: Int,
             timeLimit: TimeInterval,
             genre: Genre,
             wordCategory: StudyCategory? = nil,
-            wordDifficulty: StudyDifficulty? = nil
+            wordDifficulty: StudyDifficulty? = nil,
+            questionFormat: QuestionFormat? = nil
         ) {
             self.questionCount = questionCount
             self.timeLimit = timeLimit
             self.genre = genre
             self.wordCategory = wordCategory
             self.wordDifficulty = wordDifficulty
+            self.questionFormat = questionFormat
         }
 
         /// Realtime Databaseのsettingsへ保存する値
@@ -94,6 +98,9 @@ struct RoomState {
                 value["wordCategory"] = wordCategory.rawValue
                 value["wordDifficulty"] = wordDifficulty.rawValue
             }
+            if let questionFormat {
+                value["questionFormat"] = questionFormat.rawValue
+            }
             return value
         }
 
@@ -101,6 +108,7 @@ struct RoomState {
             questionCount = RoomState.int(databaseValue["questionCount"]) ?? QuizDefaults.questionCount
             timeLimit = RoomState.double(databaseValue["timeLimit"]) ?? QuizDefaults.timeLimit
             genre = Genre(rawValue: databaseValue["genre"] as? String ?? "") ?? .englishWord
+            questionFormat = QuestionFormat(rawValue: databaseValue["questionFormat"] as? String ?? "")
 
             let category = StudyCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
             let difficultyValue = RoomState.int(databaseValue["wordDifficulty"])

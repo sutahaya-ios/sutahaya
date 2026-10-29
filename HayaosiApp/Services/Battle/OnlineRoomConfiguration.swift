@@ -5,6 +5,7 @@ struct OnlineRoomConfiguration: Equatable {
     static let genreKey = "onlineRoomGenre"
     static let categoryKey = "onlineRoomCategory"
     static let difficultyKey = "onlineRoomDifficulty"
+    static let formatKey = "onlineRoomQuestionFormat"
     static let questionCountKey = "onlineRoomQuestionCount"
     static let timeLimitKey = "onlineRoomTimeLimit"
 
@@ -17,8 +18,11 @@ struct OnlineRoomConfiguration: Equatable {
     )
 
     var genre: Genre
-    var category: StudyCategory
+    var category: StudyCategory {
+        didSet { clearUnsupportedFormat() }
+    }
     var difficulty: StudyDifficulty
+    var format: QuestionFormat?
     var questionCount: Int
     var timeLimit: TimeInterval
 
@@ -27,13 +31,16 @@ struct OnlineRoomConfiguration: Equatable {
         category: StudyCategory,
         difficulty: StudyDifficulty,
         questionCount: Int,
-        timeLimit: TimeInterval
+        timeLimit: TimeInterval,
+        format: QuestionFormat? = nil
     ) {
         self.genre = genre
         self.category = category
         self.difficulty = difficulty
         self.questionCount = questionCount
         self.timeLimit = timeLimit
+        self.format = format
+        clearUnsupportedFormat()
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -57,6 +64,8 @@ struct OnlineRoomConfiguration: Equatable {
         timeLimit = QuizDefaults.timeLimitOptions(for: category).contains(storedLimit)
             ? storedLimit
             : category.defaultTimeLimit
+        format = QuestionFormat(rawValue: defaults.string(forKey: Self.formatKey) ?? "")
+        clearUnsupportedFormat()
     }
 
     /// 既に存在するルームの設定画面を、現在値のまま開くための初期化。
@@ -67,6 +76,8 @@ struct OnlineRoomConfiguration: Equatable {
         difficulty = settings.wordDifficulty ?? fallback.difficulty
         questionCount = settings.questionCount
         timeLimit = settings.timeLimit
+        format = settings.questionFormat
+        clearUnsupportedFormat()
     }
 
     func save(to defaults: UserDefaults = .standard) {
@@ -75,6 +86,7 @@ struct OnlineRoomConfiguration: Equatable {
         defaults.set(difficulty.rawValue, forKey: Self.difficultyKey)
         defaults.set(questionCount, forKey: Self.questionCountKey)
         defaults.set(timeLimit, forKey: Self.timeLimitKey)
+        defaults.set(format?.rawValue, forKey: Self.formatKey)
     }
 
     /// ジャンルを変えると、そのジャンルのカテゴリと既定の制限時間へ揃える
@@ -91,7 +103,13 @@ struct OnlineRoomConfiguration: Equatable {
             timeLimit: timeLimit,
             genre: genre,
             wordCategory: category,
-            wordDifficulty: difficulty
+            wordDifficulty: difficulty,
+            questionFormat: format
         )
+    }
+
+    private mutating func clearUnsupportedFormat() {
+        guard let format, !category.formats.contains(format) else { return }
+        self.format = nil
     }
 }

@@ -7,6 +7,7 @@ struct BattleSettingsSelector: View {
     private enum Axis: Hashable {
         case category
         case difficulty
+        case format
         case questionCount
         case timeLimit
 
@@ -14,6 +15,7 @@ struct BattleSettingsSelector: View {
             switch self {
             case .category: return "ジャンル"
             case .difficulty: return "レベル"
+            case .format: return "形式"
             case .questionCount: return "問題数"
             case .timeLimit: return "制限時間"
             }
@@ -23,6 +25,7 @@ struct BattleSettingsSelector: View {
             switch self {
             case .category: return "book"
             case .difficulty: return "star"
+            case .format: return "square.grid.2x2"
             case .questionCount: return "list.bullet"
             case .timeLimit: return "clock"
             }
@@ -45,6 +48,13 @@ struct BattleSettingsSelector: View {
             options
             availabilityRow
         }
+        .onChange(of: configuration.category) { _, category in
+            // カテゴリ変更で消える項目の選択肢を残さない
+            if selectedAxis == .format && category.formats.isEmpty
+                || selectedAxis == .difficulty && !category.genre.usesDifficultyLevels {
+                selectedAxis = .category
+            }
+        }
     }
 
     // MARK: - 4分割
@@ -53,8 +63,13 @@ struct BattleSettingsSelector: View {
         HStack(spacing: 0) {
             axisCell(.category)
             cellDivider
-            axisCell(.difficulty)
-            cellDivider
+            if !configuration.category.formats.isEmpty {
+                axisCell(.format)
+                cellDivider
+            } else if configuration.category.genre.usesDifficultyLevels {
+                axisCell(.difficulty)
+                cellDivider
+            }
             axisCell(.questionCount)
             cellDivider
             axisCell(.timeLimit)
@@ -109,6 +124,7 @@ struct BattleSettingsSelector: View {
         switch axis {
         case .category: return configuration.category.displayName
         case .difficulty: return "★\(configuration.difficulty.rawValue)"
+        case .format: return configuration.format?.displayName ?? "すべて"
         case .questionCount: return "\(configuration.questionCount)問"
         case .timeLimit: return "\(Int(configuration.timeLimit))秒"
         }
@@ -131,6 +147,8 @@ struct BattleSettingsSelector: View {
             } select: {
                 configuration.difficulty = $0
             }
+        case .format:
+            QuestionFormatSelector(formats: configuration.category.formats, selection: $configuration.format)
         case .questionCount:
             chips(QuizDefaults.questionCountOptions, current: configuration.questionCount) {
                 "\($0)問"

@@ -21,7 +21,7 @@ enum QuestionDataError: LocalizedError {
 /// バンドルの問題データ(JSON)をSwiftDataへ投入する
 enum QuestionSeeder {
     /// 問題データを更新したらこの値を上げる(次回起動時に再投入される)
-    static let dataVersion = 12
+    static let dataVersion = 14
     private static let versionKey = "questionDataVersion"
     private static let distractorCount = 3
     /// 誤答選択の巡回ストライド。品詞グループ数と互いに素な素数にする
@@ -127,6 +127,7 @@ enum QuestionSeeder {
     private struct SPIQuestionFile: Decodable {
         let id: String
         let difficulty: Int
+        let format: String?
         let text: String
         let choices: [String]
         let answer: String
@@ -154,7 +155,8 @@ enum QuestionSeeder {
                         category: category,
                         difficulty: StudyDifficulty(rawValue: file.difficulty) ?? .one,
                         explanation: file.explanation,
-                        table: file.table
+                        table: file.table,
+                        formatRaw: file.format
                     )
                 }
             } catch {

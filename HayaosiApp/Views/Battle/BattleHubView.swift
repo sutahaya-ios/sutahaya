@@ -14,6 +14,8 @@ struct BattleHubView: View {
     private var savedCategoryRaw = StudyCategory.juniorHigh.rawValue
     @AppStorage(OnlineRoomConfiguration.difficultyKey)
     private var savedDifficultyValue = StudyDifficulty.one.rawValue
+    @AppStorage(OnlineRoomConfiguration.formatKey)
+    private var savedFormatRaw = ""
     @AppStorage(OnlineRoomConfiguration.questionCountKey)
     private var savedQuestionCount = QuizDefaults.questionCount
     @AppStorage(OnlineRoomConfiguration.timeLimitKey)
@@ -47,7 +49,12 @@ struct BattleHubView: View {
         VStack(alignment: .leading, spacing: 0) {
             BattleScopeCard(
                 categoryName: configuration.category.displayName,
-                difficulty: configuration.difficulty.rawValue,
+                difficulty: configuration.category.genre.usesDifficultyLevels
+                    ? configuration.difficulty.rawValue
+                    : nil,
+                formatName: configuration.category.formats.isEmpty
+                    ? nil
+                    : configuration.format?.displayName ?? "すべて",
                 proficiency: proficiency
             )
 
@@ -284,18 +291,20 @@ struct BattleHubView: View {
                 : QuizDefaults.questionCount,
             timeLimit: QuizDefaults.timeLimitOptions(for: category).contains(savedTimeLimit)
                 ? savedTimeLimit
-                : category.defaultTimeLimit
+                : category.defaultTimeLimit,
+            format: QuestionFormat(rawValue: savedFormatRaw)
         )
     }
 
-    /// 学習記録と同じ集計を、選択中のカテゴリと難易度に絞って使う。
+    /// 学習記録と同じ集計を、選択中のカテゴリ・難易度・形式に絞って使う。
     /// 対戦設定を変えると、この値も切り替わる
     private var proficiency: CategoryProficiencySummary {
         CategoryProficiencySummary.calculate(
             records: answerRecords,
             questions: allQuestions,
             category: configuration.category,
-            difficulty: configuration.difficulty
+            difficulty: configuration.difficulty,
+            format: configuration.format
         )
     }
 

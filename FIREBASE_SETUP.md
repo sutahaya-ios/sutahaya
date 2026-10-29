@@ -114,7 +114,8 @@ Realtime Database:
 rooms/{4桁コード}
   ├─ hostID, status(waiting/playing/finished/closed), createdAt
   ├─ settings { questionCount, timeLimit, genre,
-  │             wordCategory(junior_high/high_school), wordDifficulty(1〜5) }
+  │             wordCategory(junior_high/high_school/toeic/spi_verbal/spi_nonverbal), wordDifficulty(1〜5),
+  │             questionFormat(任意: SPI言語の形式rawValue。省略時はすべて) }
   ├─ players/{uid} { nickname, score, joinedAt }
   ├─ questions [ { id, text, choices[4], answer } ]  ← 開始時にホストが配信
   └─ game { questionIndex, phase(question/reveal/finished), startedAt, startDelayMS(1問目のみ),

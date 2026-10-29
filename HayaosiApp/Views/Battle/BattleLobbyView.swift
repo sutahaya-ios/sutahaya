@@ -190,7 +190,8 @@ struct BattleLobbyView: View {
     }
 
     private func settingsCard(state: RoomState) -> some View {
-        VStack(spacing: 24) {
+        let hasFormats = !(state.settings.wordCategory?.formats.isEmpty ?? true)
+        return VStack(spacing: 24) {
             HStack {
                 Text("対戦設定")
                     .font(.title3.bold())
@@ -218,9 +219,11 @@ struct BattleLobbyView: View {
                 )
                 settingDivider
                 settingItem(
-                    title: "レベル",
-                    value: compactDifficulty(state.settings.wordDifficulty),
-                    systemImage: "star"
+                    title: hasFormats ? "形式" : "レベル",
+                    value: hasFormats
+                        ? state.settings.questionFormat?.displayName ?? "すべて"
+                        : compactDifficulty(state.settings.wordDifficulty),
+                    systemImage: hasFormats ? "square.grid.2x2" : "star"
                 )
                 settingDivider
                 settingItem(
@@ -400,7 +403,8 @@ struct BattleLobbyView: View {
             .filter { $0.genre == state.settings.genre }
             .matching(
                 category: state.settings.wordCategory,
-                difficulty: state.settings.wordDifficulty
+                difficulty: state.settings.wordDifficulty,
+                format: state.settings.questionFormat
             )
         let questions = Array(pool.shuffled().prefix(state.settings.questionCount))
         guard !questions.isEmpty else { return }

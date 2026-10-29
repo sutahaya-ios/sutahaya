@@ -36,12 +36,42 @@ enum StudyCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// 選択できる出題形式。形式が未定のカテゴリでは選択UIを出さない
+    var formats: [QuestionFormat] {
+        self == .spiVerbal ? QuestionFormat.allCases : []
+    }
+
     /// 既定の制限時間(秒)
     var defaultTimeLimit: TimeInterval {
         switch self {
         case .juniorHigh, .highSchool, .toeic: return QuizDefaults.timeLimit
         case .spiVerbal: return 60
         case .spiNonVerbal: return 120
+        }
+    }
+}
+
+/// SPI言語の出題形式。rawValueは配布JSONとルーム設定で共用する
+enum QuestionFormat: String, Codable, CaseIterable, Identifiable {
+    case twoWordRelation = "two_word_relation"
+    case wordMeaning = "word_meaning"
+    case wordUsage = "word_usage"
+    case sentenceOrder = "sentence_order"
+    case fillBlank = "fill_blank"
+    case reading = "reading"
+    case kanjiCompound = "kanji_compound"
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .twoWordRelation: return "二語の関係"
+        case .wordMeaning: return "語句の意味"
+        case .wordUsage: return "語句の用法"
+        case .sentenceOrder: return "文の並び替え"
+        case .fillBlank: return "空欄補充"
+        case .reading: return "長文読解"
+        case .kanjiCompound: return "熟語の成り立ち"
         }
     }
 }
@@ -63,12 +93,19 @@ enum StudyDifficulty: Int, Codable, CaseIterable, Identifiable {
 }
 
 extension Collection where Element == Question {
-    /// 指定されたカテゴリと難易度で絞り込む。nilはオンライン対戦用の「指定なし」
-    func matching(category: StudyCategory?, difficulty: StudyDifficulty?) -> [Question] {
+    /// カテゴリ・難易度・形式で絞り込む。nilの条件は「すべて」を対象にする
+    func matching(
+        category: StudyCategory?,
+        difficulty: StudyDifficulty?,
+        format: QuestionFormat? = nil
+    ) -> [Question] {
         filter { question in
             let matchesCategory = category.map { question.category == $0 } ?? true
-            let matchesDifficulty = difficulty.map { question.difficulty == $0 } ?? true
-            return matchesCategory && matchesDifficulty
+            // レベルを使わないジャンルは、保存済みの★やルーム設定の★が残っていても全問を対象にする
+            let matchesDifficulty = !question.category.genre.usesDifficultyLevels
+                || (difficulty.map { question.difficulty == $0 } ?? true)
+            let matchesFormat = format.map { question.format == $0 } ?? true
+            return matchesCategory && matchesDifficulty && matchesFormat
         }
     }
 }

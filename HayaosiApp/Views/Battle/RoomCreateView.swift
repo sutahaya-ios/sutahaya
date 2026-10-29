@@ -129,7 +129,8 @@ struct RoomCreateView: View {
         allQuestions
             .matching(
                 category: configuration.category,
-                difficulty: configuration.difficulty
+                difficulty: configuration.difficulty,
+                format: configuration.format
             )
     }
 
@@ -164,7 +165,8 @@ struct RoomCreateView: View {
         let availableQuestionCount = allQuestions
             .matching(
                 category: configuration.category,
-                difficulty: configuration.difficulty
+                difficulty: configuration.difficulty,
+                format: configuration.format
             )
             .count
         guard availableQuestionCount > 0, let onSaveSettings else { return nil }

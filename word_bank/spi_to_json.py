@@ -10,6 +10,7 @@
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -26,12 +27,37 @@ COLUMNS = [
     "id", "difficulty", "text", "answer",
     "wrong1", "wrong2", "wrong3", "wrong4",
     "explanation", "table_caption", "table_data",
+    # 既存シートの列位置を崩さないよう末尾に足した
+    "format",
 ]
 WRONG_COLUMNS = ["wrong1", "wrong2", "wrong3", "wrong4"]
 
+# 出題形式。アプリの形式選択はこの値で絞り込む。非言語は形式が未定なので空欄のままにする
+VERBAL_FORMATS = (
+    "two_word_relation",  # 二語の関係
+    "word_meaning",       # 語句の意味
+    "word_usage",         # 語句の用法
+    "sentence_order",     # 文の並び替え
+    "fill_blank",         # 空欄補充
+    "reading",            # 長文読解
+    "kanji_compound",     # 熟語の成り立ち
+)
+
 SHEET_CONFIGS = (
-    {"sheet": "言語", "filename": "spi_verbal.json", "prefix": "spi_v_"},
-    {"sheet": "非言語", "filename": "spi_nonverbal.json", "prefix": "spi_n_"},
+    {"sheet": "言語", "filename": "spi_verbal.json", "prefix": "spi_v_", "formats": VERBAL_FORMATS},
+    {"sheet": "非言語", "filename": "spi_nonverbal.json", "prefix": "spi_n_", "formats": ()},
+)
+
+# 記号そのものが選択肢になる問題は、本番どおり決まった順に並べる
+FIXED_CHOICE_ORDERS = (
+    ("ア", "イ", "ウ", "エ", "オ"),
+    (
+        "似た意味の漢字を重ねる",
+        "反対の意味の漢字を重ねる",
+        "主語と述語の関係にある",
+        "動詞の後に目的語を置く",
+        "前の漢字が後の漢字を修飾する",
+    ),
 )
 
 DIFFICULTIES = range(1, 6)
@@ -72,13 +98,28 @@ def numeric_value(text):
     return float(digits)
 
 
-def ordered_choices(answer, wrongs):
-    """5つすべてが数値なら昇順、1つでも数値でなければ入力順を保つ。"""
+def answer_position(identifier, choice_count):
+    """正解を置く位置をIDから決める。SPIは出題時にシャッフルしないため、
+    入力順のままだと正解が常に先頭になる。実行のたびに変わらないようハッシュで決める。"""
+    digest = hashlib.sha256(str(identifier).encode("utf-8")).digest()
+    return digest[0] % choice_count
+
+
+def ordered_choices(identifier, answer, wrongs):
+    """決まった順がある記号はその順、5つすべてが数値なら昇順、
+    それ以外は誤答の入力順を保ったまま、IDから決めた位置へ正解を差し込む。"""
     choices = [answer] + wrongs
+    for fixed_order in FIXED_CHOICE_ORDERS:
+        if set(choices) == set(fixed_order):
+            return list(fixed_order)
+
     numbers = [numeric_value(choice) for choice in choices]
     if all(number is not None for number in numbers):
         return [choice for _, choice in sorted(zip(numbers, choices), key=lambda pair: pair[0])]
-    return choices
+
+    shuffled = list(wrongs)
+    shuffled.insert(answer_position(identifier, len(choices)), answer)
+    return shuffled
 
 
 def parse_table(caption, data):
@@ -102,7 +143,7 @@ def parse_table(caption, data):
     }, problems
 
 
-def validate(rows, prefix, sheet_name):
+def validate(rows, prefix, sheet_name, formats):
     problems = []
     seen_texts = set()
     identifiers = [entry["id"] for entry in rows]
@@ -126,6 +167,11 @@ def validate(rows, prefix, sheet_name):
 
         if entry["difficulty"] not in DIFFICULTIES:
             problems.append(f"{where}: difficultyは1〜5(いまは {entry['difficulty']})")
+
+        if formats and entry["format"] not in formats:
+            problems.append(f"{where}: formatは {' / '.join(formats)} のいずれか(いまは {entry['format']})")
+        elif not formats and entry["format"]:
+            problems.append(f"{where}: このシートのformatは未定なので空欄にする(いまは {entry['format']})")
 
         choices = [entry["answer"]] + [entry[column] for column in WRONG_COLUMNS]
         filled = [choice for choice in choices if choice]
@@ -158,8 +204,9 @@ def build_questions(rows):
         questions.append({
             "id": entry["id"],
             "difficulty": int(entry["difficulty"]),
+            "format": entry["format"] or None,
             "text": entry["text"],
-            "choices": ordered_choices(entry["answer"], wrongs),
+            "choices": ordered_choices(entry["id"], entry["answer"], wrongs),
             "answer": entry["answer"],
             "explanation": entry["explanation"],
             "table": table,
@@ -187,7 +234,7 @@ def main():
             problems.append(f"{args.workbook.name}: 必要なシート「{sheet_name}」がない")
             continue
         rows = read_sheet(workbook[sheet_name])
-        found = validate(rows, config["prefix"], sheet_name)
+        found = validate(rows, config["prefix"], sheet_name, config["formats"])
         problems.extend(found)
         if not found:
             results.append((config, rows))

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 指定カテゴリ(必要なら難易度も絞って)の習得率・難易度別正答率を、問題と解答履歴から集計する
+/// 指定カテゴリ(必要なら難易度・形式も絞って)の習得率・難易度別正答率を集計する
 struct CategoryProficiencySummary: Equatable {
     let totalWordCount: Int
     let masteredWordCount: Int
@@ -36,18 +36,19 @@ struct CategoryProficiencySummary: Equatable {
         min(max(proficiencyRate ?? 0, 0), 1)
     }
 
-    /// - Parameter difficulty: 指定すると、その難易度の問題だけで集計する(未指定はカテゴリ全体)
+    /// - Parameter difficulty: 指定すると、その難易度の問題だけで集計する(未指定とレベルを使わないジャンルはカテゴリ全体)
     static func calculate(
         records: [AnswerRecord],
         questions: [Question],
         category: StudyCategory,
-        difficulty: StudyDifficulty? = nil
+        difficulty: StudyDifficulty? = nil,
+        format: QuestionFormat? = nil
     ) -> CategoryProficiencySummary {
-        let categoryQuestionsByID = questions.reduce(into: [String: Question]()) { result, question in
-            guard question.category == category else { return }
-            if let difficulty, question.difficulty != difficulty { return }
-            result[question.id] = question
-        }
+        let categoryQuestionsByID = questions
+            .matching(category: category, difficulty: difficulty, format: format)
+            .reduce(into: [String: Question]()) { result, question in
+                result[question.id] = question
+            }
         var masteredQuestionIDs = Set<String>()
         var countsByDifficulty = [Int: AccuracyCount]()
 

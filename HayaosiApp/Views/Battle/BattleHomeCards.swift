@@ -3,7 +3,9 @@ import SwiftUI
 /// 対戦範囲と、その範囲のカテゴリの習得率。数字は学習記録と同じ集計を使う
 struct BattleScopeCard: View {
     let categoryName: String
-    let difficulty: Int
+    /// レベル分けしないジャンルはnilにして★を出さない
+    let difficulty: Int?
+    var formatName: String? = nil
     let proficiency: CategoryProficiencySummary
 
     var body: some View {
@@ -12,9 +14,15 @@ struct BattleScopeCard: View {
                 Text(categoryName)
                     .font(.title3.bold())
 
-                Text("★\(difficulty)")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.orange)
+                if let formatName {
+                    Text(formatName)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.accentColor)
+                } else if let difficulty {
+                    Text("★\(difficulty)")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.orange)
+                }
             }
 
             ProgressView(value: proficiency.progress)

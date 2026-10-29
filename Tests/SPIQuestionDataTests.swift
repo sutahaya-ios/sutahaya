@@ -5,6 +5,26 @@ import XCTest
 final class SPIQuestionDataTests: XCTestCase {
     private var questions: [Question] { QuestionSeeder.loadSPIQuestions() }
 
+    func test_SPI言語は全問に有効な形式があり7形式すべてを含む() {
+        let verbalQuestions = questions.filter { $0.category == .spiVerbal }
+        XCTAssertFalse(verbalQuestions.isEmpty)
+        for question in verbalQuestions {
+            XCTAssertNotNil(question.format, "\(question.id) の形式が無いか不明な値")
+        }
+        XCTAssertEqual(Set(verbalQuestions.compactMap(\.format)), Set(StudyCategory.spiVerbal.formats))
+        XCTAssertEqual(StudyCategory.spiVerbal.formats, QuestionFormat.allCases)
+        for category in StudyCategory.allCases where category != .spiVerbal {
+            XCTAssertTrue(category.formats.isEmpty)
+        }
+    }
+
+    func test_SPI非言語は形式未指定のまま読み込める() {
+        for question in questions where question.category == .spiNonVerbal {
+            XCTAssertNil(question.formatRaw)
+            XCTAssertNil(question.format)
+        }
+    }
+
     func test_SPIの各カテゴリに問題がある() {
         for category in Genre.spi.categories {
             XCTAssertFalse(

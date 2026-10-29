@@ -76,6 +76,59 @@ final class OnlineRoomConfigurationTests: XCTestCase {
         XCTAssertEqual(configuration.questionCount, 7)
         XCTAssertEqual(configuration.timeLimit, 5)
     }
+
+    func testFormatCanBeSavedRestoredAndCleared() {
+        var configuration = OnlineRoomConfiguration(
+            genre: .spi, category: .spiVerbal, difficulty: .one,
+            questionCount: 10, timeLimit: 60, format: .wordMeaning
+        )
+        configuration.save(to: defaults)
+
+        XCTAssertEqual(defaults.string(forKey: "onlineRoomQuestionFormat"), "word_meaning")
+        XCTAssertEqual(OnlineRoomConfiguration(defaults: defaults), configuration)
+
+        configuration.format = nil
+        configuration.save(to: defaults)
+        XCTAssertNil(defaults.object(forKey: OnlineRoomConfiguration.formatKey))
+        XCTAssertNil(OnlineRoomConfiguration(defaults: defaults).format)
+    }
+
+    func testCategoryAndGenreChangesClearUnsupportedFormat() {
+        var configuration = OnlineRoomConfiguration(
+            genre: .spi, category: .spiVerbal, difficulty: .one,
+            questionCount: 10, timeLimit: 60, format: .wordMeaning
+        )
+        configuration.category = .spiVerbal
+        XCTAssertEqual(configuration.format, .wordMeaning)
+        configuration.category = .spiNonVerbal
+        XCTAssertNil(configuration.format)
+
+        configuration.category = .spiVerbal
+        configuration.format = .reading
+        configuration.changeGenre(to: .englishWord)
+        XCTAssertNil(configuration.format)
+    }
+
+    func testUnknownOrUnsupportedStoredFormatBecomesNil() {
+        defaults.set(StudyCategory.spiVerbal.rawValue, forKey: OnlineRoomConfiguration.categoryKey)
+        defaults.set("unknown_format", forKey: OnlineRoomConfiguration.formatKey)
+        XCTAssertNil(OnlineRoomConfiguration(defaults: defaults).format)
+
+        defaults.set(StudyCategory.spiNonVerbal.rawValue, forKey: OnlineRoomConfiguration.categoryKey)
+        defaults.set(QuestionFormat.wordMeaning.rawValue, forKey: OnlineRoomConfiguration.formatKey)
+        XCTAssertNil(OnlineRoomConfiguration(defaults: defaults).format)
+    }
+
+    func testFormatPassesThroughRoomSettingsAndEditor() {
+        let configuration = OnlineRoomConfiguration(
+            genre: .spi, category: .spiVerbal, difficulty: .one,
+            questionCount: 10, timeLimit: 60, format: .wordMeaning
+        )
+        let settings = configuration.roomSettings(availableQuestionCount: 20)
+
+        XCTAssertEqual(settings.questionFormat, .wordMeaning)
+        XCTAssertEqual(OnlineRoomConfiguration(settings: settings), configuration)
+    }
 }
 
 final class RoomInviteLifecycleTests: XCTestCase {

@@ -16,6 +16,8 @@ final class Question {
     var categoryRaw: String = StudyCategory.highSchool.rawValue
     /// カテゴリ内の難易度(1〜5)。既存インストールを壊さないためデフォルト値付き
     var difficultyValue: Int = StudyDifficulty.one.rawValue
+    /// 出題形式。既存データや形式未定の問題はnil
+    var formatRaw: String? = nil
     /// 解答後に見せる解説。英単語は持たないので既定は空
     var explanation: String = ""
     /// 資料解釈の表。持たない問題はnil
@@ -26,7 +28,8 @@ final class Question {
          category: StudyCategory = .highSchool,
          difficulty: StudyDifficulty = .one,
          explanation: String = "",
-         table: QuestionTable? = nil) {
+         table: QuestionTable? = nil,
+         formatRaw: String? = nil) {
         self.id = id
         self.genreRaw = genre.rawValue
         self.typeRaw = type.rawValue
@@ -37,6 +40,7 @@ final class Question {
         self.difficultyValue = difficulty.rawValue
         self.explanation = explanation
         self.table = table
+        self.formatRaw = formatRaw
     }
 
     var genre: Genre { Genre(rawValue: genreRaw) ?? .englishWord }
@@ -48,4 +52,5 @@ final class Question {
     var type: QuestionType { QuestionType(rawValue: typeRaw) ?? .multipleChoice }
     var category: StudyCategory { StudyCategory(rawValue: categoryRaw) ?? .highSchool }
     var difficulty: StudyDifficulty { StudyDifficulty(rawValue: difficultyValue) ?? .one }
+    var format: QuestionFormat? { formatRaw.flatMap(QuestionFormat.init(rawValue:)) }
 }
