@@ -43,6 +43,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/{matchmakingHandlers.js,matchmakingCore.js}`・Phase B/C Competitive tests | **旧deployで部分完了したExplicit Forfeit sessionを安全に自己修復**。Match側FORFEITEDとsession fenceをServerで照合し、5秒後の再Queueを復旧する | 2026年10月29日 |
 ---
 ## 最新更新(2026年8月25日〜10月26日)
 - TOKIYA-YAMAMOTO(Codex, 2026年10月29日): **Explicit Forfeit後のACTIVE_MATCH_EXISTSをLocal / Emulatorで解消**。Server cooldown recordを正として旧session/lease/assignmentを自己修復し、5秒未満は拒否、5秒後は旧Room進行中でもnew sessionId/sessionEpochでQueue参加可能。棄権者は即時強制4位Penaltyを冪等確定する一方、残存Playerの通常score順位は詰めず、Humanが残るRoomは継続、Human 0のNPC-only Roomはmatch/presence/clocks/claimを削除してprivate settlementだけ保持。duplicate Forfeit、Room A/B fencing、通常切断の15秒Reconnectを維持。Backend Unit 70件、Phase C Emulator 4件が成功。Swift側は不変のため直前のXCTest 21件・Simulator Build証拠を再利用。**Production deployは未実施。対象は`competitiveIntent`・`competitiveMatchmaking`・`competitiveReconcileMatch`**
