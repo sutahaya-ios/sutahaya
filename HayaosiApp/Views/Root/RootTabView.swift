@@ -6,6 +6,7 @@ struct RootTabView: View {
     private enum AppTab: Hashable {
         case battle
         case study
+        case creation
         case myPage
     }
 
@@ -26,6 +27,10 @@ struct RootTabView: View {
             NavigationStack { StudyHubView() }
                 .tabItem { Label("学習", systemImage: "book.fill") }
                 .tag(AppTab.study)
+
+            NavigationStack { QuestionCreateView() }
+                .tabItem { Label("作問", systemImage: "square.and.pencil") }
+                .tag(AppTab.creation)
 
             NavigationStack { MyPageView() }
                 .tabItem { Label("マイページ", systemImage: "person.crop.circle.fill") }

@@ -74,6 +74,86 @@ service cloud.firestore {
         && existsAfter(/databases/$(database)/documents/users/$(recipientUid)/friends/$(senderUid));
     }
 
+    // 手動作問は本文を固定し、ライブラリと受信箱だけで参照権限を渡す。
+    function authoringText(value, maximum) {
+      return value is string && value.size() > 0 && value.size() <= maximum;
+    }
+
+    // 全20問のmap・形式・問題文型を確認する。詳細な型/文字数/選択肢整合性はSwift側で全件検証。
+    // 本文は対戦や権限判定に使わず、厳密な内容検査でRulesの式数上限を超えないようにする。
+    function validAuthoredQuestion(question) {
+      return question is map
+        && question.format in ['trueFalse', 'multipleChoice', 'shortAnswer']
+        && question.text is string;
+    }
+
+    function validAuthoredQuestionAt(questions, index) {
+      return questions.size() <= index || validAuthoredQuestion(questions[index]);
+    }
+
+    function validQuestionSet(data) {
+      return data.keys().hasOnly(['title', 'creatorUID', 'createdAt', 'questions', 'status', 'schemaVersion'])
+        && authoringText(data.title, 80)
+        && data.creatorUID == request.auth.uid
+        && data.createdAt == request.time
+        && data.status == 'active' && data.schemaVersion == 1
+        && data.questions is list && data.questions.size() >= 1 && data.questions.size() <= 20
+        && validAuthoredQuestionAt(data.questions, 0)
+        && validAuthoredQuestionAt(data.questions, 1)
+        && validAuthoredQuestionAt(data.questions, 2)
+        && validAuthoredQuestionAt(data.questions, 3)
+        && validAuthoredQuestionAt(data.questions, 4)
+        && validAuthoredQuestionAt(data.questions, 5)
+        && validAuthoredQuestionAt(data.questions, 6)
+        && validAuthoredQuestionAt(data.questions, 7)
+        && validAuthoredQuestionAt(data.questions, 8)
+        && validAuthoredQuestionAt(data.questions, 9)
+        && validAuthoredQuestionAt(data.questions, 10)
+        && validAuthoredQuestionAt(data.questions, 11)
+        && validAuthoredQuestionAt(data.questions, 12)
+        && validAuthoredQuestionAt(data.questions, 13)
+        && validAuthoredQuestionAt(data.questions, 14)
+        && validAuthoredQuestionAt(data.questions, 15)
+        && validAuthoredQuestionAt(data.questions, 16)
+        && validAuthoredQuestionAt(data.questions, 17)
+        && validAuthoredQuestionAt(data.questions, 18)
+        && validAuthoredQuestionAt(data.questions, 19);
+    }
+
+    function canReadQuestionSet(setID) {
+      return signedIn()
+        && (resource.data.creatorUID == request.auth.uid
+          || exists(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID))
+          || exists(/databases/$(database)/documents/users/$(request.auth.uid)/sharedQuestionSets/$(setID)));
+    }
+
+    function validLibraryEntry(uid, setID, data) {
+      let questionSet = getAfter(/databases/$(database)/documents/questionSets/$(setID)).data;
+      return data.keys().hasOnly(['questionSetID', 'addedAt'])
+        && data.questionSetID == setID && data.addedAt == request.time
+        && questionSet.status == 'active'
+        && (questionSet.creatorUID == uid
+          || exists(/databases/$(database)/documents/users/$(uid)/sharedQuestionSets/$(setID)));
+    }
+
+    function ownsQuestionSet(setID) {
+      return signedIn()
+        && get(/databases/$(database)/documents/questionSets/$(setID)).data.creatorUID == request.auth.uid;
+    }
+
+    function validQuestionSetShare(recipientUid, setID, data) {
+      let questionSet = getAfter(/databases/$(database)/documents/questionSets/$(setID)).data;
+      return data.keys().hasOnly(['questionSetID', 'fromUID', 'toUID', 'fromNickname', 'title', 'sentAt'])
+        && data.questionSetID == setID
+        && data.fromUID == request.auth.uid && data.toUID == recipientUid
+        && data.fromUID != recipientUid
+        && questionSet.creatorUID == request.auth.uid && questionSet.status == 'active'
+        && data.title == questionSet.title
+        && data.fromNickname == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nickname
+        && data.sentAt == request.time
+        && mutualFriends(request.auth.uid, recipientUid);
+    }
+
     function validInviteIdentity(recipientUid, inviteId, data) {
       return data.roomInstanceID is string
         && data.roomInstanceID.size() >= 1
@@ -242,6 +322,20 @@ service cloud.firestore {
       allow delete: if isOwner(uid)
         && !existsAfter(/databases/$(database)/documents/friendCodes/$(resource.data.friendCode));
 
+      match /library/{setID} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && validLibraryEntry(uid, setID, request.resource.data);
+        allow update, delete: if false;
+      }
+
+      match /sharedQuestionSets/{setID} {
+        // 作者の不存在確認も許可し、同じ相手への再送はtransactionのno-opにする。
+        allow get: if isOwner(uid) || ownsQuestionSet(setID);
+        allow list: if isOwner(uid);
+        allow create: if signedIn() && validQuestionSetShare(uid, setID, request.resource.data);
+        allow update, delete: if false;
+      }
+
       match /friends/{friendUid} {
         allow get: if isOwner(uid) || (signedIn() && request.auth.uid == friendUid);
         allow list: if isOwner(uid);
@@ -317,6 +411,21 @@ service cloud.firestore {
                 || recipientRollsBack(uid, inviteId))));
         allow delete: if false;
       }
+    }
+
+    match /questionSets/{setID} {
+      // 新規保存transactionで不存在を確認する。存在する本文は参照権限が必要。
+      allow get: if signedIn()
+        && (!exists(/databases/$(database)/documents/questionSets/$(setID)) || canReadQuestionSet(setID));
+      allow list: if false;
+      allow create: if signedIn()
+        && validQuestionSet(request.resource.data)
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID)).data.questionSetID == setID;
+      allow update: if signedIn()
+        && resource.data.creatorUID == request.auth.uid
+        && resource.data.status == 'active' && request.resource.data.status == 'deleted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
     }
 
     match /friendCodes/{code} {

@@ -1,68 +1,151 @@
 import SwiftUI
 
-/// 作問タブ。ユーザーが自分で問題を作れるようにする機能で、**次回アップデートで実装予定**。
-/// いまは何ができるようになるかだけを見せる(要件 §4 v1.5「ユーザー投稿問題」)
+/// 作成した問題集と受信した共有の入口。
 struct QuestionCreateView: View {
-    private static let plans: [(icon: String, title: String, detail: String)] = [
-        ("square.and.pencil", "自分で問題を作る", "覚えたい単語と意味を登録して、自分だけの問題セットにできます"),
-        ("person.2.fill", "友達と共有する", "作った問題セットを友達に渡して、そのまま対戦できます"),
-        ("books.vertical.fill", "テスト範囲に合わせる", "授業や試験の範囲だけを集めた出題ができます")
-    ]
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var service = QuestionSetService()
+    @State private var isCreating = false
+    @State private var addingIDs: Set<String> = []
+    @State private var actionError = ""
+    @State private var showsActionError = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                header
+        List {
+            Section {
+                Button {
+                    isCreating = true
+                } label: {
+                    Label("問題集を新規作成", systemImage: "plus.circle.fill")
+                        .font(.headline)
+                        .padding(.vertical, 6)
+                }
+                .disabled(service.uid == nil || service.isLoading)
+                .accessibilityIdentifier("authoring.newSet")
+            } footer: {
+                Text("○×・4択・短い記述の問題集を作り、フレンドに共有できます。")
+            }
 
-                VStack(spacing: 12) {
-                    ForEach(Self.plans, id: \.title) { plan in
-                        planRow(plan)
-                    }
+            if service.isLoading {
+                Section { ProgressView("問題集を読み込み中…") }
+            }
+            if let errorMessage = service.errorMessage {
+                Section {
+                    Label("読み込めませんでした", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                    Text(errorMessage).font(.subheadline)
+                    Button("再試行") { Task { await service.load() } }
+                        .disabled(service.isLoading)
+                        .accessibilityIdentifier("authoring.retry")
                 }
             }
-            .padding()
+
+            if let warningMessage = service.warningMessage {
+                Section {
+                    Label("一部の問題集を表示できません", systemImage: "exclamationmark.triangle")
+                        .font(.headline)
+                    Text(warningMessage).font(.subheadline)
+                }
+                .accessibilityIdentifier("authoring.warning")
+            }
+
+            Section("ライブラリ") {
+                ForEach(service.library) { set in
+                    NavigationLink {
+                        QuestionSetDetailView(questionSetID: set.id, service: service)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(set.title).font(.headline)
+                            Text("\(set.questions.count)問 · \(set.creatorUID == service.uid ? "自分で作成" : "フレンドから追加")")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .accessibilityIdentifier("authoring.library.\(set.id)")
+                }
+                if service.library.isEmpty && !service.isLoading && service.errorMessage == nil {
+                    ContentUnavailableView(
+                        "問題集を作ってみましょう", systemImage: "books.vertical",
+                        description: Text("「問題集を新規作成」から、覚えたい問題を登録できます。")
+                    )
+                }
+            }
+
+            Section("フレンドからの共有") {
+                ForEach(service.sharedSets) { share in
+                    sharedRow(share)
+                }
+                if service.sharedSets.isEmpty && !service.isLoading && service.errorMessage == nil {
+                    Text("共有された問題集はありません。届いた問題集はここからライブラリに追加できます。")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .navigationTitle("作問")
+        .accessibilityIdentifier("authoring.library")
+        .task { await service.load() }
+        .refreshable { await service.load() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await service.load() } }
+        }
+        .sheet(isPresented: $isCreating) {
+            QuestionSetEditorView(service: service)
+        }
+        .alert("追加できませんでした", isPresented: $showsActionError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(actionError)
+        }
     }
 
-    private var header: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "hammer.fill")
-                .font(.system(size: 40))
-                .foregroundStyle(.orange)
-            Text("次回アップデートで公開予定")
-                .font(.headline)
-            Text("いまは収録済みの英単語で対戦できます")
+    private func sharedRow(_ share: QuestionSetShare) -> some View {
+        let isAvailable = service.questionSets[share.questionSetID]?.status == .active
+        let isAdded = service.libraryIDs.contains(share.questionSetID)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(share.title).font(.headline)
+            Text("\(share.fromNickname)さんから共有されました")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
-    }
-
-    private func planRow(_ plan: (icon: String, title: String, detail: String)) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: plan.icon)
-                .font(.title3)
-                .foregroundStyle(.orange)
-                .frame(width: 32)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(plan.title)
-                    .font(.headline)
-                Text(plan.detail)
+            if !isAvailable {
+                Label("この問題集は現在利用できません", systemImage: "lock.fill")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            } else if isAdded {
+                Label("ライブラリに追加済み", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+            } else {
+                Button {
+                    Task { await addToLibrary(share) }
+                } label: {
+                    if addingIDs.contains(share.id) {
+                        ProgressView("追加中…")
+                    } else {
+                        Label("ライブラリに追加", systemImage: "plus")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(addingIDs.contains(share.id))
+                .accessibilityIdentifier("authoring.addShared.\(share.id)")
             }
-            Spacer(minLength: 0)
         }
-        .padding()
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(.secondarySystemBackground)))
+        .padding(.vertical, 4)
+    }
+
+    private func addToLibrary(_ share: QuestionSetShare) async {
+        guard !addingIDs.contains(share.id) else { return }
+        addingIDs.insert(share.id)
+        defer { addingIDs.remove(share.id) }
+        do {
+            try await service.addToLibrary(share)
+        } catch {
+            actionError = error.localizedDescription
+            showsActionError = true
+        }
     }
 }
 
 #Preview {
-    NavigationStack {
-        QuestionCreateView()
-    }
+    NavigationStack { QuestionCreateView() }
 }
