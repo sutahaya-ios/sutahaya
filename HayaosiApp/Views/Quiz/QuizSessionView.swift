@@ -11,7 +11,6 @@ struct QuizSessionView: View {
     private static let correctFeedbackDuration: TimeInterval = 0.7
     private static let wrongFeedbackDuration: TimeInterval = 1.6
     private static let answerFeedbackDuration: TimeInterval = 1.2
-    private static let nextButtonVerticalPadding: CGFloat = 12
 
     let mode: PlayMode
     private let showsInterstitial: Bool
@@ -192,27 +191,14 @@ struct QuizSessionView: View {
 
     /// ○×の表示後、タブバーの上から解説と次問を選べるようにする。
     private var feedbackButtons: some View {
-        HStack(spacing: 12) {
-            Button {
-                showsExplanation = true
-            } label: {
-                Label("解説", systemImage: "text.book.closed")
-            }
-            .buttonStyle(.bordered)
-
-            Button {
-                session.advance()
-            } label: {
-                Text("次へ")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-        }
+        QuizActionBar(
+            secondaryTitle: "解説",
+            secondarySystemImage: "text.book.closed",
+            primaryTitle: "次へ",
+            onSecondary: { showsExplanation = true },
+            onPrimary: { session.advance() }
+        )
         .disabled(showsAnswerFeedback)
-        .controlSize(.large)
-        .padding(.horizontal)
-        .padding(.vertical, Self.nextButtonVerticalPadding)
-        .background(.bar)
     }
 
     /// シートが閉じきってから進め、次問の制限時間を開始する。
