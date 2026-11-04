@@ -217,12 +217,111 @@ final class QuestionSetTests: XCTestCase {
         }
     }
 
+    func test_保存済み問題の編集は問題集IDと問題IDと作成情報を維持する() throws {
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let original = QuestionSet(
+            id: "set-1", title: "日本の地理", creatorUID: "author", createdAt: createdAt,
+            questions: [trueFalse(), multipleChoice()]
+        )
+        var edited = original.questions[0]
+        edited.text = "日本の首都は大阪である。"
+        edited.answers = ["×"]
+        edited.explanation = "日本の首都は東京です。"
+
+        let updated = try original.replacingQuestions([edited, original.questions[1]])
+
+        XCTAssertEqual(updated.id, original.id)
+        XCTAssertEqual(updated.creatorUID, original.creatorUID)
+        XCTAssertEqual(updated.createdAt, createdAt)
+        XCTAssertEqual(updated.questions.map(\.id), original.questions.map(\.id))
+        XCTAssertEqual(updated.questions[0].text, "日本の首都は大阪である。")
+        XCTAssertEqual(updated.questions[0].answers, ["×"])
+    }
+
+    func test_問題削除は残りの順番を維持し最後の1問は削除できない() throws {
+        let original = QuestionSet(
+            id: "set-1", title: "日本の地理", creatorUID: "author", createdAt: .now,
+            questions: [trueFalse(), multipleChoice(), shortAnswer()]
+        )
+
+        let updated = try original.replacingQuestions(Array(original.questions.dropFirst()))
+
+        XCTAssertEqual(updated.questions.map(\.id), ["multiple-choice", "short-answer"])
+        XCTAssertThrowsError(try updated.replacingQuestions([]))
+    }
+
+    func test_保存済み問題集へ3形式を末尾追加して同じIDを維持する() throws {
+        let original = QuestionSet(
+            id: "set-1", title: "日本の地理", creatorUID: "author", createdAt: .now,
+            questions: [trueFalse()]
+        )
+        let additions = [
+            trueFalse(id: "added-true-false"),
+            multipleChoice(id: "added-multiple-choice"),
+            shortAnswer(id: "added-short-answer")
+        ]
+
+        let updated = try additions.reduce(original) { set, question in
+            try set.replacingQuestions(set.questions + [question])
+        }
+
+        XCTAssertEqual(updated.id, original.id)
+        XCTAssertEqual(updated.questions.map(\.id), [
+            "true-false", "added-true-false", "added-multiple-choice", "added-short-answer"
+        ])
+        XCTAssertEqual(updated.friendBattlePayloads.map(\.id), [
+            "true-false", "added-true-false", "added-multiple-choice"
+        ])
+    }
+
+    func test_保存済み問題集へ21問目を追加できない() throws {
+        let questions = (0..<QuestionSetLimits.questions).map { trueFalse(id: "question-\($0)") }
+        let fullSet = QuestionSet(
+            id: "set-1", title: "上限", creatorUID: "author", createdAt: .now,
+            questions: questions
+        )
+
+        XCTAssertEqual(try fullSet.replacingQuestions(questions).questions.count, QuestionSetLimits.questions)
+        XCTAssertThrowsError(
+            try fullSet.replacingQuestions(questions + [multipleChoice(id: "question-over-limit")])
+        )
+    }
+
+    func test_フレンド対戦には丸バツと4択だけを配信する() {
+        let set = QuestionSet(
+            id: "set-1",
+            title: "日本の地理",
+            creatorUID: "author",
+            createdAt: .now,
+            questions: [trueFalse(), multipleChoice(), shortAnswer()]
+        )
+
+        let payloads = set.friendBattlePayloads
+
+        XCTAssertEqual(payloads.map(\.id), ["true-false", "multiple-choice"])
+        XCTAssertEqual(payloads[0].choices, ["○", "×"])
+        XCTAssertEqual(Set(payloads[1].choices), Set(["東京", "大阪", "京都", "札幌"]))
+        XCTAssertEqual(payloads.map(\.answer), ["○", "東京"])
+    }
+
+    func test_短文記述だけの問題集はフレンド対戦へ配信しない() {
+        let set = QuestionSet(
+            id: "set-1",
+            title: "記述",
+            creatorUID: "author",
+            createdAt: .now,
+            questions: [shortAnswer()]
+        )
+
+        XCTAssertTrue(set.friendBattlePayloads.isEmpty)
+    }
+
     private func trueFalse(id: String = "true-false") -> AuthoredQuestion {
         AuthoredQuestion(id: id, format: .trueFalse, text: "日本の首都は東京である。", choices: ["○", "×"], answers: ["○"])
     }
 
-    private func multipleChoice() -> AuthoredQuestion {
-        AuthoredQuestion(id: "multiple-choice", format: .multipleChoice, text: "日本の首都は？", choices: ["東京", "大阪", "京都", "札幌"], answers: ["東京"])
+    private func multipleChoice(id: String = "multiple-choice") -> AuthoredQuestion {
+        AuthoredQuestion(id: id, format: .multipleChoice, text: "日本の首都は？", choices: ["東京", "大阪", "京都", "札幌"], answers: ["東京"])
     }
 
     private func shortAnswer(id: String = "short-answer") -> AuthoredQuestion {

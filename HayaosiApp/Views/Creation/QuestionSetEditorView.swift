@@ -18,7 +18,7 @@ struct QuestionSetEditorView: View {
                 } header: {
                     Text("問題集タイトル")
                 } footer: {
-                    Text("\(QuestionSetLimits.title)文字以内。保存後は内容を編集できません。")
+                    Text("\(QuestionSetLimits.title)文字以内")
                 }
 
                 Section {

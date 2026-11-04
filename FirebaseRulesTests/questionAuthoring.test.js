@@ -251,15 +251,21 @@ describe("Question authoring Firestore rules", () => {
     await assertFails(getDoc(doc(bob, "users", "eve", "sharedQuestionSets", "set-1")));
   });
 
-  it("keeps question body, library references and inbox immutable", async () => {
+  it("lets only the author update validated questions while keeping references immutable", async () => {
     await seedProfilesAndFriends();
     const alice = database("alice");
     const bob = database("bob");
+    const eve = database("eve");
     await createSet(alice);
     await shareTransaction(alice);
     await addTransaction(bob);
     await assertFails(updateDoc(doc(alice, "questionSets", "set-1"), { title: "編集" }));
-    await assertFails(updateDoc(doc(alice, "questionSets", "set-1"), { questions: [question("shortAnswer")] }));
+    const editedQuestions = [question("shortAnswer", { id: "edited-question", text: "編集後の問題文" })];
+    await assertSucceeds(updateDoc(doc(alice, "questionSets", "set-1"), { questions: editedQuestions }));
+    assert.deepEqual((await assertSucceeds(getDoc(doc(bob, "questionSets", "set-1")))).data().questions, editedQuestions);
+    await assertFails(updateDoc(doc(bob, "questionSets", "set-1"), { questions: [question()] }));
+    await assertFails(updateDoc(doc(eve, "questionSets", "set-1"), { questions: [question()] }));
+    await assertFails(updateDoc(doc(alice, "questionSets", "set-1"), { questions: [] }));
     await assertFails(deleteDoc(doc(alice, "questionSets", "set-1")));
     await assertFails(setDoc(doc(alice, "users", "bob", "sharedQuestionSets", "set-1"), share()));
     await assertFails(deleteDoc(doc(bob, "users", "bob", "sharedQuestionSets", "set-1")));
@@ -349,7 +355,7 @@ describe("Question authoring Firestore rules", () => {
     await assertFails(createSet(alice, "invalid", { questions: [missingText] }));
   });
 
-  it("leaves detailed content validation to the app while keeping content private and immutable", async () => {
+  it("leaves detailed content validation to the app while keeping content private and owner-editable", async () => {
     // この境界は意図的: Rulesは20問すべてのmap・形式・問題文型と権限を守り、詳細な型と内容はSwiftで検証。
     const alice = database("alice");
     await assertSucceeds(createSet(alice, "client-validation", {
@@ -358,6 +364,7 @@ describe("Question authoring Firestore rules", () => {
       })],
     }));
     await assertFails(getDoc(doc(database("eve"), "questionSets", "client-validation")));
-    await assertFails(updateDoc(doc(alice, "questionSets", "client-validation"), { questions: [question()] }));
+    await assertSucceeds(updateDoc(doc(alice, "questionSets", "client-validation"), { questions: [question()] }));
+    await assertFails(updateDoc(doc(database("eve"), "questionSets", "client-validation"), { questions: [question()] }));
   });
 });

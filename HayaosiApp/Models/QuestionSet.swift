@@ -90,6 +90,24 @@ struct AuthoredQuestion: Codable, Equatable, Identifiable {
     }
 }
 
+extension AuthoredQuestion {
+    /// 初期版のフレンド対戦は、選択肢を1回選ぶ形式だけを扱う。
+    var isSupportedInFriendBattle: Bool {
+        format == .trueFalse || format == .multipleChoice
+    }
+
+    var friendBattlePayload: RoomState.QuestionPayload? {
+        guard isSupportedInFriendBattle, let answer = answers.first else { return nil }
+        let presentedChoices = format == .multipleChoice ? choices.shuffled() : choices
+        return RoomState.QuestionPayload(
+            id: id,
+            text: text,
+            choices: presentedChoices,
+            answer: answer
+        )
+    }
+}
+
 struct QuestionSet: Codable, Equatable, Identifiable {
     var id: String
     var title: String
@@ -98,6 +116,20 @@ struct QuestionSet: Codable, Equatable, Identifiable {
     var questions: [AuthoredQuestion]
     var status: QuestionSetStatus = .active
     var schemaVersion: Int = 1
+}
+
+extension QuestionSet {
+    var friendBattlePayloads: [RoomState.QuestionPayload] {
+        questions.compactMap(\.friendBattlePayload)
+    }
+
+    /// 保存済み問題集の識別子と共有参照を保ったまま、問題本文だけを差し替える。
+    func replacingQuestions(_ questions: [AuthoredQuestion]) throws -> QuestionSet {
+        let validated = try QuestionSetDraft(id: id, title: title, questions: questions).validated()
+        var updated = self
+        updated.questions = validated.questions
+        return updated
+    }
 }
 
 struct QuestionSetDraft: Equatable {

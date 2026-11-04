@@ -438,20 +438,39 @@ final class OnlineBattleSession: NPCManageableBattleSession {
 
     /// 対戦開始。選択肢は全端末で同じ並びになるようホストがシャッフルして配信する
     func startGame(questions: [Question]) async {
-        guard isHost, let state, state.players.count >= BattleRules.minPlayersToStart else { return }
-        isStartingMatch = true
-        let payload: [[String: Any]] = questions.map { question in
-            [
-                "id": question.id,
-                "text": question.text,
-                "choices": question.presentedChoices,
-                "answer": question.answer
-            ]
+        let payloads = questions.map { question in
+            RoomState.QuestionPayload(
+                id: question.id,
+                text: question.text,
+                choices: question.presentedChoices,
+                answer: question.answer
+            )
         }
+        await startGame(payloads: payloads)
+    }
+
+    /// 作問ルームを作成したホストが、選んだQuestionSetから作った配信値を待機中に登録する。
+    func prepareAuthoredQuestions(_ questions: [RoomState.QuestionPayload]) async throws {
+        guard isHost, !roomCode.isEmpty, !questions.isEmpty else {
+            throw SessionError.settingsUnavailable
+        }
+        try await roomRef.child("questions").setValue(questions.map(\.databaseValue))
+    }
+
+    /// 作問ルームでは待機中に配信済みの問題を使い、永続化したQuestionSetを複製しない。
+    func startPreparedGame() async {
+        guard let state, state.settings.isAuthored else { return }
+        await startGame(payloads: state.questions.shuffled())
+    }
+
+    private func startGame(payloads: [RoomState.QuestionPayload]) async {
+        guard isHost, let state, state.players.count >= BattleRules.minPlayersToStart,
+              !payloads.isEmpty else { return }
+        isStartingMatch = true
         do {
             try await roomRef.updateChildValues([
                 "status": RoomState.Status.playing.rawValue,
-                "questions": payload,
+                "questions": payloads.map(\.databaseValue),
                 "game": [
                     "questionIndex": 0,
                     "phase": RoomState.GamePhase.question.rawValue,
@@ -471,9 +490,11 @@ final class OnlineBattleSession: NPCManageableBattleSession {
         guard isHost, let state else { return }
         var updates: [String: Any] = [
             "status": RoomState.Status.waiting.rawValue,
-            "game": NSNull(),
-            "questions": NSNull()
+            "game": NSNull()
         ]
+        if !state.settings.isAuthored {
+            updates["questions"] = NSNull()
+        }
         for player in state.players {
             updates["players/\(player.id)/score"] = 0
         }
@@ -822,6 +843,7 @@ final class OnlineBattleSession: NPCManageableBattleSession {
     func saveResultsIfNeeded(context: ModelContext) {
         guard !hasSavedResults, state?.status == .finished else { return }
         hasSavedResults = true
+        guard state?.settings.isAuthored != true else { return }
         ResultRecorder.record(
             results: myResultsByQuestion.map { ($0.key, $0.value) },
             mode: .battle,

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 保存前の問題を入力する。確定済みの問題集は編集しない。
+/// 問題の作成と保存後の編集で共用する入力画面。
 struct AuthoredQuestionEditorView: View {
     let question: AuthoredQuestion
     let isNew: Bool

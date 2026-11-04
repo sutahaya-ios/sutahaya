@@ -49,6 +49,19 @@ struct OnlineModeMenuView: View {
                 }
                 .buttonStyle(SoundButtonStyle())
 
+                NavigationLink {
+                    AuthoredBattleSetupView(isOnlineReady: isOnlineReady)
+                } label: {
+                    MenuCard(
+                        title: "作問",
+                        subtitle: "自分で作った問題集で対戦",
+                        systemImage: "square.and.pencil",
+                        color: .accentColor
+                    )
+                }
+                .buttonStyle(SoundButtonStyle())
+                .accessibilityIdentifier("battle.authored")
+
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
                     inviteSection(at: timeline.date)
                 }
@@ -226,6 +239,133 @@ struct OnlineModeMenuView: View {
         return configuration.roomSettings(
             availableQuestionCount: availableQuestionCount
         )
+    }
+}
+
+/// 作問フレンド対戦の問題集選択。共有から追加した問題集は意図的に除外する。
+private struct AuthoredBattleSetupView: View {
+    @AppStorage("nickname") private var nickname = "ゲスト"
+    @State private var service = QuestionSetService()
+    @State private var session: OnlineBattleSession?
+    @State private var showRoom = false
+    @State private var creatingSetID: String?
+    @State private var errorMessage: String?
+
+    let isOnlineReady: Bool
+
+    private var ownedSets: [QuestionSet] {
+        service.library.filter { $0.creatorUID == service.uid }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Text("フレンド対戦では、自分で作った問題集の○×・4択だけを使えます。")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if service.isLoading {
+                Section { ProgressView("問題集を読み込み中…") }
+            } else if let loadError = service.errorMessage {
+                Section {
+                    Text(loadError).foregroundStyle(.secondary)
+                    Button("再試行") { Task { await service.load() } }
+                }
+            } else {
+                Section("自分の問題集") {
+                    ForEach(ownedSets) { set in
+                        let supportedCount = set.questions.filter(\.isSupportedInFriendBattle).count
+                        Button {
+                            Task { await createRoom(with: set) }
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(set.title).font(.headline).foregroundStyle(.primary)
+                                    Text("対戦対応 \(supportedCount)問（○×・4択）")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if creatingSetID == set.id {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .disabled(creatingSetID != nil || supportedCount == 0)
+                        .accessibilityIdentifier("battle.authoredSet.\(set.id)")
+                    }
+
+                    if ownedSets.isEmpty {
+                        ContentUnavailableView(
+                            "対戦できる問題集がありません",
+                            systemImage: "square.and.pencil",
+                            description: Text("学習タブの「作問」から、自分の問題集を作成してください。")
+                        )
+                    }
+                }
+            }
+        }
+        .navigationTitle("作問の問題集")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await service.load() }
+        .refreshable { await service.load() }
+        .navigationDestination(isPresented: $showRoom) {
+            if let session {
+                BattleFlowView(session: session)
+            }
+        }
+        .onChange(of: showRoom) { _, isShowing in
+            if !isShowing {
+                session?.leave()
+                session = nil
+            }
+        }
+        .alert("ルームを作成できませんでした", isPresented: .init(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private func createRoom(with set: QuestionSet) async {
+        guard isOnlineReady else {
+            errorMessage = "Firebase設定後に作問対戦を利用できます。"
+            return
+        }
+        let payloads = set.friendBattlePayloads
+        guard !payloads.isEmpty else { return }
+
+        creatingSetID = set.id
+        defer { creatingSetID = nil }
+        var newSession: OnlineBattleSession?
+        do {
+            let uid = try await AuthService.shared.ensureAuthenticated()
+            let createdSession = try OnlineBattleSession(myID: uid, nickname: nickname)
+            newSession = createdSession
+            let settings = RoomState.Settings(
+                questionCount: payloads.count,
+                timeLimit: 30,
+                genre: .spi,
+                questionSource: .authored,
+                authoredQuestionSetID: set.id,
+                authoredQuestionSetTitle: set.title
+            )
+            try await createdSession.createRoom(settings: settings)
+            try await createdSession.prepareAuthoredQuestions(payloads)
+            session = createdSession
+            showRoom = true
+        } catch {
+            newSession?.leave()
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

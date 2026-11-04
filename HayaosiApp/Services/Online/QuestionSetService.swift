@@ -134,6 +134,36 @@ final class QuestionSetService {
         }
     }
 
+    /// 同じQuestionSetを参照したまま問題本文を更新する。タイトル・作者・作成日時は変更しない。
+    func updateQuestions(in set: QuestionSet, questions: [AuthoredQuestion]) async throws -> QuestionSet {
+        let requested = try set.replacingQuestions(questions)
+        let currentUID = try requireUID()
+        guard set.creatorUID == currentUID else { throw QuestionSetServiceError.notCreator }
+        let setRef = db.collection("questionSets").document(set.id)
+        do {
+            let result = try await transaction { transaction in
+                let current = try Self.decodeSet(transaction.getDocument(setRef))
+                guard current.creatorUID == currentUID else { throw QuestionSetServiceError.notCreator }
+                guard current.status == .active else { throw QuestionSetServiceError.unavailable }
+                guard current.questions == set.questions else { throw QuestionSetServiceError.staleQuestionSet }
+                let updated = try current.replacingQuestions(requested.questions)
+                transaction.updateData([
+                    "questions": updated.questions.map(Self.questionData)
+                ], forDocument: setRef)
+                return updated
+            }
+            guard isCurrent(currentUID) else { throw QuestionSetServiceError.accountChanged }
+            guard let updated = result as? QuestionSet else { throw QuestionSetServiceError.invalidData }
+            revision += 1
+            questionSets[updated.id] = updated
+            rebuildLibrary()
+            errorMessage = nil
+            return updated
+        } catch {
+            throw userError(error, operation: "transaction update", path: "questionSets/{id}.questions")
+        }
+    }
+
     func share(_ set: QuestionSet, with friend: Friend) async throws {
         let currentUID = try requireUID()
         guard set.creatorUID == currentUID, friend.id != currentUID else {
@@ -305,7 +335,7 @@ final class QuestionSetService {
 }
 
 private enum QuestionSetServiceError: LocalizedError {
-    case accountChanged, notCreator, unavailable, conflictingDraft, invalidData
+    case accountChanged, notCreator, unavailable, conflictingDraft, staleQuestionSet, invalidData
     case requestFailed(String)
 
     var errorDescription: String? {
@@ -314,6 +344,7 @@ private enum QuestionSetServiceError: LocalizedError {
         case .notCreator: "この操作は問題集の作成者だけが行えます。"
         case .unavailable: "この問題集は削除されたか、現在利用できません。"
         case .conflictingDraft: "この問題集はすでに保存されています。画面を閉じてライブラリを更新してください。"
+        case .staleQuestionSet: "問題集が別の画面で更新されています。画面を更新して、もう一度お試しください。"
         case .invalidData: "問題集のデータを読み取れませんでした。アプリを更新してお試しください。"
         case .requestFailed(let message): message
         }

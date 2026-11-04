@@ -14,7 +14,11 @@ struct BattleResultView: View {
 
     var body: some View {
         // スクロールさせず1画面に収める。退出・再戦の操作位置を毎回同じにするため
-        BattleResultPodiumView(players: rankedPlayers, myID: session.myID)
+        BattleResultPodiumView(
+            players: rankedPlayers,
+            myID: session.myID,
+            usesCorrectCount: session.state?.settings.isAuthored == true
+        )
             .padding(.horizontal, 20)
             .padding(.vertical, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -95,6 +99,7 @@ struct BattleResultView: View {
 
     /// 出題順のまま、解説を持つ問題だけを残す。英単語だけの対戦では空になる
     private var explainedQuestions: [Question] {
+        guard session.state?.settings.isAuthored != true else { return [] }
         let questionsByID = Dictionary(
             allQuestions.map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first }

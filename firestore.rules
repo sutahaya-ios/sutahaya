@@ -95,7 +95,7 @@ service cloud.firestore {
       return data.keys().hasOnly(['title', 'creatorUID', 'createdAt', 'questions', 'status', 'schemaVersion'])
         && authoringText(data.title, 80)
         && data.creatorUID == request.auth.uid
-        && data.createdAt == request.time
+        && data.createdAt is timestamp
         && data.status == 'active' && data.schemaVersion == 1
         && data.questions is list && data.questions.size() >= 1 && data.questions.size() <= 20
         && validAuthoredQuestionAt(data.questions, 0)
@@ -420,11 +420,15 @@ service cloud.firestore {
       allow list: if false;
       allow create: if signedIn()
         && validQuestionSet(request.resource.data)
+        && request.resource.data.createdAt == request.time
         && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID)).data.questionSetID == setID;
       allow update: if signedIn()
         && resource.data.creatorUID == request.auth.uid
-        && resource.data.status == 'active' && request.resource.data.status == 'deleted'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+        && ((resource.data.status == 'active' && request.resource.data.status == 'deleted'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+          || (resource.data.status == 'active'
+            && validQuestionSet(request.resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['questions'])));
       allow delete: if false;
     }
 

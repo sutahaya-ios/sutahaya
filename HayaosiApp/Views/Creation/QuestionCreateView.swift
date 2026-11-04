@@ -15,7 +15,7 @@ struct QuestionCreateView: View {
                 Button {
                     isCreating = true
                 } label: {
-                    Label("問題集を新規作成", systemImage: "plus.circle.fill")
+                    Label("新しい問題集を作る", systemImage: "plus.circle.fill")
                         .font(.headline)
                         .padding(.vertical, 6)
                 }
@@ -48,30 +48,25 @@ struct QuestionCreateView: View {
                 .accessibilityIdentifier("authoring.warning")
             }
 
-            Section("ライブラリ") {
-                ForEach(service.library) { set in
-                    NavigationLink {
-                        QuestionSetDetailView(questionSetID: set.id, service: service)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(set.title).font(.headline)
-                            Text("\(set.questions.count)問 · \(set.creatorUID == service.uid ? "自分で作成" : "フレンドから追加")")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .accessibilityIdentifier("authoring.library.\(set.id)")
-                }
-                if service.library.isEmpty && !service.isLoading && service.errorMessage == nil {
-                    ContentUnavailableView(
-                        "問題集を作ってみましょう", systemImage: "books.vertical",
-                        description: Text("「問題集を新規作成」から、覚えたい問題を登録できます。")
-                    )
+            Section("自分の問題集") {
+                ForEach(ownedSets) { set in libraryRow(set, source: "自分で作成") }
+                if ownedSets.isEmpty && !service.isLoading && service.errorMessage == nil {
+                    Text("自分で作った問題集はありません。")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
             }
 
-            Section("フレンドからの共有") {
+            Section("フレンドから追加した問題集") {
+                ForEach(addedSets) { set in libraryRow(set, source: "フレンドから追加") }
+                if addedSets.isEmpty && !service.isLoading && service.errorMessage == nil {
+                    Text("フレンドから追加した問題集はありません。")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("届いた共有") {
                 ForEach(service.sharedSets) { share in
                     sharedRow(share)
                 }
@@ -97,6 +92,29 @@ struct QuestionCreateView: View {
         } message: {
             Text(actionError)
         }
+    }
+
+    private var ownedSets: [QuestionSet] {
+        service.library.filter { $0.creatorUID == service.uid }
+    }
+
+    private var addedSets: [QuestionSet] {
+        service.library.filter { $0.creatorUID != service.uid }
+    }
+
+    private func libraryRow(_ set: QuestionSet, source: String) -> some View {
+        NavigationLink {
+            QuestionSetDetailView(questionSetID: set.id, service: service)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(set.title).font(.headline)
+                Text("\(set.questions.count)問 · \(source)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+        .accessibilityIdentifier("authoring.library.\(set.id)")
     }
 
     private func sharedRow(_ share: QuestionSetShare) -> some View {
