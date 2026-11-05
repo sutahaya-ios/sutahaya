@@ -7,7 +7,7 @@ struct QuizExplanationSheet: View {
     let question: Question
     let questionNumber: Int
     let userAnswer: QuestionExplanationCard.UserAnswer
-    let onNext: () -> Void
+    var onNext: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -23,15 +23,17 @@ struct QuizExplanationSheet: View {
             }
             .background(Color(.systemBackground))
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                Button(action: onNext) {
-                    Text("次の問題へ")
-                        .frame(maxWidth: .infinity)
+                if let onNext {
+                    Button(action: onNext) {
+                        Text("次の問題へ")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, Self.buttonVerticalPadding)
+                    .background(.bar)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .padding(.horizontal, 20)
-                .padding(.vertical, Self.buttonVerticalPadding)
-                .background(.bar)
             }
             .navigationTitle("解説")
             .navigationBarTitleDisplayMode(.inline)

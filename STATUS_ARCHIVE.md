@@ -5,6 +5,10 @@
 
 ---
 
+## 過去の更新(2026年11月2日・整理分)
+
+- TOKIYA-YAMAMOTO(Codex): **TASK 2 招待ライフサイクルの実装を完了**。ルーム作成ごとの`roomInstanceID`、recipient配下のcanonical invite、generation付き10秒再招待、30秒logical expiry、`pending→accepting→accepted` claim transaction、claim ID付き期限内rollback、document ID+generation単位の「あとで」を追加。RTDB参加は0〜7の固定枠とplayerをatomicにclaim/releaseし、同一UIDの再接続ではslot・score・joinedAtを書き換えない。client deleteを廃止し、acceptedとRTDB退出を分離。03 Securityで固定8枠とrollback proofのRules契約も反映済み。対象Swiftテスト8件・アプリコンパイル・Rules Emulator 43件（skip 0）に成功。**本番FirebaseへのRules deployと実機での再招待・競合回帰は未実施**
+
 ## 過去の更新(2026年10月30日・整理分)
 
 - TOKIYA-YAMAMOTO(Codex): **対戦ホームを添付デザインに沿った直接操作型UIへ刷新**。前回設定をローカル保存し、初回は既定値を使って設定画面を挟まずルーム作成、4桁コード参加、CPU対戦、招待参加ができる。設定は「変更」から編集可能。作成・参加中の二重操作を防ぎ、失敗時はロビーへ遷移しない。招待の「あとで」はFirebase上の招待を削除せず端末上だけで閉じ、参加成功後のみ既存招待を削除する。招待データ構造を変更していないため、カードの人数は招待者1名を既知人数として表示する。待機ロビー・Firebase・Rules・対戦ロジック・下部タブは変更なし。XcodeGen生成、関連テスト4件、Simulator向けbuildに成功し、iPhone 17 Pro Simulatorで対戦ホームの最終表示を確認。**実在Firebaseでのルーム作成・コード参加・招待参加と各失敗時の画面操作は未検証**

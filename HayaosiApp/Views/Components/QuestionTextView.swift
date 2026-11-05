@@ -37,9 +37,8 @@ struct QuestionTextView: View {
     /// 表示中はまだ続きがあることをカーソルで示す
     @ViewBuilder
     private func questionText(_ visible: String, isComplete: Bool) -> some View {
-        if !isSingleWord, let newline = visible.firstIndex(of: "\n") {
-            let instruction = String(visible[..<newline])
-            let body = String(visible[visible.index(after: newline)...])
+        let prompt = QuestionPrompt(text: visible)
+        if !isSingleWord, let instruction = prompt.instruction {
             let isProminent = format?.usesProminentCenteredBody == true
             VStack(alignment: .leading, spacing: Self.instructionSpacing) {
                 Text(highlightedInstruction(instruction))
@@ -47,7 +46,7 @@ struct QuestionTextView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                (Text(body) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
+                (Text(prompt.body) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
                     .font(isProminent ? .title.bold() : .title3.weight(.semibold))
                     .multilineTextAlignment(isProminent ? .center : .leading)
                     .frame(maxWidth: .infinity, alignment: isProminent ? .center : .leading)

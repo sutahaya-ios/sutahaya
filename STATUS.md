@@ -12,6 +12,7 @@
 - 実機2台での通信対戦検証はトキヤが実施済み(2026年9月6日・たける報告)。**同時押しでの進行停止・切断・再入室の個別結果はここに未記入。トキヤが追記すること**
 ---
 ## リリース計画
+
 **2026年9月6日にv1.0.0を審査へ提出した。** 8/11公開の計画は2026年8月7日に延期を決めていた(当時の日割り計画は `STATUS_ARCHIVE.md` を参照)。
 
 ### 申請素材の状況(2026年9月6日・提出時点ですべて完了)
@@ -44,8 +45,8 @@
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 | TOKIYA-YAMAMOTO(Codex) | `functions/competitive/{matchmakingHandlers.js,matchmakingCore.js}`・Phase B/C Competitive tests | **旧deployで部分完了したExplicit Forfeit sessionを安全に自己修復**。Match側FORFEITEDとsession fenceをServerで照合し、5秒後の再Queueを復旧する | 2026年10月29日 |
 ---
-## 最新更新(2026年8月25日〜10月31日)
-- Codex(2026年10月31日・作問専用worktree): **作問MVPの実装・自動検証まで完了**。○×/4択/短文、1〜20問の問題集保存、作者と受信者のライブラリ、相互フレンド共有、論理削除を追加。本文固定・参照型ライブラリ・固定IDによる重複防止、不正共有1件を除外して正常一覧を表示。SwiftData/対戦/Competitive/既存Rulesは変更なし。友達の5コミットを`feature/question-authoring`へ取り込み、元treeは不変。Simulator build・Swift関連74件・新旧Rules59件成功。Simulatorで起動と作問タブ表示を確認。**画面からの保存・再起動・2ユーザー共有は未検証、本番deployなし**。仕様・確認手順は`docs/QUESTION_AUTHORING_MVP.md`。
+## 最新更新(2026年8月25日〜11月2日)
+- Codex(2026年11月2日): **一人練習・復習のリザルトを本文中心の一覧と下端固定ボタンへ変更**。指示文/本文の分割をQuestionPromptへ共通化し、SPI行は本文の改行を「 ／ 」に置換して2行まで表示。正解の後ろに誤答時だけ「あなた」の回答を赤字で添え、時間切れにも対応。解説のある行はchevron付きで全体をタップでき、一覧順の問題番号・回答を渡して解説シートを開く。リザルトでは「次の問題へ」を非表示にし、練習中の動作は維持。案内文を追加し、「もう一度」「終了」は練習中と共用のQuizActionBarで下端固定。再挑戦・終了の広告処理は変更なし。xcodegenとSimulator向けビルド成功。指定のSPI言語5問を完走し、4正解/1誤答の一覧から解説シートを開閉して一覧へ戻ること、シートに次問ボタンがないことを確認。リザルト一覧をライト/ダーク各1枚撮影。古い更新1項目をアーカイブへ移動し150行以内を維持。ユニットテストの追加・実行とcommitはなし。
 - Codex(2026年10月30日): **SPIの問題文を最初の改行で指示文と本文に分離**。共通QuestionTextViewで指示文を小さいグレーの左寄せにし、「数字＋番目」だけアクセント色・太字に変更。二語の関係・語句の意味・語句の用法・熟語の成り立ちは本文をtitleの太字・中央寄せ、それ以外と形式不明はtitle3のsemibold・左寄せで表示する。英単語と改行なしの問題は従来どおり。練習はQuestion.format、フレンド対戦は端末内の問題ID照合で形式を渡す。作問規則をSPI_DATA_SCHEMA.mdへ追記。Simulator向けビルド成功。指定の学習→SPI言語→二語の関係→ランダム練習で指示文と本文の表示を確認し、ライト/ダーク各1枚撮影。古い更新をアーカイブへ移動し150行以内を維持。ユニットテストの追加・実行とcommitはなし。
 - Codex(2026年10月30日): **一人練習・復習を、回答後の中央○×→下端の「解説」「次へ」→解説シートの流れへ変更**。○×を1.2秒表示する間は両ボタンを無効化し、出題画面の解説文を撤去。対戦の解説カードを共通化して見た目を維持し、練習では「あなたの回答」(正解は緑、不正解/時間切れは赤)を追加。大サイズのシートは右上の「閉じる」で戻り、下端の「次の問題へ」で閉じてから次問へ進む。旧QuestionExplanationViewを削除。**前回の画面全体のスクロール化と、タブバー上に下端固定した「次へ」の仕組みを維持**。英単語の自動進行時間・選択肢の色・効果音/振動・記録処理は変更なし。xcodegenとSimulator向けビルド成功。学習→SPI言語→ランダム練習の1問で○の表示/消去・ボタン無効化・シート開閉・次問遷移を確認し、解説シートのライト/ダークを各1枚撮影。古い更新1項目をアーカイブへ移動。ユニットテストは追加・実行せず、commitなし。
 - Codex(2026年10月30日): **一人練習・復習の正誤表示を対戦と同じ中央の○×へ統一**。`AnswerFeedbackSymbol`をComponentsへ移し、`BattleView`は元の定義削除だけで表示・タイミングを維持。`QuizSessionView`では100pt・太字の緑○/赤×を同じアニメーションで表示し、1.2秒後または次問移行時に消去。時間切れも×とし、操作を遮らない。下部の正誤ラベルを削除し、解説・選択肢の色・効果音・自動進行時間を維持。**前回の問題/解説のスクロール化と下端固定の「次へ」も保持**。`xcodegen generate`とSimulator向けビルド成功。指定の学習→SPI言語→ランダム練習で1問回答し、中央の○の表示・消去後の解説スクロールと次問遷移を確認。ライト/ダーク各1枚撮影。指示どおりユニットテストは追加・実行せず、commitなし。
@@ -91,7 +92,6 @@
   - 検証:xcodegen実行、Simulator向けビルド成功。`BattleStatsSummaryTests` 3件成功(他クラスは未実行)。iPhone 17 Simulatorでライト/ダーク両方を確認し、CPU対戦(中学英単語★1・4問)を通してフレンド戦が0→1件、3位のため1位回数0・1位率0.0%へ更新されること、ランダムマッチが0件表示のままであることを確認。**オンライン対戦での記録は実機2台が必要なため未検証**
 - Codex(たける側): **英単語の品詞へ助動詞を追加**。`PartOfSpeech.auxiliary`を代名詞・接続詞・前置詞と同じ少数機能語グループへ加え、変換ツールの許容品詞・グループ表示、作業用Excelの使い方、コーディング規約と決定事項を8品詞へ追従。既存データの品詞と問題データは未変更。`xcodegen generate`、`WordClassificationTests`全11件、Simulator向けビルドは成功。`python3 word_bank/word_bank_to_json.py`は実行したが、手元の作業用Excelに既存の未入力行が残っているため6284件の入力エラーで未達。全テストとSimulator画面確認は指示どおり未実施
 - TOKIYA-YAMAMOTO(Codex): **招待accept直後のRTDB一時offlineエラーを修正**。`joinRoom()`は`.info/connected`を最大3秒だけ待ってからroomを取得し、Firebase Coreが返す「接続前・active listenerなし・cacheなし」の一時offlineだけ250ms後に1回再試行する。招待claim開始前からjoin完了までを6秒に制限して10秒claim leaseへ余白を残し、期限超過・join失敗・finalize失敗では参加状態をcleanupして可能なら同じclaimをrollbackする。permission denied・room不存在・roomInstance不一致はoffline retryしない。固定slot・同一UIDの冪等join・Rules schemaは維持。関連Swiftテスト11件とアプリコンパイル成功。**一時切断を再現する実機accept回帰は未実施**
-- TOKIYA-YAMAMOTO(Codex): **TASK 2 招待ライフサイクルの実装を完了**。ルーム作成ごとの`roomInstanceID`、recipient配下のcanonical invite、generation付き10秒再招待、30秒logical expiry、`pending→accepting→accepted` claim transaction、claim ID付き期限内rollback、document ID+generation単位の「あとで」を追加。RTDB参加は0〜7の固定枠とplayerをatomicにclaim/releaseし、同一UIDの再接続ではslot・score・joinedAtを書き換えない。client deleteを廃止し、acceptedとRTDB退出を分離。03 Securityで固定8枠とrollback proofのRules契約も反映済み。対象Swiftテスト8件・アプリコンパイル・Rules Emulator 43件（skip 0）に成功。**本番FirebaseへのRules deployと実機での再招待・競合回帰は未実施**
 
 ---
 
