@@ -273,7 +273,7 @@ describe("Question authoring Firestore rules", () => {
     await assertFails(deleteDoc(doc(bob, "users", "bob", "library", "set-1")));
   });
 
-  it("allows only author logical deletion, preserving readable status but denying new share or add", async () => {
+  it("allows only author logical deletion, hides deleted content and denies reuse or resurrection", async () => {
     await seedProfilesAndFriends();
     const alice = database("alice");
     const bob = database("bob");
@@ -284,8 +284,9 @@ describe("Question authoring Firestore rules", () => {
     await assertFails(updateDoc(ref, { status: "blocked" }));
     await assertFails(updateDoc(ref, { status: "deleted", title: "Changed" }));
     await assertSucceeds(updateDoc(ref, { status: "deleted" }));
-    assert.equal((await assertSucceeds(getDoc(doc(bob, "questionSets", "set-1")))).data().status, "deleted");
-    await assert.rejects(addTransaction(bob), /unavailable/);
+    assert.equal((await assertSucceeds(getDoc(ref))).data().status, "deleted");
+    await assertFails(getDoc(doc(bob, "questionSets", "set-1")));
+    await assert.rejects(addTransaction(bob));
     await assertFails(setDoc(doc(bob, "users", "bob", "library", "set-1"), libraryEntry()));
     await assertFails(updateDoc(ref, { status: "active" }));
     await assertFails(setDoc(doc(alice, "users", "eve", "sharedQuestionSets", "set-1"), share("set-1", { toUID: "eve" })));
@@ -339,15 +340,16 @@ describe("Question authoring Firestore rules", () => {
       { questions: [] }, { questions: "invalid" },
       { questions: Array.from({ length: 21 }, (_, i) => question("trueFalse", { id: `q-${i}` })) },
     ]) await assertFails(createSet(alice, "invalid", overrides));
+    await assertFails(createSet(alice, "s".repeat(129)));
   });
 
-  it("validates the structure of every question, including the twentieth element", async () => {
+  it("validates the structure and text limit of every question, including the twentieth element", async () => {
     const alice = database("alice");
     const questions = Array.from({ length: 20 }, (_, i) => question("trueFalse", { id: `q-${i}` }));
     questions[19].text = 42;
     await assertFails(createSet(alice, "invalid-last", { questions }));
     for (const overrides of [
-      { text: null }, { format: "unknown" },
+      { text: null }, { text: "a".repeat(2001) }, { format: "unknown" },
     ]) await assertFails(createSet(alice, "invalid", { questions: [question("trueFalse", overrides)] }));
     await assertFails(createSet(alice, "invalid", { questions: ["not-a-map"] }));
     const missingText = question();
@@ -355,16 +357,18 @@ describe("Question authoring Firestore rules", () => {
     await assertFails(createSet(alice, "invalid", { questions: [missingText] }));
   });
 
-  it("leaves detailed content validation to the app while keeping content private and owner-editable", async () => {
-    // この境界は意図的: Rulesは20問すべてのmap・形式・問題文型と権限を守り、詳細な型と内容はSwiftで検証。
+  it("applies the server-side question text limit to owner edits", async () => {
     const alice = database("alice");
-    await assertSucceeds(createSet(alice, "client-validation", {
-      questions: [question("multipleChoice", {
-        text: "", choices: ["duplicate", "duplicate"], answers: ["not-a-choice"],
-      })],
+    await assertSucceeds(createSet(alice, "edit-validation"));
+    const ref = doc(alice, "questionSets", "edit-validation");
+    await assertFails(updateDoc(ref, {
+      questions: [question("trueFalse", { text: "a".repeat(2001) })],
     }));
-    await assertFails(getDoc(doc(database("eve"), "questionSets", "client-validation")));
-    await assertSucceeds(updateDoc(doc(alice, "questionSets", "client-validation"), { questions: [question()] }));
-    await assertFails(updateDoc(doc(database("eve"), "questionSets", "client-validation"), { questions: [question()] }));
+    await assertSucceeds(updateDoc(ref, {
+      questions: [question("shortAnswer", { text: "a".repeat(2000) })],
+    }));
+    await assertFails(updateDoc(doc(database("eve"), "questionSets", "edit-validation"), {
+      questions: [question()],
+    }));
   });
 });

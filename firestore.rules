@@ -79,20 +79,25 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= maximum;
     }
 
-    // 全20問のmap・形式・問題文型を確認する。詳細な型/文字数/選択肢整合性はSwift側で全件検証。
-    // 本文は対戦や権限判定に使わず、厳密な内容検査でRulesの式数上限を超えないようにする。
+    function validAuthoringID(value) {
+      return authoringText(value, 128) && !value.matches('.*[/].*');
+    }
+
+    // Firestore Rulesの1000式上限内で全20問を検査する。
+    // 詳細な選択肢整合性は現行の配列内包schemaでは上限を超えるため、Swiftでも再検査する。
     function validAuthoredQuestion(question) {
       return question is map
         && question.format in ['trueFalse', 'multipleChoice', 'shortAnswer']
-        && question.text is string;
+        && question.text is string && question.text.size() <= 2000;
     }
 
     function validAuthoredQuestionAt(questions, index) {
       return questions.size() <= index || validAuthoredQuestion(questions[index]);
     }
 
-    function validQuestionSet(data) {
-      return data.keys().hasOnly(['title', 'creatorUID', 'createdAt', 'questions', 'status', 'schemaVersion'])
+    function validQuestionSet(setID, data) {
+      return validAuthoringID(setID)
+        && data.keys().hasOnly(['title', 'creatorUID', 'createdAt', 'questions', 'status', 'schemaVersion'])
         && authoringText(data.title, 80)
         && data.creatorUID == request.auth.uid
         && data.createdAt is timestamp
@@ -123,13 +128,15 @@ service cloud.firestore {
     function canReadQuestionSet(setID) {
       return signedIn()
         && (resource.data.creatorUID == request.auth.uid
-          || exists(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID))
-          || exists(/databases/$(database)/documents/users/$(request.auth.uid)/sharedQuestionSets/$(setID)));
+          || (resource.data.status == 'active'
+            && (exists(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID))
+              || exists(/databases/$(database)/documents/users/$(request.auth.uid)/sharedQuestionSets/$(setID)))));
     }
 
     function validLibraryEntry(uid, setID, data) {
       let questionSet = getAfter(/databases/$(database)/documents/questionSets/$(setID)).data;
-      return data.keys().hasOnly(['questionSetID', 'addedAt'])
+      return validAuthoringID(uid) && validAuthoringID(setID)
+        && data.keys().hasOnly(['questionSetID', 'addedAt'])
         && data.questionSetID == setID && data.addedAt == request.time
         && questionSet.status == 'active'
         && (questionSet.creatorUID == uid
@@ -143,12 +150,14 @@ service cloud.firestore {
 
     function validQuestionSetShare(recipientUid, setID, data) {
       let questionSet = getAfter(/databases/$(database)/documents/questionSets/$(setID)).data;
-      return data.keys().hasOnly(['questionSetID', 'fromUID', 'toUID', 'fromNickname', 'title', 'sentAt'])
+      return validAuthoringID(recipientUid) && validAuthoringID(setID)
+        && data.keys().hasOnly(['questionSetID', 'fromUID', 'toUID', 'fromNickname', 'title', 'sentAt'])
         && data.questionSetID == setID
         && data.fromUID == request.auth.uid && data.toUID == recipientUid
         && data.fromUID != recipientUid
         && questionSet.creatorUID == request.auth.uid && questionSet.status == 'active'
         && data.title == questionSet.title
+        && authoringText(data.fromNickname, 30)
         && data.fromNickname == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.nickname
         && data.sentAt == request.time
         && mutualFriends(request.auth.uid, recipientUid);
@@ -419,7 +428,7 @@ service cloud.firestore {
         && (!exists(/databases/$(database)/documents/questionSets/$(setID)) || canReadQuestionSet(setID));
       allow list: if false;
       allow create: if signedIn()
-        && validQuestionSet(request.resource.data)
+        && validQuestionSet(setID, request.resource.data)
         && request.resource.data.createdAt == request.time
         && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/library/$(setID)).data.questionSetID == setID;
       allow update: if signedIn()
@@ -427,7 +436,7 @@ service cloud.firestore {
         && ((resource.data.status == 'active' && request.resource.data.status == 'deleted'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
           || (resource.data.status == 'active'
-            && validQuestionSet(request.resource.data)
+            && validQuestionSet(setID, request.resource.data)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['questions'])));
       allow delete: if false;
     }

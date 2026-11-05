@@ -58,16 +58,17 @@ final class QuestionSetService {
             let allIDs = ids.union(shares.map(\.questionSetID))
             var sets: [String: QuestionSet] = [:]
             for id in allIDs.sorted() {
-                let snapshot = try await db.collection("questionSets").document(id).getDocument(source: .server)
-                guard snapshot.exists else {
+                // 削除済み・権限喪失・不正データの1件が、他の問題集の読み込みを妨げないようにする。
+                do {
+                    let snapshot = try await db.collection("questionSets").document(id).getDocument(source: .server)
+                    guard snapshot.exists else {
+                        unavailableCount += 1
+                        continue
+                    }
+                    sets[id] = try Self.decodeSet(snapshot)
+                } catch {
                     unavailableCount += 1
-                    continue
-                }
-                // 不正な共有1件が、正常な自作問題や他の共有の読み込みを妨げないようにする。
-                do { sets[id] = try Self.decodeSet(snapshot) }
-                catch {
-                    unavailableCount += 1
-                    _ = Self.report(error, operation: "decode", path: "questionSets/{id}")
+                    _ = Self.report(error, operation: "read/decode", path: "questionSets/{id}")
                 }
             }
             guard Auth.auth().currentUser?.uid == currentUID, uid == currentUID,
@@ -287,22 +288,39 @@ final class QuestionSetService {
          "choices": question.choices, "answers": question.answers, "explanation": question.explanation]
     }
 
+    nonisolated private static func validFirestoreID(_ value: String) -> Bool {
+        !value.isEmpty && value.count <= 128 && !value.contains("/")
+    }
+
     nonisolated private static func decodeSet(_ snapshot: DocumentSnapshot) throws -> QuestionSet {
-        guard var data = snapshot.data() else { throw QuestionSetServiceError.unavailable }
+        guard let storedData = snapshot.data(),
+              Set(storedData.keys) == Set(["title", "creatorUID", "createdAt", "questions", "status", "schemaVersion"]),
+              validFirestoreID(snapshot.documentID) else {
+            throw QuestionSetServiceError.invalidData
+        }
+        var data = storedData
         data["id"] = snapshot.documentID
         let set = try Firestore.Decoder().decode(QuestionSet.self, from: data)
-        guard set.schemaVersion == 1, !set.creatorUID.isEmpty else { throw QuestionSetServiceError.invalidData }
+        guard set.schemaVersion == 1, validFirestoreID(set.creatorUID) else {
+            throw QuestionSetServiceError.invalidData
+        }
         _ = try QuestionSetDraft(id: set.id, title: set.title, questions: set.questions).validated()
         return set
     }
 
     nonisolated private static func decodeShare(_ snapshot: DocumentSnapshot, recipientUID: String) throws -> QuestionSetShare {
         guard let data = snapshot.data(),
+              Set(data.keys) == Set(["questionSetID", "fromUID", "toUID", "fromNickname", "title", "sentAt"]),
               data["questionSetID"] as? String == snapshot.documentID,
               data["toUID"] as? String == recipientUID,
-              let fromUID = data["fromUID"] as? String,
+              validFirestoreID(snapshot.documentID), validFirestoreID(recipientUID),
+              let fromUID = data["fromUID"] as? String, validFirestoreID(fromUID), fromUID != recipientUID,
               let fromNickname = data["fromNickname"] as? String,
+              !fromNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              fromNickname.count <= 30,
               let title = data["title"] as? String,
+              !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              title.count <= QuestionSetLimits.title,
               let sentAt = data["sentAt"] as? Timestamp else {
             throw QuestionSetServiceError.invalidData
         }
