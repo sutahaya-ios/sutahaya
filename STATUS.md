@@ -12,7 +12,6 @@
 - 実機2台での通信対戦検証はトキヤが実施済み(2026年9月6日・たける報告)。**同時押しでの進行停止・切断・再入室の個別結果はここに未記入。トキヤが追記すること**
 ---
 ## リリース計画
-
 **2026年9月6日にv1.0.0を審査へ提出した。** 8/11公開の計画は2026年8月7日に延期を決めていた(当時の日割り計画は `STATUS_ARCHIVE.md` を参照)。
 
 ### 申請素材の状況(2026年9月6日・提出時点ですべて完了)
@@ -45,7 +44,8 @@
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 | TOKIYA-YAMAMOTO(Codex) | `functions/competitive/{matchmakingHandlers.js,matchmakingCore.js}`・Phase B/C Competitive tests | **旧deployで部分完了したExplicit Forfeit sessionを安全に自己修復**。Match側FORFEITEDとsession fenceをServerで照合し、5秒後の再Queueを復旧する | 2026年10月29日 |
 ---
-## 最新更新(2026年8月25日〜11月2日)
+## 最新更新(2026年8月25日〜11月5日)
+- Codex(2026年11月5日): **フレンドルームの定期削除・コード衝突再試行・消失時の解散表示をローカル実装**。`cleanupStaleRooms`を東京で15分ごとに実行し、closed初観測から1時間/作成から24時間で最大500ルームをtransactionで識別子照合して削除。上限時の観測記録保持、個別失敗ログ・件数ログ・部分成功の次回回収に対応。Rulesはstatus/createdAtのindex追加のみ。作成時のread/write permission deniedは最大10回再抽選し、監視中の消失は既存の解散画面へ反映。掃除unit testの指定6件、`HostDisconnectPolicyTests`全9件(追加5件)、Simulator向けbuildが成功。Swiftテストは既存XcodeプロジェクトのNSFileCoordinator読取待ちを回避するため、同じ`project.yml`から生成した一時プロジェクトと既存Config参照で実行。**修正実装済み・元症状未確認。実際の作成→解散→掃除→同じコードでの再作成の通し確認、本番動作は未検証**。既存Rules/Competitive test、deploy・commit・pushは未実施。deploy前に人間がコンソールで本番rooms件数を確認し、Rules(indexのみ)と`cleanupStaleRooms`を反映する。Cloud Scheduler APIが無効なら有効化する。
 - Codex(2026年11月2日): **一人練習・復習のリザルトを本文中心の一覧と下端固定ボタンへ変更**。指示文/本文の分割をQuestionPromptへ共通化し、SPI行は本文の改行を「 ／ 」に置換して2行まで表示。正解の後ろに誤答時だけ「あなた」の回答を赤字で添え、時間切れにも対応。解説のある行はchevron付きで全体をタップでき、一覧順の問題番号・回答を渡して解説シートを開く。リザルトでは「次の問題へ」を非表示にし、練習中の動作は維持。案内文を追加し、「もう一度」「終了」は練習中と共用のQuizActionBarで下端固定。再挑戦・終了の広告処理は変更なし。xcodegenとSimulator向けビルド成功。指定のSPI言語5問を完走し、4正解/1誤答の一覧から解説シートを開閉して一覧へ戻ること、シートに次問ボタンがないことを確認。リザルト一覧をライト/ダーク各1枚撮影。古い更新1項目をアーカイブへ移動し150行以内を維持。ユニットテストの追加・実行とcommitはなし。
 - Codex(2026年10月30日): **SPIの問題文を最初の改行で指示文と本文に分離**。共通QuestionTextViewで指示文を小さいグレーの左寄せにし、「数字＋番目」だけアクセント色・太字に変更。二語の関係・語句の意味・語句の用法・熟語の成り立ちは本文をtitleの太字・中央寄せ、それ以外と形式不明はtitle3のsemibold・左寄せで表示する。英単語と改行なしの問題は従来どおり。練習はQuestion.format、フレンド対戦は端末内の問題ID照合で形式を渡す。作問規則をSPI_DATA_SCHEMA.mdへ追記。Simulator向けビルド成功。指定の学習→SPI言語→二語の関係→ランダム練習で指示文と本文の表示を確認し、ライト/ダーク各1枚撮影。古い更新をアーカイブへ移動し150行以内を維持。ユニットテストの追加・実行とcommitはなし。
 - Codex(2026年10月30日): **一人練習・復習を、回答後の中央○×→下端の「解説」「次へ」→解説シートの流れへ変更**。○×を1.2秒表示する間は両ボタンを無効化し、出題画面の解説文を撤去。対戦の解説カードを共通化して見た目を維持し、練習では「あなたの回答」(正解は緑、不正解/時間切れは赤)を追加。大サイズのシートは右上の「閉じる」で戻り、下端の「次の問題へ」で閉じてから次問へ進む。旧QuestionExplanationViewを削除。**前回の画面全体のスクロール化と、タブバー上に下端固定した「次へ」の仕組みを維持**。英単語の自動進行時間・選択肢の色・効果音/振動・記録処理は変更なし。xcodegenとSimulator向けビルド成功。学習→SPI言語→ランダム練習の1問で○の表示/消去・ボタン無効化・シート開閉・次問遷移を確認し、解説シートのライト/ダークを各1枚撮影。古い更新1項目をアーカイブへ移動。ユニットテストは追加・実行せず、commitなし。

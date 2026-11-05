@@ -18,7 +18,7 @@ enum BattleRules {
     static let revealDuration: TimeInterval = 3
     static let codeDigits = 4
     /// ルームコードが重複したときの再抽選回数
-    static let createAttempts = 5
+    static let createAttempts = 10
 
     static func correctPoint(for rank: Int) -> Int {
         guard rank > 0 else { return 0 }

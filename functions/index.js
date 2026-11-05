@@ -11,6 +11,7 @@ const {
   competitiveReconcileMatch,
 } = require("./competitive/handlers");
 const { competitiveMatchmaking } = require("./competitive/matchmakingHandlers");
+const { cleanupStaleRooms } = require("./roomCleanup/handlers");
 
 const INVITE_COOLDOWN_MS = 10_000;
 const ACCEPTING_LEASE_MS = 10_000;
@@ -145,3 +146,4 @@ exports.competitiveIntent = competitiveIntent;
 exports.competitivePresenceChanged = competitivePresenceChanged;
 exports.competitiveReconcileMatch = competitiveReconcileMatch;
 exports.competitiveMatchmaking = competitiveMatchmaking;
+exports.cleanupStaleRooms = cleanupStaleRooms;

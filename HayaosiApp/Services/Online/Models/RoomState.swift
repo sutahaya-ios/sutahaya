@@ -137,6 +137,20 @@ struct RoomState {
     let questions: [QuestionPayload]
     let game: Game?
 
+    func withStatus(_ status: Status) -> RoomState {
+        RoomState(
+            code: code,
+            roomInstanceID: roomInstanceID,
+            hostID: hostID,
+            status: status,
+            settings: settings,
+            players: players,
+            playerSlots: playerSlots,
+            questions: questions,
+            game: game
+        )
+    }
+
     func playerSlot(for uid: String) -> Int? {
         playerSlots.first { $0.value == uid }?.key
     }

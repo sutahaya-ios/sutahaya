@@ -29,6 +29,18 @@ enum RTDBJoinRetryPolicy {
     }
 }
 
+enum RoomCreationPolicy {
+    static func shouldTryNextCode(after error: Error) -> Bool {
+        RTDBJoinRetryPolicy.isPermissionDenied(error)
+    }
+}
+
+enum RoomSnapshotLossPolicy {
+    static func shouldShowClosed(hasState: Bool, hasLeft: Bool) -> Bool {
+        hasState && !hasLeft
+    }
+}
+
 enum HostDisconnectAction: Equatable {
     case apply
     case delayClosure
@@ -164,27 +176,32 @@ final class OnlineBattleSession: NPCManageableBattleSession {
         let roomInstanceID = UUID().uuidString.lowercased()
         for _ in 0..<BattleRules.createAttempts {
             let code = String(format: "%0\(BattleRules.codeDigits)d", Int.random(in: 0...9999))
-            let snapshot = try await roomsRef.child(code).getData()
-            if snapshot.exists() { continue }
+            do {
+                let snapshot = try await roomsRef.child(code).getData()
+                if snapshot.exists() { continue }
 
-            let value: [String: Any] = [
-                "roomInstanceID": roomInstanceID,
-                "hostID": myID,
-                "status": RoomState.Status.waiting.rawValue,
-                "createdAt": ServerValue.timestamp(),
-                "settings": settings.databaseValue,
-                "playerSlots": ["0": myID],
-                "players": [
-                    myID: [
-                        "nickname": nickname,
-                        "score": 0,
-                        "joinedAt": ServerValue.timestamp(),
-                        "roomInstanceID": roomInstanceID,
-                        "slot": 0
+                let value: [String: Any] = [
+                    "roomInstanceID": roomInstanceID,
+                    "hostID": myID,
+                    "status": RoomState.Status.waiting.rawValue,
+                    "createdAt": ServerValue.timestamp(),
+                    "settings": settings.databaseValue,
+                    "playerSlots": ["0": myID],
+                    "players": [
+                        myID: [
+                            "nickname": nickname,
+                            "score": 0,
+                            "joinedAt": ServerValue.timestamp(),
+                            "roomInstanceID": roomInstanceID,
+                            "slot": 0
+                        ]
                     ]
                 ]
-            ]
-            try await roomsRef.child(code).setValue(value)
+                try await roomsRef.child(code).setValue(value)
+            } catch {
+                guard RoomCreationPolicy.shouldTryNextCode(after: error) else { throw error }
+                continue
+            }
             roomCode = code
             isHost = true
             joinedPlayerSlot = 0
@@ -733,8 +750,16 @@ final class OnlineBattleSession: NPCManageableBattleSession {
     }
 
     private func apply(snapshot: DataSnapshot) {
-        guard snapshot.exists(),
-              let dict = snapshot.value as? [String: Any],
+        guard snapshot.exists() else {
+            if RoomSnapshotLossPolicy.shouldShowClosed(hasState: state != nil, hasLeft: hasLeft),
+               let state {
+                apply(state: state.withStatus(.closed))
+            } else {
+                state = nil
+            }
+            return
+        }
+        guard let dict = snapshot.value as? [String: Any],
               let newState = RoomState(code: roomCode, dict: dict) else {
             state = nil
             return
