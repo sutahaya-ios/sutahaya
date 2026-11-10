@@ -173,6 +173,34 @@ final class StudyClassificationTests: XCTestCase {
         XCTAssertNil(RoomState.Settings(databaseValue: unknownValue).questionFormat)
     }
 
+    func test_作問ルーム設定を問題集情報とともに保存して復元する() {
+        let original = RoomState.Settings(
+            questionCount: 8,
+            timeLimit: 30,
+            genre: .spi,
+            questionSource: .authored,
+            authoredQuestionSetID: "set-1",
+            authoredQuestionSetTitle: "日本の地理"
+        )
+
+        let restored = RoomState.Settings(databaseValue: original.databaseValue)
+
+        XCTAssertTrue(restored.isAuthored)
+        XCTAssertEqual(restored.authoredQuestionSetID, "set-1")
+        XCTAssertEqual(restored.authoredQuestionSetTitle, "日本の地理")
+    }
+
+    func test_旧ルームは既存問題として復元する() {
+        let restored = RoomState.Settings(databaseValue: [
+            "questionCount": 10,
+            "timeLimit": 20,
+            "genre": Genre.englishWord.rawValue
+        ])
+
+        XCTAssertFalse(restored.isAuthored)
+        XCTAssertNil(restored.authoredQuestionSetID)
+    }
+
     func test_分類設定がない旧オンラインルームは全問題を対象にする() {
         let legacySettings = RoomState.Settings(databaseValue: [
             "questionCount": 10,

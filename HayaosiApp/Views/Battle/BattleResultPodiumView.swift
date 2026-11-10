@@ -4,6 +4,13 @@ import SwiftUI
 struct BattleResultPodiumView: View {
     let players: [RoomState.Player]
     let myID: String
+    let usesCorrectCount: Bool
+
+    init(players: [RoomState.Player], myID: String, usesCorrectCount: Bool = false) {
+        self.players = players
+        self.myID = myID
+        self.usesCorrectCount = usesCorrectCount
+    }
 
     private static let podiumCount = 3
     private static let twoPlayerHeight: CGFloat = 200
@@ -55,7 +62,7 @@ struct BattleResultPodiumView: View {
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
-            Text("\(player.score) pt").font(.headline).monospacedDigit()
+            Text(scoreText(player.score)).font(.headline).monospacedDigit()
             VStack(spacing: 8) {
                 Text("\(rank(player))位").font(.title2.bold())
                 if player.id == myID { Text("自分").font(.caption) }
@@ -69,7 +76,7 @@ struct BattleResultPodiumView: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(rank(player))位、\(player.nickname)、\(player.score)ポイント\(player.id == myID ? "、自分" : "")")
+        .accessibilityLabel("\(rank(player))位、\(player.nickname)、\(scoreText(player.score))\(player.id == myID ? "、自分" : "")")
     }
 
     private func podiumHeight(_ player: RoomState.Player) -> CGFloat {
@@ -85,7 +92,7 @@ struct BattleResultPodiumView: View {
                 Text("自分").font(.caption2).foregroundStyle(.blue)
             }
             Spacer(minLength: 0)
-            Text("\(player.score) pt").fontWeight(.semibold).monospacedDigit()
+            Text(scoreText(player.score)).fontWeight(.semibold).monospacedDigit()
         }
         .font(.subheadline)
         .padding(.horizontal, 12)
@@ -95,5 +102,9 @@ struct BattleResultPodiumView: View {
             in: RoundedRectangle(cornerRadius: 12)
         )
         .accessibilityElement(children: .combine)
+    }
+
+    private func scoreText(_ score: Int) -> String {
+        usesCorrectCount ? "\(score)問正解" : "\(score) pt"
     }
 }

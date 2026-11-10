@@ -178,7 +178,8 @@ extension OnlineBattleSession {
         let scoring = BattleScoring.result(
             answers: validAnswers,
             correctAnswer: question.answer,
-            participantIDs: state.players.map(\.id)
+            participantIDs: state.players.map(\.id),
+            style: state.settings.isAuthored ? .correctCount : .standard
         )
 
         var updates: [String: Any] = [:]
@@ -302,7 +303,8 @@ extension OnlineBattleSession {
         let scoring = BattleScoring.result(
             answers: accepted,
             correctAnswer: question.answer,
-            participantIDs: state.players.map(\.id)
+            participantIDs: state.players.map(\.id),
+            style: state.settings.isAuthored ? .correctCount : .standard
         )
 
         var updates: [String: Any] = [:]

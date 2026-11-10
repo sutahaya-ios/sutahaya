@@ -119,21 +119,27 @@ struct BattleView: View {
         session.state?.settings.genre ?? .englishWord
     }
 
+    private var isAuthoredBattle: Bool {
+        session.state?.settings.isAuthored == true
+    }
+
     /// 配信payloadは問題文と選択肢しか持たないため、IDで端末内の問題を引いて表を出す。
     /// アプリの版が違って見つからない場合は、表なしで出題する
     private func table(for question: RoomState.QuestionPayload) -> QuestionTable? {
-        allQuestions.first { $0.id == question.id }?.table
+        guard !isAuthoredBattle else { return nil }
+        return allQuestions.first { $0.id == question.id }?.table
     }
 
     /// 形式も端末内の問題から取得し、見つからなければ標準の本文表示にする。
     private func format(for question: RoomState.QuestionPayload) -> QuestionFormat? {
-        allQuestions.first { $0.id == question.id }?.format
+        guard !isAuthoredBattle else { return nil }
+        return allQuestions.first { $0.id == question.id }?.format
     }
 
     /// 出題中は文字送りを進め、発表に入ったら全文を出す。
     /// SPIは読解と計算に時間が要るため、出題中から全文を見せる
     private func revealMode(game: RoomState.Game) -> QuestionTextView.Mode {
-        guard game.phase == .question, genre.usesProgressiveReveal else { return .full }
+        guard !isAuthoredBattle, game.phase == .question, genre.usesProgressiveReveal else { return .full }
         return .progressing(
             startedAtMS: session.localTimeMS(forBattleTimeMS: game.effectiveStartedAtMS)
         )
@@ -147,7 +153,8 @@ struct BattleView: View {
             hostID: session.state?.hostID ?? session.myID,
             answers: answersForDisplay,
             failedIDs: failedIDs,
-            correctIDs: correctIDs
+            correctIDs: correctIDs,
+            usesCorrectCount: isAuthoredBattle
         )
     }
 
@@ -173,7 +180,8 @@ struct BattleView: View {
             correctAnswer: question.answer,
             participantIDs: state.players.map(\.id),
             baseScores: liveScoreBase.scores,
-            currentScores: currentScores
+            currentScores: currentScores,
+            style: state.settings.isAuthored ? .correctCount : .standard
         )
         return scoresAreReflected ? confirmed : []
     }
@@ -284,7 +292,10 @@ struct BattleView: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(.red)
         } else if game.failedIDs.contains(session.myID) {
-            Label("お手つき!この問題には回答できません", systemImage: "hand.raised.fill")
+            Label(
+                isAuthoredBattle ? "不正解です" : "お手つき!この問題には回答できません",
+                systemImage: isAuthoredBattle ? "xmark.circle.fill" : "hand.raised.fill"
+            )
                 .font(.subheadline.bold())
                 .foregroundStyle(.red)
         } else if myAnswer(in: game) != nil {

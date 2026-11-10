@@ -27,6 +27,10 @@ struct RoomState {
         let text: String
         let choices: [String]
         let answer: String
+
+        var databaseValue: [String: Any] {
+            ["id": id, "text": text, "choices": choices, "answer": answer]
+        }
     }
 
     struct Reveal: Equatable {
@@ -62,6 +66,11 @@ struct RoomState {
     }
 
     struct Settings {
+        enum QuestionSource: String {
+            case builtIn
+            case authored
+        }
+
         let questionCount: Int
         let timeLimit: TimeInterval
         let genre: Genre
@@ -70,6 +79,12 @@ struct RoomState {
         let wordDifficulty: StudyDifficulty?
         /// 出題形式。nilは全形式(旧ルームを含む)
         let questionFormat: QuestionFormat?
+        /// 既存問題か、ユーザー作成問題か。未保存の旧ルームは既存問題として扱う。
+        let questionSource: QuestionSource
+        let authoredQuestionSetID: String?
+        let authoredQuestionSetTitle: String?
+
+        var isAuthored: Bool { questionSource == .authored }
 
         init(
             questionCount: Int,
@@ -77,7 +92,10 @@ struct RoomState {
             genre: Genre,
             wordCategory: StudyCategory? = nil,
             wordDifficulty: StudyDifficulty? = nil,
-            questionFormat: QuestionFormat? = nil
+            questionFormat: QuestionFormat? = nil,
+            questionSource: QuestionSource = .builtIn,
+            authoredQuestionSetID: String? = nil,
+            authoredQuestionSetTitle: String? = nil
         ) {
             self.questionCount = questionCount
             self.timeLimit = timeLimit
@@ -85,6 +103,9 @@ struct RoomState {
             self.wordCategory = wordCategory
             self.wordDifficulty = wordDifficulty
             self.questionFormat = questionFormat
+            self.questionSource = questionSource
+            self.authoredQuestionSetID = authoredQuestionSetID
+            self.authoredQuestionSetTitle = authoredQuestionSetTitle
         }
 
         /// Realtime Databaseのsettingsへ保存する値
@@ -101,6 +122,15 @@ struct RoomState {
             if let questionFormat {
                 value["questionFormat"] = questionFormat.rawValue
             }
+            if isAuthored {
+                value["questionSource"] = questionSource.rawValue
+                if let authoredQuestionSetID {
+                    value["authoredQuestionSetID"] = authoredQuestionSetID
+                }
+                if let authoredQuestionSetTitle {
+                    value["authoredQuestionSetTitle"] = authoredQuestionSetTitle
+                }
+            }
             return value
         }
 
@@ -109,6 +139,11 @@ struct RoomState {
             timeLimit = RoomState.double(databaseValue["timeLimit"]) ?? QuizDefaults.timeLimit
             genre = Genre(rawValue: databaseValue["genre"] as? String ?? "") ?? .englishWord
             questionFormat = QuestionFormat(rawValue: databaseValue["questionFormat"] as? String ?? "")
+            questionSource = QuestionSource(
+                rawValue: databaseValue["questionSource"] as? String ?? ""
+            ) ?? .builtIn
+            authoredQuestionSetID = databaseValue["authoredQuestionSetID"] as? String
+            authoredQuestionSetTitle = databaseValue["authoredQuestionSetTitle"] as? String
 
             let category = StudyCategory(rawValue: databaseValue["wordCategory"] as? String ?? "")
             let difficultyValue = RoomState.int(databaseValue["wordDifficulty"])

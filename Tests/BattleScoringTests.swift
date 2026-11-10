@@ -55,6 +55,35 @@ final class BattleScoringTests: XCTestCase {
         XCTAssertTrue(result.pointChanges.isEmpty)
     }
 
+    func test_作問対戦は回答速度に関係なく正解数だけを加算する() {
+        let result = BattleScoring.result(
+            answers: [
+                answer(uid: "wrong", choice: "誤答", time: 50),
+                answer(uid: "second", choice: "正答", time: 200),
+                answer(uid: "first", choice: "正答", time: 100)
+            ],
+            correctAnswer: "正答",
+            participantIDs: ["first", "second", "wrong"],
+            style: .correctCount
+        )
+
+        XCTAssertEqual(result.pointChanges["first"], 1)
+        XCTAssertEqual(result.pointChanges["second"], 1)
+        XCTAssertNil(result.pointChanges["wrong"], "誤答による減点はしない")
+        XCTAssertEqual(result.wrongIDs, ["wrong"])
+    }
+
+    func test_作問対戦の表示用得点照合も正解数を使う() {
+        XCTAssertTrue(BattleAnswerAcceptance.scoresMatch(
+            answers: [answer(uid: "guest", choice: "正答", time: 100)],
+            correctAnswer: "正答",
+            participantIDs: ["host", "guest"],
+            baseScores: ["host": 2, "guest": 3],
+            currentScores: ["host": 2, "guest": 4],
+            style: .correctCount
+        ))
+    }
+
     func test_回答受付境界は開始時刻以上かつ締切時刻以下だけをacceptedにする() {
         let game = RoomState.Game(
             questionIndex: 2,

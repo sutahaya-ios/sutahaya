@@ -21,6 +21,19 @@ struct StudyHubView: View {
                     onUnpin: unpin
                 )
 
+                NavigationLink {
+                    QuestionCreateView()
+                } label: {
+                    MenuCard(
+                        title: "作問",
+                        subtitle: "問題集を作る・選んで学習する",
+                        systemImage: "square.and.pencil",
+                        color: .accentColor
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("study.authoring")
+
                 addMaterialButton
             }
             .padding(.horizontal, 20)

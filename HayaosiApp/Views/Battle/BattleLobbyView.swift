@@ -112,6 +112,7 @@ struct BattleLobbyView: View {
                     if session.isOnline,
                        session.isHost,
                        state.status == .waiting,
+                       !state.settings.isAuthored,
                        state.players.count < BattleRules.maxPlayers,
                        npcSession != nil {
                         addNPCSlot
@@ -190,13 +191,13 @@ struct BattleLobbyView: View {
     }
 
     private func settingsCard(state: RoomState) -> some View {
-        let hasFormats = !(state.settings.wordCategory?.formats.isEmpty ?? true)
+        let hasFormats = state.settings.isAuthored || !(state.settings.wordCategory?.formats.isEmpty ?? true)
         return VStack(spacing: 24) {
             HStack {
                 Text("対戦設定")
                     .font(.title3.bold())
                 Spacer()
-                if session.isHost {
+                if session.isHost && !state.settings.isAuthored {
                     Button(action: onChangeSettings) {
                         HStack(spacing: 5) {
                             Text("変更")
@@ -211,16 +212,26 @@ struct BattleLobbyView: View {
                 }
             }
 
+            if state.settings.isAuthored, let title = state.settings.authoredQuestionSetTitle {
+                Label(title, systemImage: "books.vertical")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             HStack(spacing: 0) {
                 settingItem(
                     title: "ジャンル",
-                    value: state.settings.wordCategory?.displayName ?? state.settings.genre.displayName,
+                    value: state.settings.isAuthored
+                        ? "作問"
+                        : state.settings.wordCategory?.displayName ?? state.settings.genre.displayName,
                     systemImage: "book"
                 )
                 settingDivider
                 settingItem(
                     title: hasFormats ? "形式" : "レベル",
-                    value: hasFormats
+                    value: state.settings.isAuthored
+                        ? "○×・4択"
+                        : hasFormats
                         ? state.settings.questionFormat?.displayName ?? "すべて"
                         : compactDifficulty(state.settings.wordDifficulty),
                     systemImage: hasFormats ? "square.grid.2x2" : "star"
@@ -340,10 +351,17 @@ struct BattleLobbyView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(LobbyPrimaryButtonStyle())
-                .disabled(state.players.count < BattleRules.minPlayersToStart)
+                .disabled(
+                    state.players.count < BattleRules.minPlayersToStart
+                        || (state.settings.isAuthored && state.questions.isEmpty)
+                )
 
                 if state.players.count < BattleRules.minPlayersToStart {
                     Text("対戦には\(BattleRules.minPlayersToStart)人以上の参加が必要です")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if state.settings.isAuthored && state.questions.isEmpty {
+                    Text("問題集を読み込み中です")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -399,6 +417,11 @@ struct BattleLobbyView: View {
     }
 
     private func start(state: RoomState) async {
+        if state.settings.isAuthored {
+            guard let onlineSession = session as? OnlineBattleSession else { return }
+            await onlineSession.startPreparedGame()
+            return
+        }
         let pool = allQuestions
             .filter { $0.genre == state.settings.genre }
             .matching(

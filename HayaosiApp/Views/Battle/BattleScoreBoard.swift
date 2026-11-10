@@ -22,6 +22,23 @@ struct BattleScoreBoard: View {
     let failedIDs: Set<String>
     /// 正解発表中の正解者
     let correctIDs: Set<String>
+    let usesCorrectCount: Bool
+
+    init(
+        players: [RoomState.Player],
+        hostID: String,
+        answers: [RoomState.Answer],
+        failedIDs: Set<String>,
+        correctIDs: Set<String>,
+        usesCorrectCount: Bool = false
+    ) {
+        self.players = players
+        self.hostID = hostID
+        self.answers = answers
+        self.failedIDs = failedIDs
+        self.correctIDs = correctIDs
+        self.usesCorrectCount = usesCorrectCount
+    }
 
     var body: some View {
         let entries = Self.entries(
@@ -56,7 +73,7 @@ struct BattleScoreBoard: View {
                     .font(.title2)
                     .foregroundStyle(.white)
 
-                if let answerRank = entry.answerRank {
+                if !usesCorrectCount, let answerRank = entry.answerRank {
                     rankBadge(answerRank)
                         .offset(x: -18, y: -18)
                 }
@@ -73,7 +90,7 @@ struct BattleScoreBoard: View {
                 .lineLimit(1)
                 .frame(width: Self.playerWidth)
 
-            Text("\(entry.player.score)pt")
+            Text(usesCorrectCount ? "\(entry.player.score)問正解" : "\(entry.player.score)pt")
                 .font(.caption2.bold())
                 .monospacedDigit()
         }

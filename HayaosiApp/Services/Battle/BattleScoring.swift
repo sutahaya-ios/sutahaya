@@ -112,12 +112,14 @@ enum BattleAnswerAcceptance {
         correctAnswer: String,
         participantIDs: [String],
         baseScores: [String: Int],
-        currentScores: [String: Int]
+        currentScores: [String: Int],
+        style: BattleScoring.Style = .standard
     ) -> Bool {
         let scoring = BattleScoring.result(
             answers: answers,
             correctAnswer: correctAnswer,
-            participantIDs: participantIDs
+            participantIDs: participantIDs,
+            style: style
         )
         return participantIDs.allSatisfy { uid in
             let expected = (baseScores[uid] ?? currentScores[uid] ?? 0)
@@ -129,6 +131,11 @@ enum BattleAnswerAcceptance {
 
 /// 1問ぶんの回答を、正解者内の順位に応じた点差へ変換する純粋ロジック
 enum BattleScoring {
+    enum Style {
+        case standard
+        case correctCount
+    }
+
     struct Result: Equatable {
         let correctIDs: [String]
         let wrongIDs: Set<String>
@@ -138,7 +145,8 @@ enum BattleScoring {
     static func result(
         answers: [RoomState.Answer],
         correctAnswer: String,
-        participantIDs: [String]
+        participantIDs: [String],
+        style: Style = .standard
     ) -> Result {
         let orderedAnswers = BattleAnswerAcceptance.orderedUniqueAnswers(
             answers,
@@ -155,11 +163,19 @@ enum BattleScoring {
             }
         }
 
-        var pointChanges = Dictionary(
-            uniqueKeysWithValues: wrongIDs.map { ($0, BattleRules.wrongPoint) }
-        )
-        for (index, uid) in correctIDs.enumerated() {
-            pointChanges[uid] = BattleRules.correctPoint(for: index + 1)
+        var pointChanges: [String: Int] = [:]
+        switch style {
+        case .standard:
+            pointChanges = Dictionary(
+                uniqueKeysWithValues: wrongIDs.map { ($0, BattleRules.wrongPoint) }
+            )
+            for (index, uid) in correctIDs.enumerated() {
+                pointChanges[uid] = BattleRules.correctPoint(for: index + 1)
+            }
+        case .correctCount:
+            for uid in correctIDs {
+                pointChanges[uid] = 1
+            }
         }
 
         return Result(correctIDs: correctIDs, wrongIDs: wrongIDs, pointChanges: pointChanges)
