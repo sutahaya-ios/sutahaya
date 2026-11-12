@@ -42,7 +42,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
-| TOKIYA-YAMAMOTO(Codex) | `functions/competitive/{matchmakingHandlers.js,matchmakingCore.js}`・Phase B/C Competitive tests | **旧deployで部分完了したExplicit Forfeit sessionを安全に自己修復**。Match側FORFEITEDとsession fenceをServerで照合し、5秒後の再Queueを復旧する | 2026年10月29日 |
+| TOKIYA-YAMAMOTO(Codex) | `Views/Battle/BattleScoreBoard.swift`・`Views/Competitive/CompetitiveBattleView.swift`・関連Swift tests | **オンラインランク戦のBattle UIを通常対戦の固定ベースへ共通化**。Player列・回答状態・結果表示だけ最小parameter化し、Competitiveの通信・進行ロジックは変更しない | 2026年11月13日 |
 ---
 ## 最新更新(2026年8月25日〜11月5日)
 - Codex(2026年11月5日): **フレンドルームの定期削除・コード衝突再試行・消失時の解散表示をローカル実装**。`cleanupStaleRooms`を東京で15分ごとに実行し、closed初観測から1時間/作成から24時間で最大500ルームをtransactionで識別子照合して削除。上限時の観測記録保持、個別失敗ログ・件数ログ・部分成功の次回回収に対応。Rulesはstatus/createdAtのindex追加のみ。作成時のread/write permission deniedは最大10回再抽選し、監視中の消失は既存の解散画面へ反映。掃除unit testの指定6件、`HostDisconnectPolicyTests`全9件(追加5件)、Simulator向けbuildが成功。Swiftテストは既存XcodeプロジェクトのNSFileCoordinator読取待ちを回避するため、同じ`project.yml`から生成した一時プロジェクトと既存Config参照で実行。**修正実装済み・元症状未確認。実際の作成→解散→掃除→同じコードでの再作成の通し確認、本番動作は未検証**。既存Rules/Competitive test、deploy・commit・pushは未実施。deploy前に人間がコンソールで本番rooms件数を確認し、Rules(indexのみ)と`cleanupStaleRooms`を反映する。Cloud Scheduler APIが無効なら有効化する。
