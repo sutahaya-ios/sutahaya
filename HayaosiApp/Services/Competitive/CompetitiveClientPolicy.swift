@@ -185,6 +185,13 @@ enum CompetitiveSettlementRecoveryPolicy {
 enum CompetitiveClientDisplay {
     static let questionCount = 20
 
+    enum AnswerState: Equatable {
+        case none
+        case answered
+        case correct
+        case wrong
+    }
+
     static func tierName(_ tier: CompetitiveTier) -> String {
         switch tier {
         case .bronze: "Bronze"
@@ -231,7 +238,22 @@ enum CompetitiveClientDisplay {
         _ participant: CompetitiveParticipant,
         phase: CompetitivePhase
     ) -> Bool {
-        phase == .questionOpen && participant.answered
+        answerState(for: participant, phase: phase, result: nil) == .answered
+    }
+
+    /// QUESTION_OPEN中はansweredだけを公開し、正誤はServerの結果投影後だけ表示する。
+    static func answerState(
+        for participant: CompetitiveParticipant,
+        phase: CompetitivePhase,
+        result: CompetitiveQuestionResult?
+    ) -> AnswerState {
+        if phase == .questionOpen {
+            return participant.answered ? .answered : .none
+        }
+        guard phase == .questionResult, let result else { return .none }
+        if result.correctUIDs.contains(participant.uid) { return .correct }
+        if result.wrongUIDs.contains(participant.uid) { return .wrong }
+        return .none
     }
 
     static func canCancelQueue(_ state: CompetitiveMatchmakingState?) -> Bool {

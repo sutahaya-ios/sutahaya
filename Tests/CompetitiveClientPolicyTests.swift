@@ -69,6 +69,64 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertFalse(CompetitiveClientDisplay.showsAnswered(npc, phase: .questionResult))
     }
 
+    func test_正誤と得点差分はQUESTION_RESULT後だけ表示する() {
+        XCTAssertEqual(CompetitiveClientDisplay.questionCount, 20)
+
+        let correct = participant(uid: "correct", kind: .human, answered: true)
+        let wrongNPC = participant(uid: "wrong-npc", kind: .npc, answered: true)
+        let unanswered = participant(uid: "unanswered", kind: .human, answered: false)
+        let result = CompetitiveQuestionResult(
+            questionId: "q-1",
+            questionIndex: 0,
+            closeReason: "ALL_ANSWERED",
+            answerOrder: [correct.uid, wrongNPC.uid],
+            correctUIDs: [correct.uid],
+            wrongUIDs: [wrongNPC.uid],
+            unansweredUIDs: [unanswered.uid],
+            scoreDeltas: [correct.uid: 20, wrongNPC.uid: -10, unanswered.uid: 0],
+            cumulativeScores: [correct.uid: 20, wrongNPC.uid: -10, unanswered.uid: 0],
+            correctAnswerId: "a-1",
+            closedAtEpochMS: 1_000
+        )
+
+        XCTAssertEqual(
+            CompetitiveClientDisplay.answerState(
+                for: correct,
+                phase: .questionOpen,
+                result: result
+            ),
+            .answered,
+            "回答受付中はServerに結果があっても正誤を公開しない"
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.answerState(
+                for: correct,
+                phase: .questionResult,
+                result: result
+            ),
+            .correct
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.answerState(
+                for: wrongNPC,
+                phase: .questionResult,
+                result: result
+            ),
+            .wrong
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.answerState(
+                for: unanswered,
+                phase: .questionResult,
+                result: result
+            ),
+            .none
+        )
+        XCTAssertEqual(BattleScoreBoard.DisplayBadge.scoreDelta(20).text, "+20")
+        XCTAssertEqual(BattleScoreBoard.DisplayBadge.scoreDelta(-10).text, "-10")
+        XCTAssertEqual(BattleScoreBoard.DisplayBadge.scoreDelta(0).text, "±0")
+    }
+
     func test_ServerAction時刻をdeadlineより優先してReconcileする() throws {
         let npcDue = try XCTUnwrap(publicState(nextServerActionAtEpochMS: 3_100))
         let deadlineOnly = try XCTUnwrap(publicState())

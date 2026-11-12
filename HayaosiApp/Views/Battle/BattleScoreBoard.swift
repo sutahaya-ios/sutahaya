@@ -16,12 +16,7 @@ struct BattleScoreBoard: View {
         Color(red: 0.42, green: 0.36, blue: 0.65)
     ]
 
-    let players: [RoomState.Player]
-    let hostID: String
-    let answers: [RoomState.Answer]
-    let failedIDs: Set<String>
-    /// 正解発表中の正解者
-    let correctIDs: Set<String>
+    private let displayPlayers: [DisplayPlayer]
     let usesCorrectCount: Bool
 
     init(
@@ -32,101 +27,117 @@ struct BattleScoreBoard: View {
         correctIDs: Set<String>,
         usesCorrectCount: Bool = false
     ) {
-        self.players = players
-        self.hostID = hostID
-        self.answers = answers
-        self.failedIDs = failedIDs
-        self.correctIDs = correctIDs
-        self.usesCorrectCount = usesCorrectCount
-    }
-
-    var body: some View {
-        let entries = Self.entries(
+        displayPlayers = Self.entries(
             players: players,
             hostID: hostID,
             answers: answers,
             failedIDs: failedIDs,
             correctIDs: correctIDs
-        )
+        ).map { entry in
+            DisplayPlayer(
+                id: entry.player.id,
+                nickname: entry.player.nickname,
+                score: entry.player.score,
+                badge: entry.answerRank.map(DisplayBadge.answerRank),
+                answerState: entry.result.map {
+                    switch $0 {
+                    case .correct: .correct
+                    case .wrong: .wrong
+                    }
+                }
+            )
+        }
+        self.usesCorrectCount = usesCorrectCount
+    }
 
+    /// Server projectionを表示するオンライン対戦向け。通常対戦と同じPlayer列だけを再利用する。
+    init(displayPlayers: [DisplayPlayer], usesCorrectCount: Bool = false) {
+        self.displayPlayers = displayPlayers
+        self.usesCorrectCount = usesCorrectCount
+    }
+
+    var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: Self.playerSpacing) {
-                ForEach(entries) { entry in
-                    playerIcon(entry)
+                ForEach(displayPlayers) { player in
+                    playerIcon(player)
                 }
             }
             .padding(.horizontal, 2)
             .padding(.vertical, 3)
         }
         .frame(height: 90)
-        .animation(BattleAnimation.playerOrder, value: entries.map(\.id))
+        .animation(BattleAnimation.playerOrder, value: displayPlayers.map(\.id))
     }
 
-    private func playerIcon(_ entry: Entry) -> some View {
+    private func playerIcon(_ player: DisplayPlayer) -> some View {
         VStack(spacing: 2) {
             ZStack {
                 Circle()
-                    .fill(playerColor(for: entry.player.id))
+                    .fill(playerColor(for: player.id))
                     .frame(width: Self.iconSize, height: Self.iconSize)
 
                 Image(systemName: "person.fill")
                     .font(.title2)
                     .foregroundStyle(.white)
 
-                if !usesCorrectCount, let answerRank = entry.answerRank {
-                    rankBadge(answerRank)
+                if !usesCorrectCount, let badge = player.badge {
+                    badgeView(badge)
                         .offset(x: -18, y: -18)
                 }
 
-                if let result = entry.result {
-                    resultMark(result)
+                if let answerState = player.answerState {
+                    answerStateMark(answerState)
                         .offset(x: 18, y: 18)
                 }
             }
             .frame(width: Self.iconSize, height: Self.iconSize)
 
-            Text(entry.player.nickname)
+            Text(player.nickname)
                 .font(.caption2)
                 .lineLimit(1)
                 .frame(width: Self.playerWidth)
 
-            Text(usesCorrectCount ? "\(entry.player.score)問正解" : "\(entry.player.score)pt")
+            Text(usesCorrectCount ? "\(player.score)問正解" : "\(player.score)pt")
                 .font(.caption2.bold())
                 .monospacedDigit()
         }
         .frame(width: Self.playerWidth)
     }
 
-    private func rankBadge(_ rank: Int) -> some View {
-        Text(rankLabel(for: rank))
+    @ViewBuilder
+    private func badgeView(_ badge: DisplayBadge) -> some View {
+        Text(badge.text)
             .font(.caption2.bold())
-            .foregroundStyle(.primary)
+            .foregroundStyle(badge.foregroundStyle)
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(Color(.systemBackground), in: Capsule())
             .overlay(Capsule().strokeBorder(Color(.systemGray4)))
     }
 
-    private func resultMark(_ result: AnswerResult) -> some View {
-        Text(result.symbol)
-            .font(.title3.bold())
-            .foregroundStyle(.red)
-            .frame(width: 24, height: 24)
-            .background(.white.opacity(0.92), in: Circle())
+    @ViewBuilder
+    private func answerStateMark(_ state: DisplayAnswerState) -> some View {
+        switch state {
+        case .answered:
+            Image(systemName: "checkmark")
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.orange, in: Circle())
+                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+        case .correct, .wrong:
+            Text(state == .correct ? "○" : "×")
+                .font(.title3.bold())
+                .foregroundStyle(.red)
+                .frame(width: 24, height: 24)
+                .background(.white.opacity(0.92), in: Circle())
+        }
     }
 
     private func playerColor(for playerID: String) -> Color {
         let colorIndex = playerID.unicodeScalars.reduce(0) { $0 + Int($1.value) } % Self.playerColors.count
         return Self.playerColors[colorIndex]
-    }
-
-    private func rankLabel(for rank: Int) -> String {
-        switch rank {
-        case 1: return "1st"
-        case 2: return "2nd"
-        case 3: return "3rd"
-        default: return "\(rank)th"
-        }
     }
 
     /// 基本順(ホスト→入室順)を土台に、回答済みプレイヤーだけを回答時刻順で前へ出す
@@ -195,6 +206,50 @@ struct BattleScoreBoard: View {
 }
 
 extension BattleScoreBoard {
+    struct DisplayPlayer: Identifiable, Equatable {
+        let id: String
+        let nickname: String
+        let score: Int
+        let badge: DisplayBadge?
+        let answerState: DisplayAnswerState?
+    }
+
+    enum DisplayBadge: Equatable {
+        case answerRank(Int)
+        case scoreDelta(Int)
+
+        var text: String {
+            switch self {
+            case let .answerRank(rank):
+                switch rank {
+                case 1: return "1st"
+                case 2: return "2nd"
+                case 3: return "3rd"
+                default: return "\(rank)th"
+                }
+            case let .scoreDelta(delta):
+                if delta > 0 { return "+\(delta)" }
+                if delta == 0 { return "±0" }
+                return "\(delta)"
+            }
+        }
+
+        var foregroundStyle: Color {
+            switch self {
+            case .answerRank: return .primary
+            case let .scoreDelta(delta) where delta > 0: return .green
+            case let .scoreDelta(delta) where delta < 0: return .red
+            case .scoreDelta: return .secondary
+            }
+        }
+    }
+
+    enum DisplayAnswerState: Equatable {
+        case answered
+        case correct
+        case wrong
+    }
+
     struct Entry: Identifiable, Equatable {
         let player: RoomState.Player
         let answerRank: Int?

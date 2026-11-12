@@ -418,3 +418,7 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
 ## 過去の更新(2026年7月12日・午前・初期構築)
 
 - Claude: プロジェクト初期構築。①開発ドキュメント(CLAUDE.md / AGENTS.md / STATUS.md)を作成 ②XcodeGen構成(`project.yml`、iOS 17+・iPhone専用・SwiftData)③v0.5の骨組みを実装:SwiftDataモデル(`Question` / `AnswerRecord` / `ReviewItem`)、出題エンジン`QuizSession`(練習・対戦共通。制限時間・正誤判定・フェーズ管理)、英単語100問(`Resources/english_words.json`。初回起動時に自動投入、誤答選択肢は同品詞の他単語から自動生成)、画面一式(ホーム/練習設定/出題/リザルト/復習リスト/設定)④v1.0用スタブ画面(ルーム作成・ルーム参加・待機ロビー・対戦UIモック。通信なし、「v1.0で実装予定」を画面に明記)。Simulatorビルド成功を確認済み
+
+## 2026年9月 招待accept回帰対応(STATUS.mdから移動)
+
+- TOKIYA-YAMAMOTO(Codex): **招待accept直後のRTDB一時offlineエラーを修正**。`joinRoom()`は`.info/connected`を最大3秒だけ待ってからroomを取得し、Firebase Coreが返す「接続前・active listenerなし・cacheなし」の一時offlineだけ250ms後に1回再試行する。招待claim開始前からjoin完了までを6秒に制限して10秒claim leaseへ余白を残し、期限超過・join失敗・finalize失敗では参加状態をcleanupして可能なら同じclaimをrollbackする。permission denied・room不存在・roomInstance不一致はoffline retryしない。固定slot・同一UIDの冪等join・Rules schemaは維持。関連Swiftテスト11件とアプリコンパイル成功。**一時切断を再現する実機accept回帰は未実施**

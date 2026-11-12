@@ -58,7 +58,7 @@ struct CompetitiveMatchContainerView: View {
         coordinator.battleService?.state?.phase == .waitingPlayers
     }
 
-    private var exitTitle: String { isBeforeCommitment ? "退出" : "棄権" }
+    private var exitTitle: String { "退出" }
     private var exitButtonTitle: String { isBeforeCommitment ? "対戦を退出" : "棄権する" }
     private var exitDialogTitle: String { isBeforeCommitment ? "対戦から退出しますか？" : "対戦を棄権しますか？" }
     private var exitDialogMessage: String {
@@ -142,12 +142,12 @@ private struct CompetitiveBattleView: View {
 
             if let question = state.currentQuestion {
                 progress(question)
-                Spacer(minLength: 12)
+                Spacer()
                 QuestionTextView(text: question.prompt, mode: .full, isSingleWord: true)
                     .id(question.questionId)
-                Spacer(minLength: 12)
+                Spacer()
                 if state.phase == .questionResult {
-                    resultCard(question)
+                    resultSummary(question)
                 } else if state.phase == .nextQuestion {
                     ProgressView("次の問題を準備中…")
                 } else {
@@ -160,7 +160,7 @@ private struct CompetitiveBattleView: View {
             }
         }
         .padding()
-        .navigationTitle("ランク戦")
+        .navigationTitle("対戦")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { reconnectOverlay }
         .onChange(of: state.currentQuestion?.questionId) { _, _ in
@@ -175,47 +175,25 @@ private struct CompetitiveBattleView: View {
     }
 
     private var scoreBoard: some View {
-        HStack(spacing: 8) {
-            ForEach(state.participants) { participant in
-                VStack(spacing: 4) {
-                    Image(systemName: participant.kind == .npc ? "cpu" : "person.fill")
-                    Text(participant.displayName)
-                        .font(.caption)
-                        .lineLimit(1)
-                    Text("\(participant.score)pt")
-                        .font(.subheadline.bold())
-                        .monospacedDigit()
-                    if CompetitiveClientDisplay.showsAnswered(
-                        participant,
-                        phase: state.phase
-                    ) {
-                        Label("回答済み", systemImage: "checkmark.circle.fill")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.orange)
-                    } else if state.phase == .questionResult,
-                              let delta = state.questionResult?.scoreDeltas[participant.uid] {
-                        Text(CompetitiveClientDisplay.scoreDeltaText(delta))
-                            .font(.caption.bold())
-                            .monospacedDigit()
-                            .foregroundStyle(scoreDeltaColor(delta))
-                    }
-                }
-                .foregroundStyle(
-                    participant.uid == coordinator.activeSession?.uid
-                        ? Color.blue
-                        : Color.primary
+        BattleScoreBoard(
+            displayPlayers: state.participants.map { participant in
+                let answerState = CompetitiveClientDisplay.answerState(
+                    for: participant,
+                    phase: state.phase,
+                    result: state.questionResult
                 )
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                return BattleScoreBoard.DisplayPlayer(
+                    id: participant.uid,
+                    nickname: participant.displayName,
+                    score: participant.score,
+                    badge: state.phase == .questionResult
+                        ? state.questionResult?.scoreDeltas[participant.uid]
+                            .map(BattleScoreBoard.DisplayBadge.scoreDelta)
+                        : nil,
+                    answerState: battleAnswerState(answerState)
+                )
             }
-        }
-    }
-
-    private func scoreDeltaColor(_ delta: Int) -> Color {
-        if delta > 0 { return .green }
-        if delta < 0 { return .red }
-        return .secondary
+        )
     }
 
     private func progress(_ question: CompetitiveQuestion) -> some View {
@@ -233,38 +211,30 @@ private struct CompetitiveBattleView: View {
     }
 
     private func answerArea(_ question: CompetitiveQuestion) -> some View {
-        VStack(spacing: 10) {
-            if myParticipant?.answered == true || submittedContext != nil {
-                Label("回答しました", systemImage: "checkmark.circle")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.orange)
-            }
-
-            BattleChoiceList(
-                choices: question.choices.map(\.text),
-                myChoice: question.choices.first { $0.answerId == selectedAnswerId }?.text,
-                canAnswer: canAnswer
-            ) { selectedText in
-                guard let choice = question.choices.first(where: { $0.text == selectedText }),
-                      let service = coordinator.battleService,
-                      let context = service.displayedQuestionContext(),
-                      context.questionId == question.questionId,
-                      context.questionIndex == question.questionIndex,
-                      context.stateVersion == state.stateVersion else { return }
-                selectedAnswerId = choice.answerId
-                submittedContext = context
-                Haptics.impact(.heavy)
-                Task {
-                    await coordinator.submitAnswer(
-                        answerId: choice.answerId,
-                        displayedQuestion: context
-                    )
-                    if coordinator.userMessage != nil,
-                       submittedContext == context,
-                       myParticipant?.answered != true {
-                        selectedAnswerId = nil
-                        submittedContext = nil
-                    }
+        BattleChoiceList(
+            choices: question.choices.map(\.text),
+            myChoice: question.choices.first { $0.answerId == selectedAnswerId }?.text,
+            canAnswer: canAnswer
+        ) { selectedText in
+            guard let choice = question.choices.first(where: { $0.text == selectedText }),
+                  let service = coordinator.battleService,
+                  let context = service.displayedQuestionContext(),
+                  context.questionId == question.questionId,
+                  context.questionIndex == question.questionIndex,
+                  context.stateVersion == state.stateVersion else { return }
+            selectedAnswerId = choice.answerId
+            submittedContext = context
+            Haptics.impact(.heavy)
+            Task {
+                await coordinator.submitAnswer(
+                    answerId: choice.answerId,
+                    displayedQuestion: context
+                )
+                if coordinator.userMessage != nil,
+                   submittedContext == context,
+                   myParticipant?.answered != true {
+                    selectedAnswerId = nil
+                    submittedContext = nil
                 }
             }
         }
@@ -279,31 +249,28 @@ private struct CompetitiveBattleView: View {
             && !coordinator.isSubmittingAnswer
     }
 
-    private func resultCard(_ question: CompetitiveQuestion) -> some View {
+    private func resultSummary(_ question: CompetitiveQuestion) -> some View {
         let correctText = question.choices.first {
             $0.answerId == state.questionResult?.correctAnswerId
         }?.text ?? "—"
-        let correctNames = state.participants.filter {
-            state.questionResult?.correctUIDs.contains($0.uid) == true
-        }.map(\.displayName)
-        return VStack(spacing: 10) {
-            Label(
-                correctNames.isEmpty ? "正解者なし" : "\(correctNames.count)人が正解",
-                systemImage: correctNames.isEmpty ? "clock.badge.xmark" : "checkmark.circle.fill"
-            )
-            .font(.headline)
-            .foregroundStyle(correctNames.isEmpty ? Color.secondary : Color.green)
-            Text("正解: \(correctText)")
-                .font(.title3.bold())
-            if !correctNames.isEmpty {
-                Text(correctNames.joined(separator: "・"))
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-            }
+        let correctUIDs = state.questionResult?.correctUIDs ?? []
+        return BattleRevealCard(
+            reveal: .init(correctAnswer: correctText, correctIDs: correctUIDs),
+            correctNames: state.participants
+                .filter { correctUIDs.contains($0.uid) }
+                .map(\.displayName)
+        )
+    }
+
+    private func battleAnswerState(
+        _ state: CompetitiveClientDisplay.AnswerState
+    ) -> BattleScoreBoard.DisplayAnswerState? {
+        switch state {
+        case .none: nil
+        case .answered: .answered
+        case .correct: .correct
+        case .wrong: .wrong
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder
