@@ -6,29 +6,65 @@ struct CompetitiveMatchmakingView: View {
     let onCancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            ProgressView()
-                .controlSize(.large)
-            Text(headline)
-                .font(.title3.bold())
-            Text(description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Spacer()
+        ZStack {
+            backgroundColor
+                .ignoresSafeArea()
 
-            if CompetitiveClientDisplay.canCancelQueue(projection?.state) {
-                Button("検索をキャンセル", action: onCancel)
-                    .buttonStyle(.bordered)
-                    .disabled(isOperationInFlight)
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 24) {
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(.secondary)
+
+                    VStack(spacing: 14) {
+                        Text(headline)
+                            .font(.title2.bold())
+                        Text(description)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+
+                Spacer()
+
+                VStack(spacing: 22) {
+                    if CompetitiveClientDisplay.canCancelQueue(projection?.state) {
+                        Button(action: onCancel) {
+                            Text("検索をキャンセル")
+                                .font(.headline)
+                                .foregroundStyle(.blue)
+                                .padding(.horizontal, 24)
+                                .frame(minHeight: 48)
+                                .background(
+                                    Color(.systemGray5),
+                                    in: Capsule()
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isOperationInFlight)
+                    }
+
+                    Text("しばらく待つと、NPCで補充される場合があります")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
         }
-        .padding(24)
         .navigationTitle("マッチング")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .background(Color(.systemGroupedBackground))
+        .toolbarBackground(backgroundColor, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
+
+    private var backgroundColor: Color { Color(.systemGroupedBackground) }
 
     private var headline: String {
         switch projection?.state {

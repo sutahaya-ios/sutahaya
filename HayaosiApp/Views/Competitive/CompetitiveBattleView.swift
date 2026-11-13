@@ -72,35 +72,31 @@ private struct CompetitiveMatchSetupView: View {
     let state: CompetitivePublicState
 
     var body: some View {
-        VStack(spacing: 20) {
-            if state.phase == .countdown {
-                countdown
-            } else {
-                ProgressView()
-                    .controlSize(.large)
-                Text("参加者を接続しています")
-                    .font(.title3.bold())
-            }
+        ZStack {
+            backgroundColor
+                .ignoresSafeArea()
 
-            VStack(spacing: 10) {
-                ForEach(state.participants) { participant in
-                    HStack {
-                        Image(systemName: participant.kind == .npc ? "cpu" : "person.fill")
-                            .foregroundStyle(.secondary)
-                        Text(participant.displayName)
-                        Spacer()
-                        Text(statusText(participant))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(participant.ready ? Color.green : Color.secondary)
-                    }
-                    .padding(12)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            VStack(spacing: 0) {
+                Spacer(minLength: 155)
+
+                if state.phase == .countdown {
+                    countdown
+                } else {
+                    connecting
                 }
+
+                participantList
+                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+
+                Spacer(minLength: 24)
             }
+            .padding(.horizontal, 20)
         }
-        .padding(20)
         .navigationTitle("ランク戦")
-        .background(Color(.systemGroupedBackground))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(backgroundColor, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 
     @ViewBuilder
@@ -110,13 +106,70 @@ private struct CompetitiveMatchSetupView: View {
                 0,
                 ((state.countdownEndsAtEpochMS ?? 0) / 1_000) - timeline.date.timeIntervalSince1970
             )
-            VStack(spacing: 10) {
+            let progress = CGFloat(min(1, remaining / 3))
+            VStack(spacing: 22) {
                 Text("対戦開始")
-                    .font(.headline)
+                    .font(.title3.bold())
                     .foregroundStyle(.secondary)
-                Text("\(max(1, Int(remaining.rounded(.up))))")
-                    .font(.system(size: 64, weight: .bold, design: .rounded))
-                    .monospacedDigit()
+
+                ZStack {
+                    Circle()
+                        .stroke(Color(.systemGray5), lineWidth: 9)
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.blue.opacity(0.55), .indigo.opacity(0.65)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                    Text("\(max(1, Int(remaining.rounded(.up))))")
+                        .font(.system(size: 50, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                }
+                .frame(width: 104, height: 104)
+            }
+        }
+    }
+
+    private var connecting: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(.secondary)
+            Text("参加者を接続しています")
+                .font(.title3.bold())
+        }
+    }
+
+    private var participantList: some View {
+        VStack(spacing: 8) {
+            ForEach(state.participants.sorted { $0.slot < $1.slot }) { participant in
+                HStack(spacing: 14) {
+                    Image(systemName: participant.kind == .npc ? "cpu" : "person.fill")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28)
+
+                    Text(participant.displayName)
+                        .font(.body)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    Text(statusText(participant))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(statusColor(participant))
+                }
+                .padding(.horizontal, 16)
+                .frame(minHeight: 50)
+                .background(
+                    Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
             }
         }
     }
@@ -127,6 +180,12 @@ private struct CompetitiveMatchSetupView: View {
         if participant.joined { return "接続済み" }
         return "接続中"
     }
+
+    private func statusColor(_ participant: CompetitiveParticipant) -> Color {
+        participant.kind == .npc || participant.ready ? .green : .secondary
+    }
+
+    private var backgroundColor: Color { Color(.systemGroupedBackground) }
 }
 
 private struct CompetitiveBattleView: View {
