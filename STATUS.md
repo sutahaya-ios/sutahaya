@@ -42,6 +42,7 @@
 | 担当 | 対象ファイル | 内容 | 開始日 |
 |---|---|---|---|
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
+| TOKIYA-YAMAMOTO(Codex) | `Views/Competitive/CompetitiveHomeView.swift`・`CompetitiveFlowView.swift`・`Services/Competitive/CompetitiveClientPolicy.swift`・関連Tests/Assets | **オンラインランク戦Homeを確定モックへ統一**。Server投影値を使ったRank Badge 2段階表示、50% marker、Battle後の一度だけのBadge進化Animationを実装する。Backend/Rating計算は変更しない | 2026年11月13日 |
 ---
 ## 最新更新(2026年8月25日〜11月13日)
 - TOKIYA-YAMAMOTO(Codex, 2026年11月13日): **オンラインランク戦のマッチング待機・開始カウントダウンUIを確定モックへ統一**。画面全面を同一の薄いグレーにし、マッチングは中央spinner/待機文言と下部のpill型キャンセル・NPC補充案内だけに整理。COUNTDOWNは既存Server時刻由来の3→2→1を円形progressで表示し、Server参加者をslot順の白いrowへHuman/NPC共通で投影。Queue/Cancel/NPC補充/ready/Forfeit/Reconnect等のロジックとBackendは未変更。Competitive Swiftテスト22件とSimulator Build成功、固定投影を一時Debug入口で本番Viewへ表示して確定モックと比較し、入口は削除済み。Backend deploy不要。
