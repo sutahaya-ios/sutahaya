@@ -24,6 +24,7 @@ const {
 } = require("../functions/competitive/rating");
 const {
   completeExplicitForfeitInRoot,
+  completeReconnectTimeoutInRoot,
   settleCompetitiveRoot,
 } = require("../functions/competitive/settlement");
 
@@ -390,6 +391,54 @@ describe("Competitive Phase D-2 stats, promotion and season", () => {
 });
 
 describe("Competitive Phase D-2 settlement", () => {
+  it("settles Reconnect timeout once, releases only that session and keeps the room", () => {
+    const now = RATING_CONFIG.seasonEpochStartMs + 2;
+    const root = settlementRoot({ forfeited: ["p1"] });
+    root.matches["match-rating"].private.phase = PHASE.QUESTION_OPEN;
+    const participant = root.matches["match-rating"].private.participants.p1;
+    participant.active = false;
+    participant.status = "FORFEITED";
+    participant.forfeitReason = "RECONNECT_TIMEOUT";
+    participant.forfeitedAtEpochMs = now;
+
+    const result = completeReconnectTimeoutInRoot(root, "match-rating", "p1", now);
+    const profileValue = result.root.matchmaking.private.profiles.p1;
+
+    assert.equal(result.status, "SETTLED");
+    assert.equal(result.settlement.forfeitReason, "RECONNECT_TIMEOUT");
+    assert.equal(result.settlement.cooldownEndsAtEpochMs, undefined);
+    assert.ok(result.settlement.playerResult.ratingDelta < 0);
+    assert.equal(result.settlement.playerResult.won, false);
+    assert.equal(profileValue.competitive.stats.matchesPlayed, 1);
+    assert.equal(profileValue.competitive.stats.totalWins, 0);
+    assert.equal(profileValue.currentSession.state, "FINISHED");
+    assert.equal(profileValue.currentSession.matchId, null);
+    assert.equal(profileValue.explicitForfeitCooldown, undefined);
+    assert.equal(result.root.matchmaking.public.p1.state, "NOT_QUEUED");
+    assert.equal(result.root.matchmaking.public.p1.cooldownEndsAtEpochMs, undefined);
+    assert.ok(result.root.matches["match-rating"]);
+    assert.equal(result.root.matches["match-rating"].private.participants.p2.forfeited, false);
+    assert.equal(
+      result.root.matchmaking.private.profiles.p2.currentSession.matchId,
+      "match-rating"
+    );
+
+    const rating = profileValue.competitive.hiddenRating;
+    const matchesPlayed = profileValue.competitive.stats.matchesPlayed;
+    const duplicate = completeReconnectTimeoutInRoot(
+      result.root,
+      "match-rating",
+      "p1",
+      now + 1_000
+    );
+    assert.equal(duplicate.status, "ALREADY_SETTLED");
+    assert.equal(duplicate.root.matchmaking.private.profiles.p1.competitive.hiddenRating, rating);
+    assert.equal(
+      duplicate.root.matchmaking.private.profiles.p1.competitive.stats.matchesPlayed,
+      matchesPlayed
+    );
+  });
+
   it("settles Explicit Forfeit immediately, releases its session and preserves a five-second cooldown", () => {
     const now = RATING_CONFIG.seasonEpochStartMs + 2;
     const root = settlementRoot({ forfeited: ["p1"] });

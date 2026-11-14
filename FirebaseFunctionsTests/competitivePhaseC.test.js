@@ -485,7 +485,7 @@ describe("Competitive Phase C Emulator", () => {
   });
 
   it("handles reconnect, timeout forfeit, presence Rules, and Room A to B fencing", async () => {
-    const roomA = await queueMatch(1);
+    const roomA = await queueMatch(2);
     await adminRequest(`competitiveV2/matches/${roomA.matchId}/private/config`, "PATCH", {
       countdownDurationMs: 1,
       questionDurationMs: 500,
@@ -601,11 +601,26 @@ describe("Competitive Phase C Emulator", () => {
     );
     assert.equal(forfeited.status, "FORFEITED");
     assert.equal(forfeited.forfeitReason, "RECONNECT_TIMEOUT");
-
-    assert.equal(
-      (await finishMatchFromCurrentState(client, sessionA, roomA.matchId)).phase,
-      PHASE.SETTLED
+    await waitFor(async () => {
+      const value = await projection(client);
+      return value?.state === "NOT_QUEUED" ? value : null;
+    }, "Reconnect timeout session release");
+    const timeoutSettlement = await adminRequest(
+      `competitiveV2/matchmaking/private/explicitForfeitSettlements/${roomA.matchId}/${client.uid}`
     );
+    assert.equal(timeoutSettlement.status, "SETTLED");
+    assert.equal(timeoutSettlement.forfeitReason, "RECONNECT_TIMEOUT");
+    assert.equal(timeoutSettlement.cooldownEndsAtEpochMs, undefined);
+    const releasedSession = await adminRequest(
+      `competitiveV2/matchmaking/private/profiles/${client.uid}/currentSession`
+    );
+    assert.equal(releasedSession.state, "FINISHED");
+    assert.equal(releasedSession.matchId, undefined);
+    const continuingRoomA = await adminRequest(
+      `competitiveV2/matches/${roomA.matchId}/private`
+    );
+    assert.ok(continuingRoomA);
+    assert.equal(continuingRoomA.participants[roomA.clients[1].uid].forfeited, false);
 
     const joinB = await matchmaking(client, {
       intentId: `join-b-${randomUUID()}`,
@@ -614,6 +629,9 @@ describe("Competitive Phase C Emulator", () => {
       clientBuild: "phase-c-emulator",
       payload: {},
     });
+    assert.equal(joinB.status, "ACCEPTED");
+    assert.notEqual(joinB.sessionId, sessionA.sessionId);
+    assert.ok(joinB.sessionEpoch > sessionA.sessionEpoch);
     await adminRequest(
       `competitiveV2/matchmaking/private/queue/${client.uid}/queuedAtEpochMs`,
       "PUT",

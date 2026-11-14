@@ -21,6 +21,7 @@ const {
 const { FUNCTION_OPTIONS } = require("./functionOptions");
 const {
   completeExplicitForfeit,
+  completeReconnectTimeout,
   releaseFinishedMatchSessions,
   settleFinishedMatch,
 } = require("./matchmakingHandlers");
@@ -105,6 +106,17 @@ async function readExplicitForfeitSettlement(matchId, uid) {
 
 async function removeForfeitedPresence(matchId, uid) {
   await getDatabase().ref(`${ROOT_PATH}/presence/${matchId}/${uid}`).remove();
+}
+
+async function settleReconnectTimeouts(matchId, timedOutParticipants) {
+  for (const participant of timedOutParticipants) {
+    await completeReconnectTimeout(
+      matchId,
+      participant.uid,
+      participant.forfeitedAtEpochMs
+    );
+    await removeForfeitedPresence(matchId, participant.uid);
+  }
 }
 
 function rejection(intentId, code, state = null) {
@@ -396,9 +408,19 @@ async function commitReconcile(envelope, uid, nowEpochMs, knownMatch = null) {
   if (!transaction.committed || !computation || !transaction.snapshot.exists()) {
     return { ack: rejection(envelope.intentId, "UNKNOWN_MATCH"), phase: null };
   }
+  const participants = transaction.snapshot.child("private/participants").val() || {};
+  const reconnectTimeouts = Object.entries(participants).flatMap(([participantUID, participant]) => (
+    participant?.forfeited === true
+      && participant?.forfeitReason === "RECONNECT_TIMEOUT"
+      && participant?.forfeitSettlementApplied !== true
+      && Number.isFinite(participant?.forfeitedAtEpochMs)
+      ? [{ uid: participantUID, forfeitedAtEpochMs: participant.forfeitedAtEpochMs }]
+      : []
+  ));
   return {
     ack: computation.ack,
     phase: transaction.snapshot.child("private/phase").val(),
+    reconnectTimeouts,
   };
 }
 
@@ -621,7 +643,8 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
     if (!match) {
       if (envelope.type === "forfeit") {
         const settlement = await readExplicitForfeitSettlement(envelope.matchId, uid);
-        if (settlement?.status === "SETTLED") {
+        if (settlement?.status === "SETTLED"
+            && settlement.forfeitReason !== "RECONNECT_TIMEOUT") {
           const acceptedAt = settlement.forfeitCompletedAtEpochMs;
           const ack = withDiagnostics({
             intentId: envelope.intentId,
@@ -697,6 +720,9 @@ const competitiveIntent = onCall(FUNCTION_OPTIONS, async (request) => {
     if (envelope.type === "forfeit" && committed.status === "ACCEPTED") {
       await completeExplicitForfeit(envelope.matchId, uid, now);
       await removeForfeitedPresence(envelope.matchId, uid);
+    } else if (envelope.type === "reconnect"
+        && committed.rejectionCode === "RECONNECT_GRACE_EXPIRED") {
+      await settleReconnectTimeouts(envelope.matchId, [{ uid, forfeitedAtEpochMs: now }]);
     }
     const ack = withDiagnostics(
       committed,
@@ -762,11 +788,13 @@ const competitiveReconcileMatch = onCall(FUNCTION_OPTIONS, async (request) => {
     }
     const now = await serverTimestamp(envelope.matchId, envelope.intentId);
     let committed = await commitReconcile(envelope, uid, now);
+    await settleReconnectTimeouts(envelope.matchId, committed.reconnectTimeouts || []);
     if (committed.phase === PHASE.MATCH_FINISHED) {
       committed = await commitReconcile({
         ...envelope,
         intentId: `settlement-prepare-${envelope.matchId}`,
       }, uid, now);
+      await settleReconnectTimeouts(envelope.matchId, committed.reconnectTimeouts || []);
     }
     if (committed.phase === PHASE.SETTLEMENT_PENDING) {
       await settleFinishedMatch(envelope.matchId, now);
@@ -846,6 +874,17 @@ const competitivePresenceChanged = onValueWritten({
     console.info("competitive_presence_ignored", {
       reason: computation?.rejectionCode || "NO_STATE_CHANGE",
     });
+    return;
+  }
+  const participant = transaction.snapshot.child(`private/participants/${uid}`).val();
+  if (participant?.forfeited === true
+      && participant?.forfeitReason === "RECONNECT_TIMEOUT"
+      && participant?.forfeitSettlementApplied !== true
+      && Number.isFinite(participant?.forfeitedAtEpochMs)) {
+    await settleReconnectTimeouts(matchId, [{
+      uid,
+      forfeitedAtEpochMs: participant.forfeitedAtEpochMs,
+    }]);
   }
 });
 

@@ -8,6 +8,7 @@ const { buildCompetitiveMatch } = require("./matchFactory");
 const { validateMatchmakingIntent } = require("./matchmakingContract");
 const {
   completeExplicitForfeitInRoot,
+  completeReconnectTimeoutInRoot,
   settleCompetitiveRoot,
 } = require("./settlement");
 const {
@@ -308,9 +309,30 @@ async function completeExplicitForfeit(matchId, uid, nowEpochMs) {
   return computation;
 }
 
+async function completeReconnectTimeout(matchId, uid, nowEpochMs) {
+  const reference = competitiveRootRef();
+  const initial = await reference.get();
+  const initialValue = initial.exists() ? initial.val() : {};
+  let firstAttempt = true;
+  let computation = null;
+  const transaction = await reference.transaction((current) => {
+    if (current === null && firstAttempt) current = initialValue;
+    firstAttempt = false;
+    computation = completeReconnectTimeoutInRoot(current, matchId, uid, nowEpochMs);
+    return computation.changed ? computation.root : undefined;
+  }, undefined, false);
+  if (!computation) throw new Error("RECONNECT_TIMEOUT_TRANSACTION_NOT_EVALUATED");
+  if (!transaction.committed
+      && !["ALREADY_SETTLED", "SETTLED"].includes(computation.status)) {
+    throw new Error(`RECONNECT_TIMEOUT_NOT_COMMITTED:${computation.status}`);
+  }
+  return computation;
+}
+
 module.exports = {
   attemptMatchmaking,
   completeExplicitForfeit,
+  completeReconnectTimeout,
   competitiveMatchmaking,
   finalizeMatch,
   releaseFinishedMatchSessions,

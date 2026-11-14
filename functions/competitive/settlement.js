@@ -20,12 +20,13 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value ?? {}));
 }
 
-function completeExplicitForfeitInRoot(
+function completeForfeitInRoot(
   input,
   matchId,
   uid,
   nowEpochMs,
-  config = RATING_CONFIG
+  config,
+  { forfeitReason, cooldownMs }
 ) {
   const root = clone(input);
   root.matchmaking ||= {};
@@ -45,7 +46,7 @@ function completeExplicitForfeitInRoot(
   if (!participant || participant.kind === PARTICIPANT_KIND.NPC) {
     return { root, changed: false, status: "PARTICIPANT_NOT_FOUND" };
   }
-  if (!participant.forfeited || participant.forfeitReason !== "EXPLICIT_FORFEIT") {
+  if (!participant.forfeited || participant.forfeitReason !== forfeitReason) {
     return { root, changed: false, status: "FORFEIT_NOT_CONFIRMED" };
   }
 
@@ -55,7 +56,11 @@ function completeExplicitForfeitInRoot(
       || session.matchId !== matchId
       || session.sessionId !== participant.sessionId
       || session.sessionEpoch !== participant.sessionEpoch) {
-    throw new Error("EXPLICIT_FORFEIT_SESSION_FENCE_MISMATCH");
+    throw new Error(
+      forfeitReason === "EXPLICIT_FORFEIT"
+        ? "EXPLICIT_FORFEIT_SESSION_FENCE_MISMATCH"
+        : "RECONNECT_TIMEOUT_SESSION_FENCE_MISMATCH"
+    );
   }
 
   const competitive = ensureCompetitiveProfile(profile, nowEpochMs, config);
@@ -87,19 +92,23 @@ function completeExplicitForfeitInRoot(
   competitive.ratingBattle = competitive.currentTier === TIER.RATING_BATTLE;
   competitive.updatedAtEpochMs = nowEpochMs;
 
-  const cooldownEndsAtEpochMs = nowEpochMs + EXPLICIT_FORFEIT_COOLDOWN_MS;
+  const cooldownEndsAtEpochMs = Number.isFinite(cooldownMs)
+    ? nowEpochMs + cooldownMs
+    : null;
   session.state = "FINISHED";
   session.matchId = null;
   session.leaseExpiresAtEpochMs = nowEpochMs;
   session.updatedAtEpochMs = nowEpochMs;
   delete session.assignmentTicket;
-  profile.explicitForfeitCooldown = {
-    matchId,
-    sessionId: participant.sessionId,
-    sessionEpoch: participant.sessionEpoch,
-    forfeitCompletedAtEpochMs: nowEpochMs,
-    cooldownEndsAtEpochMs,
-  };
+  if (Number.isFinite(cooldownEndsAtEpochMs)) {
+    profile.explicitForfeitCooldown = {
+      matchId,
+      sessionId: participant.sessionId,
+      sessionEpoch: participant.sessionEpoch,
+      forfeitCompletedAtEpochMs: nowEpochMs,
+      cooldownEndsAtEpochMs,
+    };
+  }
   profile.updatedAtEpochMs = nowEpochMs;
 
   const playerResult = {
@@ -126,8 +135,9 @@ function completeExplicitForfeitInRoot(
     uid,
     sessionId: participant.sessionId,
     sessionEpoch: participant.sessionEpoch,
+    forfeitReason,
     forfeitCompletedAtEpochMs: nowEpochMs,
-    cooldownEndsAtEpochMs,
+    ...(Number.isFinite(cooldownEndsAtEpochMs) ? { cooldownEndsAtEpochMs } : {}),
     playerResult,
   };
   root.matchmaking.private.explicitForfeitSettlements[matchId][uid] = settlement;
@@ -139,7 +149,7 @@ function completeExplicitForfeitInRoot(
     protocolVersion: session.protocolVersion,
     updatedAtEpochMs: nowEpochMs,
     forfeitCompletedAtEpochMs: nowEpochMs,
-    cooldownEndsAtEpochMs,
+    ...(Number.isFinite(cooldownEndsAtEpochMs) ? { cooldownEndsAtEpochMs } : {}),
     competitive: competitiveProjection(profile),
   };
   participant.forfeitCompletedAtEpochMs = nowEpochMs;
@@ -161,6 +171,32 @@ function completeExplicitForfeitInRoot(
     settlement.roomCleanedUp = true;
   }
   return { root, changed: true, status: "SETTLED", settlement };
+}
+
+function completeExplicitForfeitInRoot(
+  input,
+  matchId,
+  uid,
+  nowEpochMs,
+  config = RATING_CONFIG
+) {
+  return completeForfeitInRoot(input, matchId, uid, nowEpochMs, config, {
+    forfeitReason: "EXPLICIT_FORFEIT",
+    cooldownMs: EXPLICIT_FORFEIT_COOLDOWN_MS,
+  });
+}
+
+function completeReconnectTimeoutInRoot(
+  input,
+  matchId,
+  uid,
+  nowEpochMs,
+  config = RATING_CONFIG
+) {
+  return completeForfeitInRoot(input, matchId, uid, nowEpochMs, config, {
+    forfeitReason: "RECONNECT_TIMEOUT",
+    cooldownMs: null,
+  });
 }
 
 function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFIG) {
@@ -373,4 +409,8 @@ function settleCompetitiveRoot(input, matchId, nowEpochMs, config = RATING_CONFI
   return { root, changed: true, status: "SETTLED", settlement };
 }
 
-module.exports = { completeExplicitForfeitInRoot, settleCompetitiveRoot };
+module.exports = {
+  completeExplicitForfeitInRoot,
+  completeReconnectTimeoutInRoot,
+  settleCompetitiveRoot,
+};
