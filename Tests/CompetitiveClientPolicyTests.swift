@@ -456,6 +456,64 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertFalse(CompetitiveExplicitForfeitPolicy.wasAccepted(rejected))
     }
 
+    func test_Reconnecting中はBattleを維持しServerのForfeit確定後だけ切り離す() throws {
+        let activeSession = session()
+        let reconnecting = try XCTUnwrap(
+            publicState(participantStatus: "RECONNECTING")
+        )
+        let timeoutForfeited = try XCTUnwrap(
+            publicState(
+                forfeitedUIDs: [activeSession.uid],
+                participantForfeited: true,
+                participantStatus: "FORFEITED"
+            )
+        )
+
+        XCTAssertFalse(
+            CompetitiveTerminalSessionPolicy.shouldDetach(
+                state: reconnecting,
+                session: activeSession
+            ),
+            "15秒grace中は同じBattleへ復帰できる"
+        )
+        XCTAssertTrue(
+            CompetitiveTerminalSessionPolicy.shouldDetach(
+                state: timeoutForfeited,
+                session: activeSession
+            ),
+            "Serverがtimeout退出を確定した後はSettlementを待たずHomeへ戻す"
+        )
+    }
+
+    func test_Live参加者から除外後もForfeitedUIDでTerminalを判定する() throws {
+        let activeSession = session()
+        let state = try XCTUnwrap(
+            publicState(forfeitedUIDs: [activeSession.uid], includeParticipant: false)
+        )
+
+        XCTAssertTrue(
+            CompetitiveTerminalSessionPolicy.shouldDetach(
+                state: state,
+                session: activeSession
+            )
+        )
+    }
+
+    func test_RoomAのTerminal通知はRoomBを切り離さない() throws {
+        let roomB = session()
+        let roomA = try XCTUnwrap(
+            publicState(
+                matchId: "match-a",
+                forfeitedUIDs: [roomB.uid],
+                includeParticipant: false
+            )
+        )
+
+        XCTAssertFalse(
+            CompetitiveTerminalSessionPolicy.shouldDetach(state: roomA, session: roomB)
+        )
+    }
+
     func test_ExplicitForfeit済みSessionは再起動後も復元対象外() throws {
         let suiteName = "CompetitiveClientPolicyTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
@@ -592,7 +650,11 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         serverSequence: Int = 10,
         settled: Bool = false,
         phase: CompetitivePhase? = nil,
-        nextServerActionAtEpochMS: Double? = nil
+        nextServerActionAtEpochMS: Double? = nil,
+        forfeitedUIDs: [String] = [],
+        participantForfeited: Bool = false,
+        participantStatus: String = "CONNECTED",
+        includeParticipant: Bool = true
     ) -> CompetitivePublicState? {
         let resolvedPhase = phase ?? (settled ? .settled : .questionOpen)
         var question: [String: Any] = [
@@ -606,6 +668,21 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         if let nextServerActionAtEpochMS {
             question["nextServerActionAtEpochMs"] = nextServerActionAtEpochMS
         }
+        var participants: [String: Any] = [:]
+        if includeParticipant {
+            participants["player-1"] = [
+                "slot": 0,
+                "kind": "HUMAN",
+                "displayName": "Player 1",
+                "joined": true,
+                "ready": true,
+                "active": !participantForfeited,
+                "forfeited": participantForfeited,
+                "status": participantStatus,
+                "answered": false,
+                "score": 0
+            ]
+        }
         var value: [String: Any] = [
             "matchId": matchId,
             "protocolVersion": CompetitiveService.protocolVersion,
@@ -614,20 +691,8 @@ final class CompetitiveClientPolicyTests: XCTestCase {
             "stateVersion": 4,
             "serverSequence": serverSequence,
             "currentQuestionIndex": 0,
-            "participants": [
-                "player-1": [
-                    "slot": 0,
-                    "kind": "HUMAN",
-                    "displayName": "Player 1",
-                    "joined": true,
-                    "ready": true,
-                    "active": true,
-                    "forfeited": false,
-                    "status": "CONNECTED",
-                    "answered": false,
-                    "score": 0
-                ]
-            ],
+            "forfeitedUIDs": forfeitedUIDs,
+            "participants": participants,
             "currentQuestion": question
         ]
         if resolvedPhase == .settled {

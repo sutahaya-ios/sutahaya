@@ -36,13 +36,7 @@ struct CompetitiveMatchContainerView: View {
             titleVisibility: .visible
         ) {
             Button(exitButtonTitle, role: .destructive) {
-                Task {
-                    if coordinator.battleService?.state?.phase == .waitingPlayers {
-                        await coordinator.leaveBeforeCommitment()
-                    } else {
-                        await coordinator.forfeit()
-                    }
-                }
+                coordinator.exitCurrentMatch()
             }
         } message: {
             Text(exitDialogMessage)
@@ -50,7 +44,8 @@ struct CompetitiveMatchContainerView: View {
     }
 
     private var canExitMatch: Bool {
-        guard let phase = coordinator.battleService?.state?.phase else { return false }
+        guard coordinator.activeSession != nil else { return false }
+        guard let phase = coordinator.battleService?.state?.phase else { return true }
         return ![.matchFinished, .settlementPending, .settled].contains(phase)
     }
 
@@ -334,23 +329,7 @@ private struct CompetitiveBattleView: View {
 
     @ViewBuilder
     private var reconnectOverlay: some View {
-        if let uid = coordinator.activeSession?.uid,
-           state.forfeitedUIDs.contains(uid) {
-            ZStack {
-                Color.black.opacity(0.35).ignoresSafeArea()
-                VStack(spacing: 10) {
-                    Image(systemName: "flag.checkered")
-                        .font(.title)
-                    Text("棄権しました")
-                        .font(.headline)
-                    Text("対戦結果を待っています")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(24)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-            }
-        } else if let participant = myParticipant, participant.status == .reconnecting {
+        if let participant = myParticipant, participant.status == .reconnecting {
             ZStack {
                 Color.black.opacity(0.35).ignoresSafeArea()
                 VStack(spacing: 14) {
@@ -382,21 +361,6 @@ private struct CompetitiveBattleView: View {
                         Task { await coordinator.retryConnection() }
                     }
                     .buttonStyle(.borderedProminent)
-                }
-                .padding(24)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-            }
-        } else if myParticipant?.forfeited == true {
-            ZStack {
-                Color.black.opacity(0.35).ignoresSafeArea()
-                VStack(spacing: 12) {
-                    Image(systemName: "flag.checkered")
-                        .font(.largeTitle)
-                    Text("棄権しました")
-                        .font(.headline)
-                    Text("対戦結果を待っています")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
                 .padding(24)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))

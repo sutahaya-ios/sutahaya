@@ -148,6 +148,18 @@ final class CompetitiveClientCoordinator {
               ),
               battleService.state?.matchId == activeSession.matchId else { return }
 
+        if let state = battleService.state,
+           CompetitiveTerminalSessionPolicy.shouldDetach(
+               state: state,
+               session: activeSession
+           ) {
+            completeClientExit(
+                expectedKey: expectedKey,
+                cancelPresenceDisconnect: true
+            )
+            return
+        }
+
         preparationTask?.cancel()
         preparationTask = Task { [weak self] in
             await self?.prepareMatchIfNeeded(expectedKey: expectedKey)
@@ -181,25 +193,31 @@ final class CompetitiveClientCoordinator {
         }
     }
 
-    func forfeit() async {
+    func exitCurrentMatch() {
         guard let battleService,
+              let activeSession,
               let expectedKey = activeSessionKey,
               !isForfeitSending else { return }
+        let isBeforeCommitment = battleService.state?.phase == .waitingPlayers
         isForfeitSending = true
         userMessage = nil
-        defer { isForfeitSending = false }
-        do {
-            let result = try await battleService.forfeit()
-            guard activeSessionKey == expectedKey else { return }
-            if CompetitiveExplicitForfeitPolicy.wasAccepted(result) {
-                completeExplicitForfeit(expectedKey: expectedKey)
-            } else if result.status == .rejected {
-                userMessage = CompetitiveClientDisplay.rejectionMessage(result.rejectionCode)
-            }
-        } catch {
-            guard activeSessionKey == expectedKey else { return }
-            userMessage = CompetitiveClientDisplay.userMessage(for: error)
+
+        let marker = CompetitiveExplicitForfeitMarker(session: activeSession)
+        explicitForfeitStore.save(marker)
+        explicitForfeitMarker = marker
+
+        Task { [battleService] in
+            await Self.finishServerExit(
+                service: battleService,
+                isBeforeCommitment: isBeforeCommitment
+            )
         }
+
+        completeClientExit(
+            expectedKey: expectedKey,
+            cancelPresenceDisconnect: false,
+            persistMarker: false
+        )
     }
 
     func retryConnection() async {
@@ -244,25 +262,6 @@ final class CompetitiveClientCoordinator {
         await joinQueue()
     }
 
-    func leaveBeforeCommitment() async {
-        guard let battleService,
-              battleService.state?.phase == .waitingPlayers,
-              let expectedKey = activeSessionKey else { return }
-        isForfeitSending = true
-        userMessage = nil
-        defer { isForfeitSending = false }
-        do {
-            let result = try await battleService.leave()
-            guard activeSessionKey == expectedKey else { return }
-            if result.status == .rejected {
-                userMessage = CompetitiveClientDisplay.rejectionMessage(result.rejectionCode)
-            }
-        } catch {
-            guard activeSessionKey == expectedKey else { return }
-            userMessage = CompetitiveClientDisplay.userMessage(for: error)
-        }
-    }
-
     var canLeaveResult: Bool {
         guard let state = battleService?.state else { return false }
         if state.phase == .settled || resultReadySessionKey == activeSessionKey { return true }
@@ -302,12 +301,18 @@ final class CompetitiveClientCoordinator {
         service.startListening()
     }
 
-    private func completeExplicitForfeit(expectedKey: CompetitiveSessionKey) {
+    private func completeClientExit(
+        expectedKey: CompetitiveSessionKey,
+        cancelPresenceDisconnect: Bool,
+        persistMarker: Bool = true
+    ) {
         guard let session = activeSession,
               CompetitiveSessionKey(session: session) == expectedKey else { return }
-        let marker = CompetitiveExplicitForfeitMarker(session: session)
-        explicitForfeitStore.save(marker)
-        explicitForfeitMarker = marker
+        if persistMarker {
+            let marker = CompetitiveExplicitForfeitMarker(session: session)
+            explicitForfeitStore.save(marker)
+            explicitForfeitMarker = marker
+        }
 
         preparationTask?.cancel()
         preparationTask = nil
@@ -317,13 +322,40 @@ final class CompetitiveClientCoordinator {
         settlementRecoveryTask = nil
         settledProfileRefreshTask?.cancel()
         settledProfileRefreshTask = nil
-        battleService?.stopListening(cancelPresenceDisconnect: true)
+        battleService?.stopListening(cancelPresenceDisconnect: cancelPresenceDisconnect)
         battleService = nil
         activeSession = nil
         resultReadySessionKey = nil
         isPreparingMatch = false
         isSubmittingAnswer = false
+        isForfeitSending = false
         isSettlementRecoveryDelayed = false
+    }
+
+    private static func finishServerExit(
+        service: CompetitiveService,
+        isBeforeCommitment: Bool
+    ) async {
+        do {
+            let acknowledgement: CompetitiveIntentAck
+            if isBeforeCommitment {
+                acknowledgement = try await service.leave()
+                if acknowledgement.status == .rejected {
+                    let fallback = try await service.forfeit()
+                    if !CompetitiveExplicitForfeitPolicy.wasAccepted(fallback) {
+                        try await service.markDisconnected()
+                    }
+                }
+            } else {
+                acknowledgement = try await service.forfeit()
+                if !CompetitiveExplicitForfeitPolicy.wasAccepted(acknowledgement) {
+                    try await service.markDisconnected()
+                }
+            }
+        } catch {
+            // Callableが届かない場合も、既存のServer timeout lifecycleを正式経路として開始する。
+            try? await service.markDisconnected()
+        }
     }
 
     private func clearExplicitForfeitMarker() {

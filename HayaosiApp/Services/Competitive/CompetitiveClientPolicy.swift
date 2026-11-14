@@ -72,6 +72,23 @@ enum CompetitiveExplicitForfeitPolicy {
     }
 }
 
+enum CompetitiveTerminalSessionPolicy {
+    static func shouldDetach(
+        state: CompetitivePublicState,
+        session: CompetitiveSession
+    ) -> Bool {
+        guard state.matchId == session.matchId else { return false }
+        if state.forfeitedUIDs.contains(session.uid)
+            || state.finalResult?.forfeitedUIDs.contains(session.uid) == true {
+            return true
+        }
+        guard let participant = state.participants.first(where: { $0.uid == session.uid }) else {
+            return false
+        }
+        return participant.forfeited || participant.status == .forfeited
+    }
+}
+
 enum CompetitiveForfeitCooldownPolicy {
     static func remainingSeconds(
         cooldownEndsAtEpochMS: Double?,
