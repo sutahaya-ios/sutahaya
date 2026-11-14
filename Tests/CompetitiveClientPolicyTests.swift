@@ -44,6 +44,143 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         XCTAssertNil(CompetitiveClientDisplay.pointsToNextTierText(for: profile))
     }
 
+    func test_RankBadgeはServer進捗が50パーセントを超えた時だけUpperになる() {
+        let cases: [(CompetitiveTier, Int, Double, CompetitiveClientDisplay.RankBadgeStage)] = [
+            (.bronze, 1_099, 0.495, .base),
+            (.bronze, 1_100, 0.5, .base),
+            (.bronze, 1_101, 0.505, .upper),
+            (.silver, 1_300, 0.5, .base),
+            (.silver, 1_301, 0.505, .upper),
+            (.gold, 1_500, 0.5, .base),
+            (.gold, 1_501, 0.505, .upper),
+            (.platinum, 1_700, 0.5, .base),
+            (.platinum, 1_701, 0.505, .upper),
+        ]
+
+        for (tier, rating, progress, expected) in cases {
+            let projection = profile(
+                tier: tier,
+                ratingBattle: false,
+                displayRating: rating,
+                currentRating: rating,
+                progressFraction: progress
+            )
+            XCTAssertEqual(CompetitiveClientDisplay.rankBadgeStage(for: projection), expected)
+        }
+    }
+
+    func test_Tier昇格とRatingBattleはBaseBadgeから始まる() {
+        let silver = profile(
+            tier: .silver,
+            ratingBattle: false,
+            displayRating: 1_200,
+            currentRating: 1_200,
+            progressFraction: 0
+        )
+        let ratingBattle = profile(
+            tier: .ratingBattle,
+            ratingBattle: true,
+            displayRating: 2_500,
+            currentRating: 2_500,
+            progressFraction: 1
+        )
+
+        XCTAssertEqual(CompetitiveClientDisplay.rankBadgeStage(for: silver), .base)
+        XCTAssertEqual(CompetitiveClientDisplay.rankBadgeStage(for: ratingBattle), .base)
+        XCTAssertEqual(
+            CompetitiveClientDisplay.rankBadgeAssetName(tier: .silver, stage: .base),
+            "rank_silver_base"
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.rankBadgeAssetName(tier: .ratingBattle, stage: .base),
+            "rank_rating_base"
+        )
+    }
+
+    func test_Badge進化Animationは同一Tierで上方向に50パーセントを跨ぐ時だけ() {
+        let bronze1090 = profile(
+            tier: .bronze,
+            ratingBattle: false,
+            displayRating: 1_090,
+            currentRating: 1_090,
+            progressFraction: 0.45
+        )
+        let bronze1110 = profile(
+            tier: .bronze,
+            ratingBattle: false,
+            displayRating: 1_110,
+            currentRating: 1_110,
+            progressFraction: 0.55
+        )
+        let bronze1120 = profile(
+            tier: .bronze,
+            ratingBattle: false,
+            displayRating: 1_120,
+            currentRating: 1_120,
+            progressFraction: 0.6
+        )
+        let silver1200 = profile(
+            tier: .silver,
+            ratingBattle: false,
+            displayRating: 1_200,
+            currentRating: 1_200,
+            progressFraction: 0
+        )
+
+        XCTAssertTrue(
+            CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
+                from: bronze1090,
+                to: bronze1110
+            )
+        )
+        XCTAssertFalse(
+            CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
+                from: bronze1110,
+                to: bronze1120
+            )
+        )
+        XCTAssertFalse(
+            CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
+                from: bronze1120,
+                to: bronze1090
+            )
+        )
+        XCTAssertFalse(
+            CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
+                from: bronze1120,
+                to: silver1200
+            )
+        )
+        XCTAssertFalse(
+            CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
+                from: nil,
+                to: bronze1110
+            ),
+            "App再起動時は現在のUpperを即表示し、進化Animationを再生しない"
+        )
+    }
+
+    func test_Rule表示は現在TierのNPC補充設定に一致する() {
+        XCTAssertEqual(
+            CompetitiveClientDisplay.competitiveRuleSummary(
+                for: profile(tier: .bronze, ratingBattle: false, displayRating: 1_000)
+            ),
+            "20問 / 4人対戦 / Bronzeは5秒でNPC補充"
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.competitiveRuleSummary(
+                for: profile(tier: .silver, ratingBattle: false, displayRating: 1_200)
+            ),
+            "20問 / 4人対戦 / Silverは10秒でNPC補充"
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.competitiveRuleSummary(
+                for: profile(tier: .gold, ratingBattle: false, displayRating: 1_400)
+            ),
+            "20問 / 4人対戦 / Gold以上はNPC補充なし"
+        )
+    }
+
     func test_MATCH_FOUND以降はQueueキャンセル不可() {
         XCTAssertTrue(CompetitiveClientDisplay.canCancelQueue(.queued))
         XCTAssertFalse(CompetitiveClientDisplay.canCancelQueue(.matchFound))

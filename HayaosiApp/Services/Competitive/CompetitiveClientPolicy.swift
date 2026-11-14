@@ -185,6 +185,11 @@ enum CompetitiveSettlementRecoveryPolicy {
 enum CompetitiveClientDisplay {
     static let questionCount = 20
 
+    enum RankBadgeStage: Equatable {
+        case base
+        case upper
+    }
+
     enum AnswerState: Equatable {
         case none
         case answered
@@ -208,6 +213,11 @@ enum CompetitiveClientDisplay {
         return "\(rating) pt"
     }
 
+    static func ratingValue(for profile: CompetitiveProfileProjection?) -> Int? {
+        guard let profile else { return nil }
+        return profile.currentRating ?? profile.displayRating
+    }
+
     static func rankProgress(for profile: CompetitiveProfileProjection?) -> Double? {
         guard let profile,
               !profile.ratingBattle,
@@ -222,6 +232,53 @@ enum CompetitiveClientDisplay {
               profile.currentTier != .ratingBattle,
               let points = profile.pointsToNextTier else { return nil }
         return "次のランクまで \(max(0, points))"
+    }
+
+    static func rankBadgeStage(for profile: CompetitiveProfileProjection?) -> RankBadgeStage {
+        guard let profile,
+              !profile.ratingBattle,
+              profile.currentTier != .ratingBattle,
+              let progress = profile.progressFraction,
+              progress > 0.5 else { return .base }
+        return .upper
+    }
+
+    static func rankBadgeAssetName(
+        tier: CompetitiveTier,
+        stage: RankBadgeStage
+    ) -> String {
+        let tierName = switch tier {
+        case .bronze: "bronze"
+        case .silver: "silver"
+        case .gold: "gold"
+        case .platinum: "platinum"
+        case .ratingBattle: "rating"
+        }
+        let stageName = stage == .upper ? "upper" : "base"
+        return "rank_\(tierName)_\(stageName)"
+    }
+
+    static func shouldAnimateBadgeEvolution(
+        from previous: CompetitiveProfileProjection?,
+        to current: CompetitiveProfileProjection?
+    ) -> Bool {
+        guard let previous, let current,
+              previous.currentTier == current.currentTier,
+              current.currentTier != .ratingBattle,
+              !previous.ratingBattle,
+              !current.ratingBattle else { return false }
+        return rankBadgeStage(for: previous) == .base
+            && rankBadgeStage(for: current) == .upper
+    }
+
+    static func competitiveRuleSummary(for profile: CompetitiveProfileProjection?) -> String {
+        let npcRule = switch profile?.currentTier {
+        case .bronze: "Bronzeは5秒でNPC補充"
+        case .silver: "Silverは10秒でNPC補充"
+        case .gold, .platinum, .ratingBattle: "Gold以上はNPC補充なし"
+        case nil: "ランクに応じてNPC補充"
+        }
+        return "20問 / 4人対戦 / \(npcRule)"
     }
 
     static func winRateText(_ value: Double) -> String {
