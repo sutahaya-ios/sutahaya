@@ -422,3 +422,7 @@ Firebaseコンソール設定は8/5にTOKIYA-YAMAMOTO氏が完了(Simulatorで�
 ## 2026年9月 招待accept回帰対応(STATUS.mdから移動)
 
 - TOKIYA-YAMAMOTO(Codex): **招待accept直後のRTDB一時offlineエラーを修正**。`joinRoom()`は`.info/connected`を最大3秒だけ待ってからroomを取得し、Firebase Coreが返す「接続前・active listenerなし・cacheなし」の一時offlineだけ250ms後に1回再試行する。招待claim開始前からjoin完了までを6秒に制限して10秒claim leaseへ余白を残し、期限超過・join失敗・finalize失敗では参加状態をcleanupして可能なら同じclaimをrollbackする。permission denied・room不存在・roomInstance不一致はoffline retryしない。固定slot・同一UIDの冪等join・Rules schemaは維持。関連Swiftテスト11件とアプリコンパイル成功。**一時切断を再現する実機accept回帰は未実施**
+
+## 2026年11月14日 STATUS.mdから移動
+
+- Codex(たける側): **英単語の品詞へ助動詞を追加**。`PartOfSpeech.auxiliary`を代名詞・接続詞・前置詞と同じ少数機能語グループへ加え、変換ツールの許容品詞・グループ表示、作業用Excelの使い方、コーディング規約と決定事項を8品詞へ追従。既存データの品詞と問題データは未変更。`xcodegen generate`、`WordClassificationTests`全11件、Simulator向けビルドは成功。`python3 word_bank/word_bank_to_json.py`は実行したが、手元の作業用Excelに既存の未入力行が残っているため6284件の入力エラーで未達。全テストとSimulator画面確認は指示どおり未実施
