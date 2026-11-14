@@ -18,6 +18,8 @@ struct QuestionTextView: View {
     /// 単語は大きく等幅で、SPIの問題文は読みやすい本文サイズで出す
     var isSingleWord = true
     var format: QuestionFormat? = nil
+    /// 指示文を呼び出し側で別の場所(スクロール外の固定領域など)に出すときはfalseにする
+    var showsInstruction = true
 
     var body: some View {
         Group {
@@ -41,11 +43,9 @@ struct QuestionTextView: View {
         if !isSingleWord, let instruction = prompt.instruction {
             let isProminent = format?.usesProminentCenteredBody == true
             VStack(alignment: .leading, spacing: Self.instructionSpacing) {
-                Text(highlightedInstruction(instruction))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if showsInstruction {
+                    QuestionInstructionText(instruction: instruction)
+                }
                 (Text(prompt.body) + Text(isComplete ? "" : "▍").foregroundColor(.secondary))
                     .font(isProminent ? .title.bold() : .title3.weight(.semibold))
                     .multilineTextAlignment(isProminent ? .center : .leading)
@@ -63,9 +63,22 @@ struct QuestionTextView: View {
                 .contentTransition(.identity)
         }
     }
+}
+
+/// 問題文の先頭に置く共通の指示文。
+struct QuestionInstructionText: View {
+    let instruction: String
+
+    var body: some View {
+        Text(highlightedInstruction)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     /// 並び替えなどの指示に含まれる、回答すべき位置だけを強調する。
-    private func highlightedInstruction(_ instruction: String) -> AttributedString {
+    private var highlightedInstruction: AttributedString {
         var styled = AttributedString(instruction)
         var searchRange = instruction.startIndex..<instruction.endIndex
         while let match = instruction.range(of: "[0-9０-９]+番目", options: .regularExpression, range: searchRange) {

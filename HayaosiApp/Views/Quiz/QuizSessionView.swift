@@ -11,6 +11,7 @@ struct QuizSessionView: View {
     private static let correctFeedbackDuration: TimeInterval = 0.7
     private static let wrongFeedbackDuration: TimeInterval = 1.6
     private static let answerFeedbackDuration: TimeInterval = 1.2
+    private static let contentSpacing: CGFloat = 20
 
     let mode: PlayMode
     private let showsInterstitial: Bool
@@ -135,12 +136,16 @@ struct QuizSessionView: View {
     }
 
     private func questionBody(entry: QuizSession.Entry) -> some View {
-        ScrollView {
-            questionContent(entry: entry)
-                .padding()
+        VStack(spacing: 0) {
+            pinnedHeader(entry: entry)
+                .padding([.horizontal, .top])
+            ScrollView {
+                questionContent(entry: entry)
+                    .padding()
+            }
+            // 長い問題を読んだあとも、次問は問題文の先頭から表示する。
+            .id(session.currentIndex)
         }
-        // 長い問題を読んだあとも、次問は問題番号から表示する。
-        .id(session.currentIndex)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if session.phase == .feedback && !entry.question.explanation.isEmpty {
                 feedbackButtons
@@ -148,8 +153,9 @@ struct QuizSessionView: View {
         }
     }
 
-    private func questionContent(entry: QuizSession.Entry) -> some View {
-        VStack(spacing: 20) {
+    /// 長い問題をスクロールしても見失わないよう、制限時間と共通の指示文は固定表示する。
+    private func pinnedHeader(entry: QuizSession.Entry) -> some View {
+        VStack(spacing: Self.contentSpacing) {
             HStack {
                 Text("第\(session.currentIndex + 1)問 / \(session.totalCount)問")
                 Spacer()
@@ -166,11 +172,26 @@ struct QuizSessionView: View {
                         : TimerBarStyle.normalTint
                 )
 
+            if let instruction = pinnedInstruction(for: entry.question) {
+                QuestionInstructionText(instruction: instruction)
+            }
+        }
+    }
+
+    /// 単語問題は指示文を持たないので、文章題のときだけ取り出す。
+    private func pinnedInstruction(for question: Question) -> String? {
+        guard !question.genre.usesProgressiveReveal else { return nil }
+        return QuestionPrompt(text: question.text).instruction
+    }
+
+    private func questionContent(entry: QuizSession.Entry) -> some View {
+        VStack(spacing: Self.contentSpacing) {
             QuestionTextView(
                 text: entry.question.text,
                 mode: .full,
                 isSingleWord: entry.question.genre.usesProgressiveReveal,
-                format: entry.question.format
+                format: entry.question.format,
+                showsInstruction: false
             )
             .fixedSize(horizontal: false, vertical: true)
 
