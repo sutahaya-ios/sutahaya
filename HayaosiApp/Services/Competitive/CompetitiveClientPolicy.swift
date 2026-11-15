@@ -101,6 +101,34 @@ enum CompetitiveForfeitCooldownPolicy {
     }
 }
 
+struct CompetitiveReconnectTimeoutNoticeState {
+    static let message = "通信が切断されました。再接続できなかったため、対戦から退出しました。"
+
+    private var pendingSessionKey: CompetitiveSessionKey?
+
+    mutating func awaitServerConfirmation(for session: CompetitiveSession) {
+        pendingSessionKey = CompetitiveSessionKey(session: session)
+    }
+
+    mutating func cancel() {
+        pendingSessionKey = nil
+    }
+
+    mutating func consumeIfConfirmed(
+        projection: CompetitiveMatchmakingProjection?
+    ) -> Bool {
+        guard let pendingSessionKey,
+              let projection,
+              projection.state == .notQueued,
+              projection.sessionId == pendingSessionKey.sessionId,
+              projection.sessionEpoch == pendingSessionKey.sessionEpoch,
+              projection.forfeitCompletedAtEpochMS != nil else { return false }
+
+        self.pendingSessionKey = nil
+        return projection.cooldownEndsAtEpochMS == nil
+    }
+}
+
 struct CompetitiveDisplayedQuestionContext: Equatable, Sendable {
     let sessionKey: CompetitiveSessionKey
     let questionId: String

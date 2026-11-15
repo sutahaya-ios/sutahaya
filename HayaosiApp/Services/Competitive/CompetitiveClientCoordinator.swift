@@ -22,6 +22,7 @@ final class CompetitiveClientCoordinator {
     private var reconcileTask: Task<Void, Never>?
     private var settlementRecoveryTask: Task<Void, Never>?
     private var settledProfileRefreshTask: Task<Void, Never>?
+    private var reconnectTimeoutNoticeState = CompetitiveReconnectTimeoutNoticeState()
 
     var profile: CompetitiveProfileProjection? {
         matchmakingService?.state?.competitive
@@ -85,6 +86,7 @@ final class CompetitiveClientCoordinator {
         activeSession = nil
         resultReadySessionKey = nil
         isSettlementRecoveryDelayed = false
+        reconnectTimeoutNoticeState.cancel()
         matchmakingService?.stopObservingMatchmakingState()
         matchmakingService = nil
     }
@@ -98,6 +100,7 @@ final class CompetitiveClientCoordinator {
            ) {
             clearExplicitForfeitMarker()
         }
+        presentReconnectTimeoutNoticeIfConfirmed(projection: projection)
         guard let session = projection?.competitiveSession,
               !CompetitiveExplicitForfeitPolicy.suppresses(
                   session: session,
@@ -153,10 +156,12 @@ final class CompetitiveClientCoordinator {
                state: state,
                session: activeSession
            ) {
+            reconnectTimeoutNoticeState.awaitServerConfirmation(for: activeSession)
             completeClientExit(
                 expectedKey: expectedKey,
                 cancelPresenceDisconnect: true
             )
+            presentReconnectTimeoutNoticeIfConfirmed(projection: matchmakingService?.state)
             return
         }
 
@@ -201,6 +206,7 @@ final class CompetitiveClientCoordinator {
         let isBeforeCommitment = battleService.state?.phase == .waitingPlayers
         isForfeitSending = true
         userMessage = nil
+        reconnectTimeoutNoticeState.cancel()
 
         let marker = CompetitiveExplicitForfeitMarker(session: activeSession)
         explicitForfeitStore.save(marker)
@@ -254,6 +260,7 @@ final class CompetitiveClientCoordinator {
         activeSession = nil
         resultReadySessionKey = nil
         isSettlementRecoveryDelayed = false
+        reconnectTimeoutNoticeState.cancel()
     }
 
     func playAgain() async {
@@ -292,6 +299,7 @@ final class CompetitiveClientCoordinator {
         settlementRecoveryTask?.cancel()
         settledProfileRefreshTask?.cancel()
         battleService?.stopListening()
+        reconnectTimeoutNoticeState.cancel()
 
         activeSession = session
         resultReadySessionKey = nil
@@ -299,6 +307,15 @@ final class CompetitiveClientCoordinator {
         let service = CompetitiveService(session: session)
         battleService = service
         service.startListening()
+    }
+
+    private func presentReconnectTimeoutNoticeIfConfirmed(
+        projection: CompetitiveMatchmakingProjection?
+    ) {
+        guard reconnectTimeoutNoticeState.consumeIfConfirmed(projection: projection) else {
+            return
+        }
+        userMessage = CompetitiveReconnectTimeoutNoticeState.message
     }
 
     private func completeClientExit(

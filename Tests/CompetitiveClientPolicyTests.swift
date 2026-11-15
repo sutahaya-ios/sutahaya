@@ -499,6 +499,73 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         )
     }
 
+    func test_ReconnectTimeout通知はServer確定後に一度だけ表示する() throws {
+        let activeSession = session()
+        let timeoutProjection = try XCTUnwrap(
+            matchmakingProjection(
+                state: "NOT_QUEUED",
+                sessionId: activeSession.sessionId,
+                sessionEpoch: activeSession.sessionEpoch,
+                matchId: nil,
+                forfeitCompletedAtEpochMS: 6_000
+            )
+        )
+        var noticeState = CompetitiveReconnectTimeoutNoticeState()
+        noticeState.awaitServerConfirmation(for: activeSession)
+
+        XCTAssertTrue(noticeState.consumeIfConfirmed(projection: timeoutProjection))
+        XCTAssertFalse(noticeState.consumeIfConfirmed(projection: timeoutProjection))
+        XCTAssertEqual(
+            CompetitiveReconnectTimeoutNoticeState.message,
+            "通信が切断されました。再接続できなかったため、対戦から退出しました。"
+        )
+    }
+
+    func test_ReconnectTimeout未確定と明示棄権では通知しない() throws {
+        let activeSession = session()
+        let notConfirmed = try XCTUnwrap(
+            matchmakingProjection(
+                state: "NOT_QUEUED",
+                sessionId: activeSession.sessionId,
+                sessionEpoch: activeSession.sessionEpoch,
+                matchId: nil
+            )
+        )
+        let explicitForfeit = try XCTUnwrap(
+            matchmakingProjection(
+                state: "NOT_QUEUED",
+                sessionId: activeSession.sessionId,
+                sessionEpoch: activeSession.sessionEpoch,
+                matchId: nil,
+                forfeitCompletedAtEpochMS: 6_000,
+                cooldownEndsAtEpochMS: 11_000
+            )
+        )
+        var noticeState = CompetitiveReconnectTimeoutNoticeState()
+
+        noticeState.awaitServerConfirmation(for: activeSession)
+        XCTAssertFalse(noticeState.consumeIfConfirmed(projection: notConfirmed))
+        XCTAssertFalse(noticeState.consumeIfConfirmed(projection: explicitForfeit))
+        XCTAssertFalse(noticeState.consumeIfConfirmed(projection: explicitForfeit))
+    }
+
+    func test_RoomAのTimeout確定はRoomBの通知にならない() throws {
+        let roomB = session()
+        let roomAProjection = try XCTUnwrap(
+            matchmakingProjection(
+                state: "NOT_QUEUED",
+                sessionId: "session-a",
+                sessionEpoch: 1,
+                matchId: nil,
+                forfeitCompletedAtEpochMS: 6_000
+            )
+        )
+        var noticeState = CompetitiveReconnectTimeoutNoticeState()
+        noticeState.awaitServerConfirmation(for: roomB)
+
+        XCTAssertFalse(noticeState.consumeIfConfirmed(projection: roomAProjection))
+    }
+
     func test_RoomAのTerminal通知はRoomBを切り離さない() throws {
         let roomB = session()
         let roomA = try XCTUnwrap(
