@@ -5,9 +5,18 @@ struct CompetitiveBadgeEvolutionRequest: Equatable, Identifiable {
     let tier: CompetitiveTier
 }
 
+struct CompetitiveTierChangeAnimationRequest: Equatable, Identifiable {
+    let id = UUID()
+    let sessionKey: CompetitiveSessionKey
+    let tier: CompetitiveTier
+    let direction: CompetitiveTierChangeDirection
+}
+
 struct CompetitiveFlowView: View {
     @State private var coordinator = CompetitiveClientCoordinator()
     @State private var badgeEvolutionRequest: CompetitiveBadgeEvolutionRequest?
+    @State private var tierChangeAnimationRequest: CompetitiveTierChangeAnimationRequest?
+    @State private var tierChangeAnimationTracker = CompetitiveTierChangeAnimationTracker()
 
     var body: some View {
         Group {
@@ -19,9 +28,14 @@ struct CompetitiveFlowView: View {
                     cooldownEndsAtEpochMS: coordinator.forfeitCooldownEndsAtEpochMS,
                     serverTimeOffsetMS: coordinator.serverTimeOffsetMS,
                     badgeEvolutionRequest: badgeEvolutionRequest,
+                    tierChangeAnimationRequest: tierChangeAnimationRequest,
                     onBadgeEvolutionHandled: { requestID in
                         guard badgeEvolutionRequest?.id == requestID else { return }
                         badgeEvolutionRequest = nil
+                    },
+                    onTierChangeAnimationHandled: { requestID in
+                        guard tierChangeAnimationRequest?.id == requestID else { return }
+                        tierChangeAnimationRequest = nil
                     },
                     onStart: { Task { await coordinator.joinQueue() } }
                 )
@@ -39,12 +53,20 @@ struct CompetitiveFlowView: View {
         .task { await coordinator.start() }
         .onChange(of: coordinator.matchmakingService?.state) { _, _ in
             coordinator.handleMatchmakingProjection()
+            if coordinator.screenMatchmakingState == .queued {
+                badgeEvolutionRequest = nil
+                tierChangeAnimationRequest = nil
+            }
         }
         .onChange(of: coordinator.battleService?.state) { _, _ in
+            observeTierChangeEligibility()
             coordinator.handleBattleProjection()
+            scheduleTierChangeAnimationIfNeeded()
         }
         .onChange(of: coordinator.profile) { previous, current in
-            guard screen == .match,
+            scheduleTierChangeAnimationIfNeeded()
+            guard tierChangeAnimationRequest == nil,
+                  screen == .match,
                   coordinator.canLeaveResult,
                   CompetitiveClientDisplay.shouldAnimateBadgeEvolution(
                 from: previous,
@@ -67,6 +89,31 @@ struct CompetitiveFlowView: View {
         CompetitiveClientScreen.resolve(
             matchmakingState: coordinator.screenMatchmakingState,
             hasActiveMatch: coordinator.battleService != nil
+        )
+    }
+
+    private func observeTierChangeEligibility() {
+        guard let sessionKey = coordinator.activeSessionKey,
+              let phase = coordinator.battleService?.state?.phase else { return }
+        tierChangeAnimationTracker.observeMatch(sessionKey: sessionKey, phase: phase)
+    }
+
+    private func scheduleTierChangeAnimationIfNeeded() {
+        guard screen == .match,
+              coordinator.canLeaveResult,
+              let session = coordinator.activeSession,
+              let profile = coordinator.profile,
+              let result = coordinator.battleService?.state?.settlement?.playerResults[session.uid],
+              result.currentTier == profile.currentTier,
+              let direction = tierChangeAnimationTracker.consumeDirection(
+                sessionKey: CompetitiveSessionKey(session: session),
+                result: result
+              ) else { return }
+        badgeEvolutionRequest = nil
+        tierChangeAnimationRequest = CompetitiveTierChangeAnimationRequest(
+            sessionKey: CompetitiveSessionKey(session: session),
+            tier: result.currentTier,
+            direction: direction
         )
     }
 }

@@ -101,6 +101,39 @@ enum CompetitiveForfeitCooldownPolicy {
     }
 }
 
+enum CompetitiveTierChangeDirection: Equatable {
+    case promotion
+    case demotion
+}
+
+struct CompetitiveTierChangeAnimationTracker {
+    private var eligibleSessionKey: CompetitiveSessionKey?
+    private var consumedSessionKey: CompetitiveSessionKey?
+
+    mutating func observeMatch(
+        sessionKey: CompetitiveSessionKey,
+        phase: CompetitivePhase
+    ) {
+        guard ![.matchFinished, .settlementPending, .settled].contains(phase) else { return }
+        eligibleSessionKey = sessionKey
+    }
+
+    mutating func consumeDirection(
+        sessionKey: CompetitiveSessionKey,
+        result: CompetitiveSettlementPlayerResult
+    ) -> CompetitiveTierChangeDirection? {
+        guard eligibleSessionKey == sessionKey,
+              consumedSessionKey != sessionKey,
+              let direction = CompetitiveClientDisplay.tierChangeDirection(
+                previousTier: result.previousTier,
+                currentTier: result.currentTier
+              ) else { return nil }
+        consumedSessionKey = sessionKey
+        eligibleSessionKey = nil
+        return direction
+    }
+}
+
 struct CompetitiveReconnectTimeoutNoticeState {
     static let message = "通信が切断されました。再接続できなかったため、対戦から退出しました。"
 
@@ -303,6 +336,17 @@ enum CompetitiveClientDisplay {
         return "rank_\(tierName)_\(stageName)"
     }
 
+    static func tierChangeDirection(
+        previousTier: CompetitiveTier,
+        currentTier: CompetitiveTier
+    ) -> CompetitiveTierChangeDirection? {
+        let previousOrder = tierOrder(previousTier)
+        let currentOrder = tierOrder(currentTier)
+        if currentOrder > previousOrder { return .promotion }
+        if currentOrder < previousOrder { return .demotion }
+        return nil
+    }
+
     static func shouldAnimateBadgeEvolution(
         from previous: CompetitiveProfileProjection?,
         to current: CompetitiveProfileProjection?
@@ -314,6 +358,16 @@ enum CompetitiveClientDisplay {
               !current.ratingBattle else { return false }
         return rankBadgeStage(for: previous) == .base
             && rankBadgeStage(for: current) == .upper
+    }
+
+    private static func tierOrder(_ tier: CompetitiveTier) -> Int {
+        switch tier {
+        case .bronze: 0
+        case .silver: 1
+        case .gold: 2
+        case .platinum: 3
+        case .ratingBattle: 4
+        }
     }
 
     static func competitiveRuleSummary(for profile: CompetitiveProfileProjection?) -> String {

@@ -160,6 +160,69 @@ final class CompetitiveClientPolicyTests: XCTestCase {
         )
     }
 
+    func test_Tier昇格降格と変化なしをSettlement結果から判定する() {
+        XCTAssertEqual(
+            CompetitiveClientDisplay.tierChangeDirection(
+                previousTier: .bronze,
+                currentTier: .silver
+            ),
+            .promotion
+        )
+        XCTAssertEqual(
+            CompetitiveClientDisplay.tierChangeDirection(
+                previousTier: .platinum,
+                currentTier: .gold
+            ),
+            .demotion
+        )
+        XCTAssertNil(
+            CompetitiveClientDisplay.tierChangeDirection(
+                previousTier: .gold,
+                currentTier: .gold
+            )
+        )
+    }
+
+    func test_Tier変化演出は進行を観測した同一Sessionで一度だけ() {
+        let activeSession = session()
+        let sessionKey = CompetitiveSessionKey(session: activeSession)
+        let promotion = CompetitiveSettlementPlayerResult(
+            rank: 1,
+            forfeited: false,
+            previousTier: .bronze,
+            currentTier: .silver,
+            ratingBattle: false,
+            displayRating: 1_210,
+            ratingDelta: 20
+        )
+        var tracker = CompetitiveTierChangeAnimationTracker()
+
+        XCTAssertNil(tracker.consumeDirection(sessionKey: sessionKey, result: promotion))
+        tracker.observeMatch(sessionKey: sessionKey, phase: .questionOpen)
+        XCTAssertEqual(
+            tracker.consumeDirection(sessionKey: sessionKey, result: promotion),
+            .promotion
+        )
+        XCTAssertNil(tracker.consumeDirection(sessionKey: sessionKey, result: promotion))
+    }
+
+    func test_Tier内50パーセント超過は昇降格演出と重複しない() {
+        let sameTier = CompetitiveSettlementPlayerResult(
+            rank: 1,
+            forfeited: false,
+            previousTier: .bronze,
+            currentTier: .bronze,
+            ratingBattle: false,
+            displayRating: 1_110,
+            ratingDelta: 20
+        )
+        let sessionKey = CompetitiveSessionKey(session: session())
+        var tracker = CompetitiveTierChangeAnimationTracker()
+        tracker.observeMatch(sessionKey: sessionKey, phase: .questionOpen)
+
+        XCTAssertNil(tracker.consumeDirection(sessionKey: sessionKey, result: sameTier))
+    }
+
     func test_Rule表示は現在TierのNPC補充設定に一致する() {
         XCTAssertEqual(
             CompetitiveClientDisplay.competitiveRuleSummary(

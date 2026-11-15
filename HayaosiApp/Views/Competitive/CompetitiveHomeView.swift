@@ -6,12 +6,18 @@ struct CompetitiveHomeView: View {
     let cooldownEndsAtEpochMS: Double?
     let serverTimeOffsetMS: Double
     let badgeEvolutionRequest: CompetitiveBadgeEvolutionRequest?
+    let tierChangeAnimationRequest: CompetitiveTierChangeAnimationRequest?
     let onBadgeEvolutionHandled: (UUID) -> Void
+    let onTierChangeAnimationHandled: (UUID) -> Void
     let onStart: () -> Void
 
     @State private var badgeStageOverride: CompetitiveClientDisplay.RankBadgeStage?
     @State private var badgeRotation = 0.0
     @State private var badgeScale = 1.0
+    @State private var badgeOpacity = 1.0
+    @State private var badgeGlowOpacity = 0.0
+    @State private var tierChangeLabel: String?
+    @State private var tierChangeLabelOpacity = 0.0
 
     private let backgroundColor = Color(red: 0.965, green: 0.972, blue: 0.99)
 
@@ -41,8 +47,12 @@ struct CompetitiveHomeView: View {
         .task(id: badgeEvolutionRequest?.id) {
             await playBadgeEvolutionIfNeeded()
         }
+        .task(id: tierChangeAnimationRequest?.id) {
+            await playTierChangeAnimationIfNeeded()
+        }
         .onChange(of: profile) { _, _ in
-            guard badgeEvolutionRequest == nil else { return }
+            guard badgeEvolutionRequest == nil,
+                  tierChangeAnimationRequest == nil else { return }
             badgeStageOverride = nil
         }
     }
@@ -78,6 +88,28 @@ struct CompetitiveHomeView: View {
                         perspective: 0.55
                     )
                     .scaleEffect(badgeScale)
+                    .opacity(badgeOpacity)
+                    .shadow(
+                        color: tierAccentColor(profile.currentTier).opacity(badgeGlowOpacity),
+                        radius: 24
+                    )
+                    .overlay(alignment: .bottom) {
+                        if let tierChangeLabel {
+                            Text(tierChangeLabel)
+                                .font(.headline.bold())
+                                .foregroundStyle(
+                                    tierChangeAnimationRequest?.direction == .promotion
+                                        ? Color.green
+                                        : Color.secondary
+                                )
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 7)
+                                .background(.regularMaterial, in: Capsule())
+                                .opacity(tierChangeLabelOpacity)
+                                .offset(y: 8)
+                                .allowsHitTesting(false)
+                        }
+                    }
                     .accessibilityLabel(
                         "\(CompetitiveClientDisplay.tierName(profile.currentTier))ランクバッジ"
                     )
@@ -325,5 +357,57 @@ struct CompetitiveHomeView: View {
         badgeStageOverride = nil
         badgeRotation = 0
         onBadgeEvolutionHandled(request.id)
+    }
+
+    @MainActor
+    private func playTierChangeAnimationIfNeeded() async {
+        guard let request = tierChangeAnimationRequest,
+              let profile,
+              request.tier == profile.currentTier else { return }
+
+        badgeStageOverride = nil
+        badgeRotation = 0
+        badgeGlowOpacity = 0
+        tierChangeLabel = request.direction == .promotion ? "ランク昇格！" : "ランク降格"
+        tierChangeLabelOpacity = 0
+
+        switch request.direction {
+        case .promotion:
+            badgeScale = 0.84
+            badgeOpacity = 0.8
+            withAnimation(.easeOut(duration: 0.35)) {
+                badgeScale = 1.08
+                badgeOpacity = 1
+                badgeGlowOpacity = 0.6
+                tierChangeLabelOpacity = 1
+            }
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.35)) {
+                badgeScale = 1
+                badgeGlowOpacity = 0
+                tierChangeLabelOpacity = 0
+            }
+        case .demotion:
+            badgeScale = 1
+            badgeOpacity = 0.3
+            withAnimation(.easeOut(duration: 0.35)) {
+                badgeOpacity = 1
+                tierChangeLabelOpacity = 1
+            }
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.35)) {
+                tierChangeLabelOpacity = 0
+            }
+        }
+
+        try? await Task.sleep(for: .milliseconds(350))
+        guard !Task.isCancelled else { return }
+        badgeScale = 1
+        badgeOpacity = 1
+        badgeGlowOpacity = 0
+        tierChangeLabel = nil
+        onTierChangeAnimationHandled(request.id)
     }
 }
