@@ -29,7 +29,7 @@ const TIER_CASES = Object.freeze([
 ]);
 
 describe("Competitive Phase D-2 question bank", () => {
-  it("contains the synchronized 1...5 English data and at least 20 per range", () => {
+  it("contains the synchronized 1...5 English data and enough questions per range", () => {
     assert.equal(ENGLISH_QUESTION_BANK.length, 5_951);
     assert.equal(new Set(ENGLISH_QUESTION_BANK.map((question) => question.id)).size, 5_951);
     for (const [difficulty, expectedCount] of Object.entries(EXPECTED_COUNTS)) {
@@ -60,7 +60,7 @@ describe("Competitive Phase D-2 question bank", () => {
     }
   });
 
-  it("selects 20 unique questions and four choices inside every tier range", () => {
+  it("selects 10 unique questions and four choices inside every tier range", () => {
     for (const testCase of TIER_CASES) {
       const selected = selectCompetitiveQuestions({
         matchId: `match-${testCase.tier}`,

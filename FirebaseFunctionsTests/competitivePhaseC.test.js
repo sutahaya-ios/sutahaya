@@ -27,7 +27,11 @@ const {
   httpsCallable,
 } = require("firebase/functions");
 
-const { PHASE, PROTOCOL_VERSION } = require("../functions/competitive/constants");
+const {
+  PHASE,
+  PROTOCOL_VERSION,
+  QUESTION_COUNT,
+} = require("../functions/competitive/constants");
 
 const projectId = "demo-hayaosiapp";
 const rootDir = path.resolve(__dirname, "..");
@@ -241,13 +245,13 @@ async function joinReadyOpen(clients, sessions) {
   await reconcile(clients[0], sessions[0], "countdown");
 }
 
-async function playTwentyQuestions(clients, sessions, matchId) {
+async function playQuestions(clients, sessions, matchId) {
   const seenNPCOutcomes = new Set();
   const initialState = await adminRequest(`competitiveV2/matches/${matchId}/private`);
   const expectedScores = Object.fromEntries(
     initialState.participantOrder.map((uid) => [uid, 0])
   );
-  for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
+  for (let questionIndex = 0; questionIndex < QUESTION_COUNT; questionIndex += 1) {
     let state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     assert.equal(state.phase, PHASE.QUESTION_OPEN);
     assert.equal(state.currentQuestionIndex, questionIndex);
@@ -325,13 +329,13 @@ async function playTwentyQuestions(clients, sessions, matchId) {
     }
     await delay(3);
     await reconcile(clients[0], sessions[0], `advance-${questionIndex}`);
-    if (questionIndex < 19) {
+    if (questionIndex < QUESTION_COUNT - 1) {
       await reconcile(clients[0], sessions[0], `open-${questionIndex + 1}`);
     }
   }
   const finalState = await adminRequest(`competitiveV2/matches/${matchId}/private`);
   assert.equal(finalState.phase, PHASE.SETTLED);
-  assert.equal(finalState.currentQuestionIndex, 19);
+  assert.equal(finalState.currentQuestionIndex, QUESTION_COUNT - 1);
   assert.equal(Object.keys(finalState.matchResult.finalScores).length, 4);
   assert.deepEqual(finalState.matchResult.finalScores, expectedScores);
   if (clients.length < 4) {
@@ -372,7 +376,7 @@ async function finishMatchFromCurrentState(client, session, matchId) {
 }
 
 describe("Competitive Phase C Emulator", () => {
-  it("completes 20 questions for 1-4 humans with Bronze NPC fill and settlement", async () => {
+  it("completes 10 questions for 1-4 humans with Bronze NPC fill and settlement", async () => {
     for (let humanCount = 1; humanCount <= 4; humanCount += 1) {
       const queued = await queueMatch(humanCount, { waitRealFiveSeconds: humanCount === 1 });
       const match = await adminRequest(`competitiveV2/matches/${queued.matchId}`);
@@ -391,7 +395,7 @@ describe("Competitive Phase C Emulator", () => {
         },
       });
       await joinReadyOpen(queued.clients, queued.sessions);
-      await playTwentyQuestions(queued.clients, queued.sessions, queued.matchId);
+      await playQuestions(queued.clients, queued.sessions, queued.matchId);
     }
   });
 

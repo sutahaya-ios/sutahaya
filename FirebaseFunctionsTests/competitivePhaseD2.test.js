@@ -23,7 +23,11 @@ const {
   httpsCallable,
 } = require("firebase/functions");
 
-const { PHASE, PROTOCOL_VERSION } = require("../functions/competitive/constants");
+const {
+  PHASE,
+  PROTOCOL_VERSION,
+  QUESTION_COUNT,
+} = require("../functions/competitive/constants");
 const {
   RATING_CONFIG,
   TIER,
@@ -240,7 +244,7 @@ async function joinReadyOpen(context) {
   await reconcile(clients[0], sessions[0], "open-first");
 }
 
-async function playTwentyQuestions(context, winnerIndex = 0) {
+async function playQuestions(context, winnerIndex = 0) {
   const { clients, sessions, matchId } = context;
   await joinReadyOpen(context);
   const firstPublicQuestion = (await get(ref(
@@ -251,7 +255,7 @@ async function playTwentyQuestions(context, winnerIndex = 0) {
   assert.equal(Object.hasOwn(firstPublicQuestion, "canonicalId"), false);
   assert.equal(Object.hasOwn(firstPublicQuestion, "difficulty"), false);
 
-  for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
+  for (let questionIndex = 0; questionIndex < QUESTION_COUNT; questionIndex += 1) {
     let state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     assert.equal(state.phase, PHASE.QUESTION_OPEN);
     const wrongAnswerId = state.currentQuestion.choices.find(
@@ -291,7 +295,7 @@ async function playTwentyQuestions(context, winnerIndex = 0) {
       Date.now() - 1
     );
     await reconcile(clients[0], sessions[0], `advance-${questionIndex}`);
-    if (questionIndex < 19) {
+    if (questionIndex < QUESTION_COUNT - 1) {
       await reconcile(clients[0], sessions[0], `next-${questionIndex}`);
     }
   }
@@ -315,8 +319,12 @@ async function assertFullScenario({
   const before = await adminRequest(`competitiveV2/matches/${context.matchId}/private`);
   const participants = Object.values(before.participants);
   assert.equal(participants.filter((value) => value.kind === "HUMAN").length, expectedHumans, name);
-  assert.equal(before.questionInstances.length, 20, name);
-  assert.equal(new Set(before.questionInstances.map((question) => question.canonicalId)).size, 20, name);
+  assert.equal(before.questionInstances.length, QUESTION_COUNT, name);
+  assert.equal(
+    new Set(before.questionInstances.map((question) => question.canonicalId)).size,
+    QUESTION_COUNT,
+    name
+  );
   assert.ok(before.questionInstances.every((question) => (
     question.difficulty >= minimumDifficulty && question.difficulty <= maximumDifficulty
   )), name);
@@ -325,7 +333,7 @@ async function assertFullScenario({
     minimum: minimumDifficulty,
     maximum: maximumDifficulty,
   }, name);
-  await playTwentyQuestions(context);
+  await playQuestions(context);
   const settlement = await adminRequest(
     `competitiveV2/matchmaking/private/settlements/${context.matchId}`
   );
@@ -377,7 +385,7 @@ async function forceSettlement(playerSpecs, ranks) {
 }
 
 describe("Competitive Phase D-2 Emulator", () => {
-  it("completes Bronze/Silver NPC and Gold/Platinum human-only 20-question matches", async () => {
+  it("completes Bronze/Silver NPC and Gold/Platinum human-only 10-question matches", async () => {
     const scenarios = [
       {
         name: "Bronze Human1 + NPC3",

@@ -23,7 +23,11 @@ const {
   httpsCallable,
 } = require("firebase/functions");
 
-const { PHASE, PROTOCOL_VERSION } = require("../functions/competitive/constants");
+const {
+  PHASE,
+  PROTOCOL_VERSION,
+  QUESTION_COUNT,
+} = require("../functions/competitive/constants");
 
 const projectId = "demo-hayaosiapp";
 const rootDir = path.resolve(__dirname, "..");
@@ -203,9 +207,9 @@ async function joinReadyOpen({ clients, sessions, matchId }) {
   await reconcile(clients[0], sessions[0], "open-first");
 }
 
-async function playTwentyQuestions(context) {
+async function playQuestions(context) {
   const { clients, sessions, matchId } = context;
-  for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
+  for (let questionIndex = 0; questionIndex < QUESTION_COUNT; questionIndex += 1) {
     let state = await adminRequest(`competitiveV2/matches/${matchId}/private`);
     assert.equal(state.phase, PHASE.QUESTION_OPEN);
     const wrong = state.currentQuestion.choices.find(
@@ -243,14 +247,14 @@ async function playTwentyQuestions(context) {
       Date.now() - 1
     );
     await reconcile(clients[0], sessions[0], `advance-${questionIndex}`);
-    if (questionIndex < 19) {
+    if (questionIndex < QUESTION_COUNT - 1) {
       await reconcile(clients[0], sessions[0], `next-${questionIndex}`);
     }
   }
 }
 
 describe("Competitive Phase D-1 Emulator", () => {
-  it("settles a 20-question Human/NPC match with rating, stats and server-only security", async () => {
+  it("settles a 10-question Human/NPC match with rating, stats and server-only security", async () => {
     const context = await createMixedMatch();
     const before = await adminRequest("competitiveV2/matchmaking/private/profiles");
     const matchBefore = await adminRequest(`competitiveV2/matches/${context.matchId}/private`);
@@ -264,11 +268,11 @@ describe("Competitive Phase D-1 Emulator", () => {
     });
 
     await joinReadyOpen(context);
-    await playTwentyQuestions(context);
+    await playQuestions(context);
 
     const match = await adminRequest(`competitiveV2/matches/${context.matchId}`);
     assert.equal(match.private.phase, PHASE.SETTLED);
-    assert.equal(match.private.currentQuestionIndex, 19);
+    assert.equal(match.private.currentQuestionIndex, QUESTION_COUNT - 1);
     assert.equal(match.private.settlement.status, "SETTLED");
     assert.equal(Object.hasOwn(match.private.settlement, "playerResults"), false);
     assert.equal(match.public.phase, PHASE.SETTLED);

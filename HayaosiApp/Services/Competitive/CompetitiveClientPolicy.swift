@@ -261,7 +261,7 @@ enum CompetitiveSettlementRecoveryPolicy {
 }
 
 enum CompetitiveClientDisplay {
-    static let questionCount = 20
+    static let questionCount = 10
 
     enum RankBadgeStage: Equatable {
         case base
@@ -377,7 +377,7 @@ enum CompetitiveClientDisplay {
         case .gold, .platinum, .ratingBattle: "Gold以上はNPC補充なし"
         case nil: "ランクに応じてNPC補充"
         }
-        return "20問 / 4人対戦 / \(npcRule)"
+        return "10問 / 4人対戦 / \(npcRule)"
     }
 
     static func winRateText(_ value: Double) -> String {

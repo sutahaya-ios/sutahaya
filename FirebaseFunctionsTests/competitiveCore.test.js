@@ -26,7 +26,11 @@ const {
   httpsCallable,
 } = require("firebase/functions");
 
-const { PHASE, PROTOCOL_VERSION } = require("../functions/competitive/constants");
+const {
+  PHASE,
+  PROTOCOL_VERSION,
+  QUESTION_COUNT,
+} = require("../functions/competitive/constants");
 const { buildTestMatch } = require("../functions/competitive/testMatchFactory");
 
 const projectId = "demo-hayaosiapp";
@@ -560,7 +564,7 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     assert.deepEqual(afterRetry.currentQuestion.result, finalized.currentQuestion.result);
   });
 
-  it("keeps four realtime projections synchronized through all 20 questions", async () => {
+  it("keeps four realtime projections synchronized through all 10 questions", async () => {
     const clients = await createFourClients();
     const { matchId } = await seedMatch(clients);
     await callReconcile(clients[0], matchId, "created-before-listeners");
@@ -586,7 +590,7 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     const questionResults = [];
     const hotPathMeasurements = [];
     let firstQuestionRetryEvent = null;
-    for (let questionIndex = 0; questionIndex < 20; questionIndex += 1) {
+    for (let questionIndex = 0; questionIndex < QUESTION_COUNT; questionIndex += 1) {
       const { acks, events, measurements } = await answerCurrentQuestion(
         clients,
         matchId,
@@ -611,7 +615,7 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
       ), 36);
 
       const next = await advanceFromResult(clients, matchId, questionIndex);
-      if (questionIndex < 19) {
+      if (questionIndex < QUESTION_COUNT - 1) {
         assert.equal(next.phase, PHASE.QUESTION_OPEN);
         await waitForTrackers(
           trackers,
@@ -636,12 +640,12 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
 
     await waitForTrackers(trackers, (value) => value.phase === PHASE.SETTLED, "SETTLED");
     const finalProjection = trackers[0].latest;
-    assert.equal(questionResults.length, 20);
+    assert.equal(questionResults.length, QUESTION_COUNT);
     assert.equal(Object.values(finalProjection.finalResult.finalScores).reduce(
       (sum, value) => sum + value,
       0
-    ), 720);
-    assert.equal(finalProjection.currentQuestionIndex, 19);
+    ), QUESTION_COUNT * 36);
+    assert.equal(finalProjection.currentQuestionIndex, QUESTION_COUNT - 1);
 
     for (const tracker of trackers) {
       const versions = tracker.observations.map((value) => value.stateVersion);
@@ -663,9 +667,9 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     }
 
     const privateState = await readPrivate(matchId);
-    assert.equal(privateState.currentQuestionIndex, 19);
+    assert.equal(privateState.currentQuestionIndex, QUESTION_COUNT - 1);
     assert.equal(privateState.phase, PHASE.SETTLED);
-    assert.equal(privateState.questionInstances.length, 20);
+    assert.equal(privateState.questionInstances.length, QUESTION_COUNT);
     assert.equal(Object.keys(privateState.currentQuestion.answers).length, 4);
     const finalScores = { ...privateState.scores };
     const settled = await readPrivate(matchId);

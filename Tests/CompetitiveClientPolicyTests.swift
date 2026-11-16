@@ -228,19 +228,19 @@ final class CompetitiveClientPolicyTests: XCTestCase {
             CompetitiveClientDisplay.competitiveRuleSummary(
                 for: profile(tier: .bronze, ratingBattle: false, displayRating: 1_000)
             ),
-            "20問 / 4人対戦 / Bronzeは5秒でNPC補充"
+            "10問 / 4人対戦 / Bronzeは5秒でNPC補充"
         )
         XCTAssertEqual(
             CompetitiveClientDisplay.competitiveRuleSummary(
                 for: profile(tier: .silver, ratingBattle: false, displayRating: 1_200)
             ),
-            "20問 / 4人対戦 / Silverは10秒でNPC補充"
+            "10問 / 4人対戦 / Silverは10秒でNPC補充"
         )
         XCTAssertEqual(
             CompetitiveClientDisplay.competitiveRuleSummary(
                 for: profile(tier: .gold, ratingBattle: false, displayRating: 1_400)
             ),
-            "20問 / 4人対戦 / Gold以上はNPC補充なし"
+            "10問 / 4人対戦 / Gold以上はNPC補充なし"
         )
     }
 
@@ -270,7 +270,7 @@ final class CompetitiveClientPolicyTests: XCTestCase {
     }
 
     func test_正誤と得点差分はQUESTION_RESULT後だけ表示する() {
-        XCTAssertEqual(CompetitiveClientDisplay.questionCount, 20)
+        XCTAssertEqual(CompetitiveClientDisplay.questionCount, 10)
 
         let correct = participant(uid: "correct", kind: .human, answered: true)
         let wrongNPC = participant(uid: "wrong-npc", kind: .npc, answered: true)
