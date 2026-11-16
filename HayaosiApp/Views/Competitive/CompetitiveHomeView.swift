@@ -11,6 +11,8 @@ struct CompetitiveHomeView: View {
     let onTierChangeAnimationHandled: (UUID) -> Void
     let onStart: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var badgeStageOverride: CompetitiveClientDisplay.RankBadgeStage?
     @State private var badgeRotation = 0.0
     @State private var badgeScale = 1.0
@@ -19,7 +21,15 @@ struct CompetitiveHomeView: View {
     @State private var tierChangeLabel: String?
     @State private var tierChangeLabelOpacity = 0.0
 
-    private let backgroundColor = Color(red: 0.965, green: 0.972, blue: 0.99)
+    private var backgroundColor: Color {
+        colorScheme == .dark
+            ? Color(.systemGroupedBackground)
+            : Color(red: 0.965, green: 0.972, blue: 0.99)
+    }
+
+    private var cardBackgroundColor: Color {
+        Color(.secondarySystemGroupedBackground)
+    }
 
     var body: some View {
         ScrollView {
@@ -129,10 +139,10 @@ struct CompetitiveHomeView: View {
     private func ratingPill(_ profile: CompetitiveProfileProjection) -> some View {
         HStack(spacing: 10) {
             Text("Rating")
-                .foregroundStyle(Color(red: 0.38, green: 0.48, blue: 0.66))
+                .foregroundStyle(.secondary)
             if let rating = CompetitiveClientDisplay.ratingValue(for: profile) {
                 Text("\(rating)")
-                    .foregroundStyle(Color(red: 0.08, green: 0.18, blue: 0.36))
+                    .foregroundStyle(.primary)
                     .monospacedDigit()
             } else {
                 Text("—")
@@ -142,7 +152,7 @@ struct CompetitiveHomeView: View {
         .font(.title3.weight(.bold))
         .padding(.horizontal, 24)
         .frame(minHeight: 44)
-        .background(Color.blue.opacity(0.065), in: Capsule())
+        .background(Color.blue.opacity(colorScheme == .dark ? 0.18 : 0.065), in: Capsule())
         .accessibilityElement(children: .combine)
     }
 
@@ -154,7 +164,7 @@ struct CompetitiveHomeView: View {
             if let remaining = profile.pointsToNextTier {
                 HStack(spacing: 8) {
                     Text("次のランクまで")
-                        .foregroundStyle(Color(red: 0.30, green: 0.36, blue: 0.48))
+                        .foregroundStyle(.secondary)
                     Text("あと \(max(0, remaining)) pt")
                         .foregroundStyle(.orange)
                         .monospacedDigit()
@@ -165,7 +175,7 @@ struct CompetitiveHomeView: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color(red: 0.82, green: 0.84, blue: 0.90))
+                        .fill(Color(.systemGray4))
                     Capsule()
                         .fill(
                             LinearGradient(
@@ -228,7 +238,7 @@ struct CompetitiveHomeView: View {
                 Image(systemName: systemImage)
                     .foregroundStyle(color)
                 Text(title)
-                    .foregroundStyle(Color(red: 0.34, green: 0.40, blue: 0.52))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
@@ -237,10 +247,10 @@ struct CompetitiveHomeView: View {
             Text(value)
                 .font(.system(size: 30, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(Color(red: 0.04, green: 0.07, blue: 0.14))
+                .foregroundStyle(.primary)
         }
         .frame(maxWidth: .infinity, minHeight: 96)
-        .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 20))
+        .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: 20))
         .shadow(color: .black.opacity(0.055), radius: 10, y: 5)
     }
 
@@ -259,10 +269,10 @@ struct CompetitiveHomeView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("ルール")
                     .font(.headline)
-                    .foregroundStyle(Color(red: 0.34, green: 0.40, blue: 0.52))
+                    .foregroundStyle(.secondary)
                 Text(CompetitiveClientDisplay.competitiveRuleSummary(for: profile))
                     .font(.subheadline)
-                    .foregroundStyle(Color(red: 0.18, green: 0.22, blue: 0.32))
+                    .foregroundStyle(.primary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.82)
             }
@@ -270,7 +280,7 @@ struct CompetitiveHomeView: View {
         }
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, minHeight: 96)
-        .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 22))
+        .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: 22))
         .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
     }
 
@@ -319,7 +329,17 @@ struct CompetitiveHomeView: View {
     }
 
     private func tierAccentColor(_ tier: CompetitiveTier) -> Color {
-        switch tier {
+        if colorScheme == .dark {
+            switch tier {
+            case .bronze: return Color(red: 0.88, green: 0.63, blue: 0.43)
+            case .silver: return Color(red: 0.73, green: 0.79, blue: 0.89)
+            case .gold: return Color(red: 1, green: 0.77, blue: 0.30)
+            case .platinum: return Color(red: 0.56, green: 0.73, blue: 1)
+            case .ratingBattle: return Color(red: 0.48, green: 0.68, blue: 1)
+            }
+        }
+
+        return switch tier {
         case .bronze: Color(red: 0.25, green: 0.12, blue: 0.08)
         case .silver: Color(red: 0.31, green: 0.37, blue: 0.49)
         case .gold: Color(red: 0.73, green: 0.42, blue: 0.03)
