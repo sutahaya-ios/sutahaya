@@ -152,6 +152,27 @@ describe("Competitive Core unit", () => {
       const result = applyClient(match, player, event, 2_200 + index, staged);
       assert.equal(result.ack.status, "ACCEPTED");
       match = result.match;
+      if (index === 0) {
+        assert.equal(match.private.phase, PHASE.QUESTION_OPEN);
+        assert.deepEqual({
+          answered: match.public.participants.p1.answered,
+          correct: match.public.participants.p1.answerCorrect,
+          answerOrder: match.public.participants.p1.answerOrder,
+          correctRank: match.public.participants.p1.correctRank,
+          scoreDelta: match.public.participants.p1.scoreDelta,
+          score: match.public.participants.p1.score,
+        }, {
+          answered: true,
+          correct: true,
+          answerOrder: 1,
+          correctRank: 1,
+          scoreDelta: 20,
+          score: 20,
+        });
+        assert.equal(match.private.scores.p1, 0);
+        assert.equal(match.public.participants.p1.answerId, undefined);
+        assert.equal(match.public.currentQuestion.correctAnswerId, undefined);
+      }
     }
 
     assert.equal(match.private.phase, PHASE.QUESTION_RESULT);
@@ -163,6 +184,98 @@ describe("Competitive Core unit", () => {
     assert.equal(JSON.stringify(match.public).includes("canonicalId"), false);
     assert.equal(JSON.stringify(match.public).includes("assignmentTicket"), false);
     assert.equal(JSON.stringify(match.public).includes("answerInbox"), false);
+  });
+
+  it("publishes wrong answers and reorders near-simultaneous correct answers canonically", () => {
+    let match = openMatch();
+    const question = match.private.currentQuestion;
+    const stateVersion = match.private.stateVersion;
+    const wrongAnswerId = question.choices.find(
+      (choice) => choice.answerId !== question.correctAnswerId
+    ).answerId;
+    const wrongEvent = envelope("submitAnswer", players[2], "live-wrong", {
+      questionId: question.questionId,
+      stateVersion,
+      payload: { answerId: wrongAnswerId },
+    });
+    match = applyClient(match, players[2], wrongEvent, 2_150, {
+      uid: players[2].uid,
+      eventId: wrongEvent.intentId,
+      questionId: question.questionId,
+      answerId: wrongAnswerId,
+      acceptedAtEpochMs: 2_100,
+    }).match;
+    assert.deepEqual({
+      correct: match.public.participants.p3.answerCorrect,
+      answerOrder: match.public.participants.p3.answerOrder,
+      correctRank: match.public.participants.p3.correctRank,
+      scoreDelta: match.public.participants.p3.scoreDelta,
+      score: match.public.participants.p3.score,
+    }, {
+      correct: false,
+      answerOrder: 1,
+      correctRank: undefined,
+      scoreDelta: -10,
+      score: -10,
+    });
+
+    const laterProcessed = envelope("submitAnswer", players[1], "live-later-processed", {
+      questionId: question.questionId,
+      stateVersion,
+      payload: { answerId: question.correctAnswerId },
+    });
+    match = applyClient(match, players[1], laterProcessed, 2_250, {
+      uid: players[1].uid,
+      eventId: laterProcessed.intentId,
+      questionId: question.questionId,
+      answerId: question.correctAnswerId,
+      acceptedAtEpochMs: 2_200,
+    }).match;
+    assert.equal(match.public.participants.p2.correctRank, 1);
+    assert.equal(match.public.participants.p2.scoreDelta, 20);
+
+    const earlierProcessedLast = envelope("submitAnswer", players[0], "live-earlier-processed-last", {
+      questionId: question.questionId,
+      stateVersion,
+      payload: { answerId: question.correctAnswerId },
+    });
+    match = applyClient(match, players[0], earlierProcessedLast, 2_260, {
+      uid: players[0].uid,
+      eventId: earlierProcessedLast.intentId,
+      questionId: question.questionId,
+      answerId: question.correctAnswerId,
+      acceptedAtEpochMs: 2_190,
+    }).match;
+
+    assert.equal(match.private.phase, PHASE.QUESTION_OPEN);
+    assert.equal(match.public.participants.p1.answerOrder, 2);
+    assert.equal(match.public.participants.p1.correctRank, 1);
+    assert.equal(match.public.participants.p1.scoreDelta, 20);
+    assert.equal(match.public.participants.p2.answerOrder, 3);
+    assert.equal(match.public.participants.p2.correctRank, 2);
+    assert.equal(match.public.participants.p2.scoreDelta, 10);
+    assert.equal(match.public.participants.p3.answerOrder, 1);
+    assert.equal(match.public.participants.p3.scoreDelta, -10);
+
+    const disconnected = processPresenceSignal(match, {
+      status: "DISCONNECTED",
+      sessionId: players[0].sessionId,
+      sessionEpoch: players[0].sessionEpoch,
+      authorityEventKey: "2026-01-01T00:00:02.000Z",
+    }, players[0].uid, 2_300);
+    assert.equal(disconnected.changed, true);
+    const reconnected = applyClient(
+      disconnected.match,
+      players[0],
+      envelope("reconnect", players[0], "live-projection"),
+      2_301
+    );
+    assert.equal(reconnected.ack.status, "ACCEPTED");
+    assert.equal(reconnected.match.public.participants.p1.answerCorrect, true);
+    assert.equal(reconnected.match.public.participants.p1.correctRank, 1);
+    assert.equal(reconnected.match.public.participants.p1.scoreDelta, 20);
+    assert.equal(reconnected.match.public.participants.p1.score, 20);
+    assert.equal(reconnected.match.public.currentQuestion.correctAnswerId, undefined);
   });
 
   it("makes retries idempotent and rejects changed replay payloads", () => {
@@ -537,6 +650,14 @@ describe("Competitive Core unit", () => {
     assert.equal(match.public.participants[orderedPlans[0][0]].answered, true);
     assert.equal(match.public.participants[orderedPlans[1][0]].answered, false);
     assert.equal(match.public.participants[orderedPlans[0][0]].answerId, undefined);
+    assert.equal(
+      match.public.participants[orderedPlans[0][0]].answerCorrect,
+      orderedPlans[0][1].answerId === question.correctAnswerId
+    );
+    assert.equal(
+      match.public.participants[orderedPlans[0][0]].score,
+      match.public.participants[orderedPlans[0][0]].scoreDelta
+    );
     assert.equal(match.public.questionResult, null);
     assert.equal(
       match.public.currentQuestion.nextServerActionAtEpochMs,
@@ -566,6 +687,16 @@ describe("Competitive Core unit", () => {
     assert.equal(match.public.participants[orderedPlans[0][0]].answered, true);
     assert.equal(match.public.participants[orderedPlans[1][0]].answered, true);
     assert.equal(match.public.participants[orderedPlans[2][0]].answered, false);
+    assert.equal(
+      typeof match.public.participants[orderedPlans[1][0]].answerCorrect,
+      "boolean"
+    );
+    assert.ok(Number.isInteger(
+      match.public.participants[orderedPlans[1][0]].answerOrder
+    ));
+    assert.ok(Number.isInteger(
+      match.public.participants[orderedPlans[1][0]].scoreDelta
+    ));
     assert.equal(match.public.currentQuestion.correctAnswerId, undefined);
   });
 });

@@ -16,14 +16,19 @@ function canonicalAnswers(answers, participantOrder, deadlineEpochMs) {
     });
 }
 
-function scoreQuestion({ answers, participantOrder, deadlineEpochMs, correctAnswerId }) {
+function scoreCanonicalAnswers({
+  answers,
+  participantOrder,
+  deadlineEpochMs,
+  isCorrect,
+}) {
   const orderedAnswers = canonicalAnswers(answers, participantOrder, deadlineEpochMs);
   const scoreDeltas = Object.fromEntries(participantOrder.map((uid) => [uid, 0]));
   const correctUIDs = [];
   const wrongUIDs = [];
 
   for (const answer of orderedAnswers) {
-    if (answer.answerId === correctAnswerId) {
+    if (isCorrect(answer)) {
       const correctRank = correctUIDs.length;
       correctUIDs.push(answer.uid);
       scoreDeltas[answer.uid] = CORRECT_POINTS[correctRank] ?? LATER_CORRECT_POINT;
@@ -46,6 +51,24 @@ function scoreQuestion({ answers, participantOrder, deadlineEpochMs, correctAnsw
   };
 }
 
+function scoreQuestion({ answers, participantOrder, deadlineEpochMs, correctAnswerId }) {
+  return scoreCanonicalAnswers({
+    answers,
+    participantOrder,
+    deadlineEpochMs,
+    isCorrect: (answer) => answer.answerId === correctAnswerId,
+  });
+}
+
+function scoreAnswerOutcomes({ answers, participantOrder, deadlineEpochMs }) {
+  return scoreCanonicalAnswers({
+    answers,
+    participantOrder,
+    deadlineEpochMs,
+    isCorrect: (answer) => answer.correct === true,
+  });
+}
+
 function rankedScores(scores, participantOrder) {
   const ordered = participantOrder
     .map((uid, slot) => ({ uid, slot, score: scores[uid] || 0 }))
@@ -62,5 +85,6 @@ module.exports = {
   WRONG_POINT,
   canonicalAnswers,
   rankedScores,
+  scoreAnswerOutcomes,
   scoreQuestion,
 };

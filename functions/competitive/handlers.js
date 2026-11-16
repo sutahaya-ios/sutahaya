@@ -11,7 +11,8 @@ const {
 } = require("./constants");
 const { validateClientIntent, validateReconcileIntent } = require("./contract");
 const {
-  allActivePlayersAnswered,
+  activeParticipantUIDs,
+  buildLiveAnswerProjection,
   existingIntentOutcome,
   intentFingerprint,
   processClientIntent,
@@ -305,9 +306,25 @@ async function markAnswerDecision(reference, decision) {
   });
 }
 
-async function publishAnswered(envelope, uid) {
-  const reference = matchRef(envelope.matchId)
-    .child(`public/participants/${uid}`);
+async function publishAnswerResult(envelope, uid, answer, match) {
+  const state = match?.private;
+  const question = state?.currentQuestion;
+  if (state?.phase !== PHASE.QUESTION_OPEN
+      || question?.questionId !== envelope.questionId
+      || !Number.isFinite(answer?.acceptedAtEpochMs)) {
+    return { committed: false, allActiveAnswered: false };
+  }
+  const participantOrder = activeParticipantUIDs(state);
+  const baseScores = Object.fromEntries(
+    participantOrder.map((participantUID) => [participantUID, state.scores[participantUID] || 0])
+  );
+  const incomingOutcome = {
+    uid,
+    eventId: answer.eventId,
+    acceptedAtEpochMs: answer.acceptedAtEpochMs,
+    correct: answer.answerId === question.correctAnswerId,
+  };
+  const reference = matchRef(envelope.matchId).child("public");
   const initial = await reference.get();
   const initialValue = initial.exists() ? initial.val() : null;
   let firstAttempt = true;
@@ -316,10 +333,53 @@ async function publishAnswered(envelope, uid) {
       current = initialValue;
     }
     firstAttempt = false;
-    if (!current || current.answerQuestionId !== envelope.questionId) return;
-    return { ...current, answered: true };
+    if (!current
+        || current.phase !== PHASE.QUESTION_OPEN
+        || current.currentQuestion?.questionId !== envelope.questionId
+        || !current.participants?.[uid]
+        || current.participants[uid].answerQuestionId !== envelope.questionId) return;
+
+    const outcomes = {};
+    for (const participantUID of participantOrder) {
+      const participant = current.participants[participantUID];
+      if (participant?.answerQuestionId !== envelope.questionId
+          || participant.answered !== true
+          || typeof participant.answerCorrect !== "boolean"
+          || !Number.isFinite(participant.answerAcceptedAtEpochMs)) continue;
+      outcomes[participantUID] = {
+        uid: participantUID,
+        eventId: `public-${participantUID}`,
+        acceptedAtEpochMs: participant.answerAcceptedAtEpochMs,
+        correct: participant.answerCorrect,
+      };
+    }
+    outcomes[uid] = incomingOutcome;
+    const liveResults = buildLiveAnswerProjection({
+      answers: outcomes,
+      participantOrder,
+      deadlineEpochMs: question.deadlineEpochMs,
+      baseScores,
+    });
+    const participants = { ...current.participants };
+    for (const [participantUID, liveResult] of Object.entries(liveResults)) {
+      if (!participants[participantUID]
+          || participants[participantUID].answerQuestionId !== envelope.questionId) continue;
+      participants[participantUID] = {
+        ...participants[participantUID],
+        ...liveResult,
+      };
+    }
+    return { ...current, participants };
   }, undefined, false);
-  return transaction.committed;
+  const publicParticipants = transaction.snapshot.child("participants").val() || {};
+  return {
+    committed: transaction.committed,
+    allActiveAnswered: transaction.committed && participantOrder.every(
+      (participantUID) => publicParticipants[participantUID]?.answered === true
+        && publicParticipants[participantUID]?.answerQuestionId === envelope.questionId
+        && typeof publicParticipants[participantUID]?.answerCorrect === "boolean"
+    ),
+  };
 }
 
 async function claimAllAnsweredClose(envelope) {
@@ -561,22 +621,29 @@ async function commitAnswerIntent(envelope, uid, initialMatch) {
     };
   }
 
+  const acceptedRecord = { ...created.record, status: "ACCEPTED" };
+  currentMatch.private.answerInbox[envelope.questionId][uid] = acceptedRecord;
   const isCurrentQuestion = currentMatch.private.currentQuestion?.questionId
     === envelope.questionId;
-  if (isCurrentQuestion) await publishAnswered(envelope, uid);
+  const publication = isCurrentQuestion
+    ? await publishAnswerResult(envelope, uid, acceptedRecord, currentMatch)
+    : { committed: false, allActiveAnswered: false };
   let ackState = currentMatch;
   if (isCurrentQuestion
       && currentMatch.private.phase === PHASE.QUESTION_OPEN
-      && allActivePlayersAnswered(currentMatch.private)
+      && publication.allActiveAnswered
       && await claimAllAnsweredClose(envelope)) {
+    const confirmedMatch = await readMatch(envelope.matchId);
     const acceptedTimes = Object.values(
-      currentMatch.private.answerInbox?.[envelope.questionId] || {}
-    ).map((answer) => answer.acceptedAtEpochMs).filter(Number.isFinite);
+      confirmedMatch?.private?.answerInbox?.[envelope.questionId] || {}
+    ).filter((confirmedAnswer) => confirmedAnswer.status === "ACCEPTED")
+      .map((confirmedAnswer) => confirmedAnswer.acceptedAtEpochMs)
+      .filter(Number.isFinite);
     const closed = await commitReconcile(
       internalCloseEnvelope(envelope),
       uid,
       Math.max(...acceptedTimes),
-      currentMatch
+      confirmedMatch
     );
     ackState = {
       private: {

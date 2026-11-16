@@ -8,7 +8,7 @@ const {
   SERVER_VERSION,
   SETTLEMENT_VERSION,
 } = require("./constants");
-const { rankedScores, scoreQuestion } = require("./scoring");
+const { rankedScores, scoreAnswerOutcomes, scoreQuestion } = require("./scoring");
 const { buildNPCProfiles, createNPCAnswerPlan } = require("./npc");
 
 function clone(value) {
@@ -31,6 +31,7 @@ function intentFingerprint(envelope, uid) {
 
 function publicParticipants(privateState) {
   const currentAnswers = acceptedAnswersForCurrentQuestion(privateState);
+  const liveAnswerResults = liveAnswerProjection(privateState);
   const terminal = [
     PHASE.MATCH_FINISHED,
     PHASE.SETTLEMENT_PENDING,
@@ -41,6 +42,8 @@ function publicParticipants(privateState) {
     : activeParticipantUIDs(privateState);
   return Object.fromEntries(visibleUIDs.map((uid) => {
     const participant = privateState.participants[uid];
+    const baseScore = privateState.scores[uid] || 0;
+    const liveResult = liveAnswerResults[uid];
     return [uid, {
       uid,
       slot: participant.slot,
@@ -55,9 +58,56 @@ function publicParticipants(privateState) {
       reconnectDeadlineEpochMs: participant.reconnectDeadlineEpochMs ?? null,
       answerQuestionId: privateState.currentQuestion?.questionId ?? null,
       answered: Boolean(currentAnswers[uid]),
-      score: privateState.scores[uid] || 0,
+      score: liveResult?.score ?? baseScore,
+      ...(liveResult || {}),
     }];
   }));
+}
+
+function buildLiveAnswerProjection({
+  answers,
+  participantOrder,
+  deadlineEpochMs,
+  baseScores,
+}) {
+  const scoring = scoreAnswerOutcomes({ answers, participantOrder, deadlineEpochMs });
+  const overallRanks = new Map(scoring.answerOrder.map((uid, index) => [uid, index + 1]));
+  const correctRanks = new Map(scoring.correctUIDs.map((uid, index) => [uid, index + 1]));
+  return Object.fromEntries(scoring.answerOrder.map((uid) => {
+    const answer = answers[uid];
+    const correct = scoring.correctUIDs.includes(uid);
+    const scoreDelta = scoring.scoreDeltas[uid] || 0;
+    return [uid, {
+      answered: true,
+      answerCorrect: correct,
+      answerOrder: overallRanks.get(uid),
+      ...(correct ? { correctRank: correctRanks.get(uid) } : {}),
+      scoreDelta,
+      score: (baseScores[uid] || 0) + scoreDelta,
+      answerAcceptedAtEpochMs: answer.acceptedAtEpochMs,
+    }];
+  }));
+}
+
+function liveAnswerProjection(privateState) {
+  const question = privateState.currentQuestion;
+  if (privateState.phase !== PHASE.QUESTION_OPEN || !question) return {};
+  const acceptedAnswers = acceptedAnswersForCurrentQuestion(privateState);
+  const outcomes = Object.fromEntries(Object.entries(acceptedAnswers).map(([uid, answer]) => [
+    uid,
+    {
+      uid,
+      eventId: answer.eventId,
+      acceptedAtEpochMs: answer.acceptedAtEpochMs,
+      correct: answer.answerId === question.correctAnswerId,
+    },
+  ]));
+  return buildLiveAnswerProjection({
+    answers: outcomes,
+    participantOrder: activeParticipantUIDs(privateState),
+    deadlineEpochMs: question.deadlineEpochMs,
+    baseScores: privateState.scores,
+  });
 }
 
 function publicQuestion(privateState) {
@@ -146,15 +196,19 @@ function acceptedAnswersForCurrentQuestion(privateState) {
   if (!question) return {};
   const inboxAnswers = privateState.answerInbox?.[question.questionId];
   const candidates = inboxAnswers || question.answers || {};
-  return Object.fromEntries(Object.entries(candidates).filter(([uid, answer]) => (
-    privateState.participants?.[uid]
-      && !privateState.participants[uid].scoreFrozen
+  return Object.fromEntries(Object.entries(candidates).filter(([uid, answer]) => {
+    const participant = privateState.participants?.[uid];
+    const formallyAccepted = answer?.status === "ACCEPTED"
+      || (participant?.kind === PARTICIPANT_KIND.NPC && answer?.status !== "REJECTED")
+      || (!inboxAnswers && answer?.status === undefined);
+    return participant
+      && !participant.scoreFrozen
       && answer?.uid === uid
       && answer.questionId === question.questionId
-      && answer.status !== "REJECTED"
+      && formallyAccepted
       && Number.isFinite(answer.acceptedAtEpochMs)
-      && answer.acceptedAtEpochMs <= question.deadlineEpochMs
-  )));
+      && answer.acceptedAtEpochMs <= question.deadlineEpochMs;
+  }));
 }
 
 function allActivePlayersAnswered(privateState) {
@@ -318,8 +372,9 @@ function applyDueNPCActions(privateState, nowEpochMs, limit = 1) {
     if (plan.acceptedAtEpochMs > nowEpochMs
         || plan.acceptedAtEpochMs > question.deadlineEpochMs
         || privateState.answerInbox[question.questionId][uid]) continue;
-    privateState.answerInbox[question.questionId][uid] = plan;
-    question.answers[uid] = plan;
+    const acceptedPlan = { ...plan, status: "ACCEPTED" };
+    privateState.answerInbox[question.questionId][uid] = acceptedPlan;
+    question.answers[uid] = acceptedPlan;
     changed = true;
     applied += 1;
     if (applied >= limit) break;
@@ -630,8 +685,9 @@ function processClientIntent(
   if (state.answerInbox[question.questionId][uid]) {
     return { match, ack: reject(match, envelope, uid, "ALREADY_ANSWERED", nowEpochMs, stateBefore) };
   }
-  state.answerInbox[question.questionId][uid] = stagedAnswer;
-  question.answers[uid] = stagedAnswer;
+  const acceptedAnswer = { ...stagedAnswer, status: "ACCEPTED" };
+  state.answerInbox[question.questionId][uid] = acceptedAnswer;
+  question.answers[uid] = acceptedAnswer;
   if (allActivePlayersAnswered(state)) {
     closeQuestion(state, nowEpochMs, "ALL_ANSWERED");
   }
@@ -781,6 +837,7 @@ module.exports = {
   acceptedAnswersForCurrentQuestion,
   activeParticipantUIDs,
   allActivePlayersAnswered,
+  buildLiveAnswerProjection,
   existingIntentOutcome,
   finishMatch,
   intentFingerprint,

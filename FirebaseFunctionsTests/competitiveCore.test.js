@@ -453,6 +453,20 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
     assert.equal(retry.status, "DUPLICATE");
     assert.equal(retry.originalStatus, "ACCEPTED");
 
+    for (const client of clients) {
+      const liveProjection = await readPublic(client, matchId);
+      const liveResult = liveProjection.participants[clients[0].uid];
+      assert.equal(liveProjection.phase, PHASE.QUESTION_OPEN);
+      assert.equal(liveResult.answered, true);
+      assert.equal(liveResult.answerCorrect, true);
+      assert.equal(liveResult.answerOrder, 1);
+      assert.equal(liveResult.correctRank, 1);
+      assert.equal(liveResult.scoreDelta, 20);
+      assert.equal(liveResult.score, 20);
+      assert.equal(liveResult.answerId, undefined);
+      assert.equal(liveProjection.currentQuestion.correctAnswerId, undefined);
+    }
+
     const secondAnswer = await callIntent(clients[0], {
       ...baseEvent,
       intentId: `event-second-answer-${randomUUID()}`,
@@ -468,7 +482,31 @@ describe("Competitive Core emulator", { concurrency: false }, () => {
       `competitiveV2/matches/${matchId}/private/currentQuestion`
     )));
 
-    const remaining = clients.slice(1);
+    const wrongAnswerId = question.choices.find(
+      (choice) => choice.answerId !== question.correctAnswerId
+    ).answerId;
+    const wrongAnswer = await callIntent(clients[1], envelope(
+      clients[1],
+      matchId,
+      "submitAnswer",
+      "security-live-wrong",
+      {
+        questionId: question.questionId,
+        stateVersion: before.stateVersion,
+        payload: { answerId: wrongAnswerId },
+      }
+    ));
+    assert.equal(wrongAnswer.status, "ACCEPTED");
+    const afterWrong = await readPublic(clients[2], matchId);
+    assert.equal(afterWrong.phase, PHASE.QUESTION_OPEN);
+    assert.equal(afterWrong.participants[clients[1].uid].answerCorrect, false);
+    assert.equal(afterWrong.participants[clients[1].uid].answerOrder, 2);
+    assert.equal(afterWrong.participants[clients[1].uid].correctRank, undefined);
+    assert.equal(afterWrong.participants[clients[1].uid].scoreDelta, -10);
+    assert.equal(afterWrong.participants[clients[1].uid].score, -10);
+    assert.equal(afterWrong.participants[clients[1].uid].answerId, undefined);
+
+    const remaining = clients.slice(2);
     const current = await readPrivate(matchId);
     const remainingAcks = await Promise.all(remaining.map((client, index) => callIntent(
       client,
