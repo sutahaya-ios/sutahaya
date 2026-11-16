@@ -44,6 +44,7 @@
 | たける(Claude含む) | `Models/WordClassification.swift`・`Models/Question.swift`・`Models/QuizTypes.swift`と、`WordCategory`を参照する28ファイル(Views/Study配下、Views/Battle配下、Services/CategoryProficiencySummary.swift ほか) | **ver2のSPI追加**。`WordCategory`を`StudyCategory`へリネームし、`Genre`にSPIを足す。`Question`へ解説と表データを持たせる。**共有ファイルへ広く触るため、この期間は上記に触らないでほしい**(LINEでも連絡済み) | 2026年9月7日 |
 ---
 ## 最新更新(2026年8月25日〜11月16日)
+- Claude(たける側, 2026年11月16日): **フレンド対戦でSPIの長い問題文が見切れる不具合を修正**。`BattleQuestionScrollArea`を追加し、SPIのときだけ問題文(と表)の枠を縦スクロール可能にした。枠に収まる問題は従来どおり中央に表示し、収まらない問題は下端をぼかして「続きあり」を出し、一度動かすと消える。スコアボード・進行バー・選択肢は固定のまま。英単語の対戦の並びとランク戦(`Views/Competitive/`)は変更なし。Simulator向けビルド成功。iPhone 17(ダーク)のNPC対戦で、長文読解が末尾の「問:」までスクロールで読めること、二語の関係がスクロールにならず中央に出ることを確認。**未検証**:英単語の対戦画面、表つきの問題(非言語)、ライト表示、オンラインのフレンドルーム、実機
 - TOKIYA-YAMAMOTO(Codex, 2026年11月16日): **フレンドルーム定期削除をProductionへ反映**。本番RTDB Rulesとの差分が`rooms/.indexOn = ["status", "createdAt"]`追加だけであることを構造比較してからRulesをdeployし、readbackでローカルと完全一致を確認。`cleanupStaleRooms`をasia-northeast1へ単独deployし、revision `cleanupstalerooms-00001-dof`がACTIVE、Cloud SchedulerがAsia/Tokyoで15分間隔・ENABLEDであることを確認。room cleanup unit test成功。初回`room_cleanup_summary`はdeploy直後のため未確認。
 - TOKIYA-YAMAMOTO(Codex, 2026年11月15日): **Reconnect timeout後に旧Matchの`currentSession`が残って再Queueを`ACTIVE_MATCH_EXISTS`で拒否する問題を修正**。timeout確定Playerだけを既存Rating/Stats pipelineで冪等精算し、`currentSession`を`FINISHED`・`matchId=null`へrelease、assignment/presenceを解除して即時再Queue可能にした。残存HumanがいるRoom Aは継続し、新sessionId/sessionEpochのRoom Bへ旧callbackが影響しないことを確認。15秒以内ReconnectとExplicit Forfeitの5秒cooldownは不変。Backend Unit 60件、Phase C Emulator 5件、Simulator Debug Build、`git diff --check`成功。**Production deployは未実施。対象は`competitiveIntent`・`competitiveReconcileMatch`・`competitivePresenceChanged`、Rules変更なし。実機の元症状消失はdeploy後に未確認**。
 - TOKIYA-YAMAMOTO(Codex, 2026年11月14日): **オンラインランク戦でReconnect timeout後または通信不能時の退出後にBattleへ残る問題を修正**。Server projectionで自分のforfeit/timeout確定を検出した時点で、Settlement完了を待たずClientのquestion/reconnect/reconcile/settlement task・listener・active sessionを停止してHomeへ戻す。退出Buttonはprojection欠損中も表示し、確認後は正式なServer `leave/forfeit`を別taskで継続しつつ即Client teardown、送信不能時は既存presence timeout経路へ接続する。Server側のpenalty・Rating/MMR・stats・settlement・残存Player進行・session release・fencingは変更なし。Room A terminal通知はRoom Bへ適用しない。関連Swiftテスト29件、Simulator Debug Build、`git diff --check`成功。Backend deploy不要。**実機で元症状の消失は未確認**。
@@ -86,28 +87,25 @@
 - Claude(たける側): **対戦ホームを「プロフィール＋習得率」構成へ再編**(たけるの指示で今回もClaudeが実装まで担当)。「スタはや」ロゴとヒーロー`BattleHomeHero`を廃止し、ツールバー左へ`AvatarCircle`と名前を置いて遊び方ボタンと同じ高さに揃えた。アイコンは既存`ProfileDetailView`(対戦実績)を開き、名前はその場で編集してキーボードの確定キーで保存する(空欄は既定の「ゲスト」へ戻し12文字で打ち止め、確定時に`AuthService.updateProfileIfSignedIn`で同期)。上部は選択中のカテゴリ・難易度の習得率カードにし、「変更」は既存`RoomCreateView(mode: .editPreferences)`へ繋いだ。集計は学習記録と同じ`CategoryProficiencySummary`を使い、難易度の絞り込みと表示文言を集計側へ集約。**学習記録はカテゴリ全体、対戦ホームは★別のため数字は一致しない**
   - 検証:Simulator向けビルド成功。iPhone 17 Proのダークで、名前編集→確定キー保存(UserDefaults反映)、アイコンからの実績表示、「変更」でTOEIC単語★1へ切り替えるとカードが1語/400語へ追従することを確認。**ライトモードと実招待でのoverlay不動は未検証**。ダークでの見え方以外は未確認
 - Codex統合担当: **TASK 3「ホスト以外も招待できる」を完了**。ロビーの招待UIと送信処理をhostに限定し、callable Function `sendRoomInvite`がRTDBの`hostID`・`roomInstanceID`・waiting状態とFirestoreの相互フレンド関係を検証してcanonical inviteを作成する。Firestore Rulesはクライアントからの招待create/reinviteを拒否し、recipientのclaim/finalize/rollbackは維持。Functions Emulator 6件、Rules Emulator 37件、Simulator Swiftテスト109件、物理iPhone向けbuildに成功。本番`hayaosiapp`でFunctionが東京リージョン・Node.js 22のACTIVE、Firestore Rules公開済み、古いコンテナは1日後に自動削除。物理iPhone＋Simulatorでhostの招待送信→guestの受信・参加→2人ロビーと、guestに招待欄が表示されないことをE2E確認済み。改造guestのbackend拒否はFunctions Emulatorで確認済み
-- Claude(たける側): **対戦ホームの復習帯を削除し、広告バナー設置と主操作の下端固定へ再構成**(たけるの指示で今回もClaudeが実装まで担当)。「最近の復習が対戦に反映されます」は実装と食い違っていたため撤去した(**復習→対戦の反映は元から無い**。対戦→復習は`ResultRecorder`経由で従来どおり動く)。未使用になった`BattleReviewBand`も削除。`BattleHubView`はScrollViewをやめてロゴ→ヒーロー→`Spacer`のVStackにし、2つの対戦ボタンは`BattleLobbyView`と同じ`safeAreaInset(edge:.bottom)`で下端へ固定、その下に`MyPageView`と同形の`AdBannerView`を置いた。ボタンとバナーの間隔は20pt。`AdBannerView`は購読中に高さ0になるためバナー用の余白は確保していない。招待overlay・ヒーロー・ボタンの見た目・タブ構成は未変更
-  - 検証:`xcodegen generate`とSimulator向けビルド成功。iPhone 17 Proのダークで、復習帯の消失・テスト広告バナーの表示・ボタンとバナーの20pt間隔・ヒーローが中央付近に残ることを確認。**ライトモードと、実招待でのoverlay不動は未検証**。ダークでヒーローの雲が黒い塊に見える既知の見え方は今回未対応
-- Codex(たける側): **対戦ホームを「蒼天」UIへ刷新し、独立したひとり対戦をフレンド対戦へ統合**。セマンティックカラーの空・雲とSF Symbolsの盾/稲妻/王冠/交差剣による非操作ヒーロー、同格のオンライン/フレンドCTA、復習帯へ整理。招待は通常レイアウト外の通知型overlayで最新1件を表示し、10秒または上スワイプで端末表示だけ閉じ、正式導線のフレンド対戦>招待には残す。フレンド対戦は既存`OnlineModeMenuView`へルーム作成/コード参加/招待/NPC対戦を集約。ローカル`CPUBattleSession`は選択した既存`CPUProfile`で初期化し、ホストが待機中にNPCを追加・削除でき、合計8人を超えない。既存`cpuCount:` initと共通ロビー/進行/採点は維持し、Firebase/オンラインルームは未変更。`CPUBattleSessionTests`全件とSimulator向けbuild成功、iPhone 17 Proでホームをライト/ダーク確認。**全国マッチング本体は既存未実装のため準備中画面まで。実在招待の10秒/スワイプ/一覧残存とNPC管理の画面操作は実機未検証**
-- Codex統合担当: **ルーム作成がFirebase障害で止まる経路を修正**。本番RTDB Rulesが要求する`roomInstanceID`・`playerSlots`・hostの`slot`を含む新schemaと、main上の旧クライアントpayloadに版ずれがあったため、関連する通信対戦実装・Rules・テストを同時にGitへ反映する。また、RTDBルーム作成に不要なFirestoreプロフィール・`friendCodes`索引の準備をFirebase Authenticationから分離し、プロフィール側のpermission deniedがあっても認証済みuidでルームを作成できるようにした。Rules Emulator 43件成功、未完成の未追跡UIモックをビルド対象から除外したSimulator向けbuild成功。修正版をiPhone 17 Simulatorへinstallし、一時XCUITestで**実在Firebaseの「ルーム作成」タップからルームID・host 1/8表示までE2E成功**。同時間帯にpermission denied等のFirebaseエラーは検出されなかった。**物理iPhone回帰と本番deployは今回未実施**
-- Codex(たける側): **実装済みスプラッシュをiPhone 15 Pro Simulator(iOS 17.4)で確認**。xcodegen実行後のSimulator向けビルドは成功。データ投入済みの再起動では、稲妻マーク・「スタはや」・「勉強系早押し対戦」が表示され、録画のフレーム確認でフェード開始まで約0.7〜0.8秒あり、その後タブ画面へクロスフェードすることを確認。ライト/ダークとも背景・文字・マークの色は問題なし。スクリーンショットは`docs/screenshots/splash-light.png`と`splash-dark.png`の2枚。**初回のデータ投入中は背景だけが表示され、ロゴと文字は描画されないままタブ画面へ切り替わるため、初回起動の表示要件は未達**。既知のメインスレッド占有中に`SplashView`の出現アニメーションが進まず、初期opacity 0のフレームが保持される見え方。依頼どおりソース修正・テスト実行は行っていない
-- Codex(たける側): **高校英単語の統合・ターゲット1900追加をJSONへ反映し、データ依存で古くなった分類テスト2か所を修正**。変換ツールの`--write`実行で差分は`high_school.json`のみ、2194語から2998語へ更新。中学1510語・TOEIC1443語は変更なし。読み飛ばしはターゲット1400=638語・1900=1063語・金のフレーズ=557語、高校内訳は★1:699 / ★2:700 / ★3:762 / ★4:418 / ★5:419。`QuestionSeeder.dataVersion`は11。高校ID接頭辞テストを`hs1_`/`hs2_`/`hs3_`対応にし、旧ID移行テストは`loadEntries()`から高校`benefit`のIDを取得して比較するよう変更。指定の`WordClassificationTests`全11件成功
-- Codex(たける側): **TOEIC金のフレーズで、同一カテゴリの先行語と同じシート内の既出語を検証・ID採番前に読み飛ばすよう変換ツールを変更し、生成JSONへ反映**。source単位のフラグは金だけ有効にし、比較は小文字化・前後空白除去したwordのみで行う。実行時は`--write`の有無にかかわらず読み飛ばした件数と語一覧を表示する。銀の許容難易度へ3を追加。`--write`で`junior_high.json`と`toeic.json`へ反映し、`QuestionSeeder.dataVersion`を10へ更新。再実行で3カテゴリとも変更なし、入力エラー0件、金から557語を読み飛ばし、中学1510語・高校183語・TOEIC1443語、TOEIC内訳★1:400 / ★2:300 / ★3:301 / ★4:157 / ★5:285を確認。全88テスト中86件成功。収録データのカテゴリ内ID・単語重複なしを含む今回関連テストは成功したが、旧ID移行テスト1件の2検証は、旧固定値`benefit = jh_0001`が生成後に中学`jh_1367`・TOEIC`tc1_0463`の2カテゴリへ存在するため失敗
 ---
 
 ## 次のタスク(優先順)
 
 ### 担当:たける側(Claude含む)— コンテンツ・大枠UI・対戦体験
 
-1. **対戦画面UIの強化**:対戦中はタブバーを隠し、対戦画面の演出・情報配置を改善する。効果音・ボイスも追加・差し替えする
-2. **英単語のボリューム拡充(2026年8月26日 方針更新)**:`word_bank/`配下の担当xlsxへ、たける・トキヤが直接入力し、変換ツールで各JSONへ反映する。現データはテスト用なので順次刷新し、各カテゴリのdifficulty 1〜5を充実させる
+1. **ランク戦UIの改善(2026年11月16日 追加)**:`Views/Competitive/`はTOKIYA担当のため、着手前に調整する。小項目は優先順
+   - 開始カウントダウンで参加者一覧が左へずれて見切れる(2026年11月16日のスクショで確認)
+   - フレンド対戦の対戦方式に合わせる(回答後すぐに回答結果を反映する。待機画面もそろえる)
+   - ダークモードに対応する
+2. **対戦画面UIの強化**:対戦中はタブバーを隠し、対戦画面の演出・情報配置を改善する。効果音・ボイスも追加・差し替えする
+3. **英単語のボリューム拡充(2026年8月26日 方針更新)**:`word_bank/`配下の担当xlsxへ、たける・トキヤが直接入力し、変換ツールで各JSONへ反映する。現データはテスト用なので順次刷新し、各カテゴリのdifficulty 1〜5を充実させる
    - **高校英単語はターゲット1200/1400/1900を基準に難易度を設計**。難易度1・2=ターゲット1200、3=ターゲット1400、4・5=ターゲット1900。3シートを`word_bank_high_school.xlsx`へまとめて管理する(git管理外、直接送付)
    - **著作権に注意**:ターゲットシリーズの収録語彙・配列は旺文社の編集著作物。収録語を丸ごと転記する行為はその複製にあたるリスクがある(商用アプリのため実務上のリスクとして認識しておく)
    - 動詞・名詞など複数の品詞を持つ単語は、posは出題用の1つに絞り、meaning欄へ`(動)〜/(名)〜`の形で両方の意味を書く(2エントリに分割しない。分割するとposのグループ化が崩れ、出題の誤答選択肢が壊れるため)
-3. **単語詳細画面(保留)**:単語帳のように1単語を詳しく見る画面で、複数品詞の意味を並べて説明できるようにしたい(たけるの発案、2026年8月25日)。今のmeaningは1文字列のみで品詞別に分かれていないため、着手する場合はデータ構造(Excel列・JSONスキーマ)とSwiftUI画面の両方を設計し直す必要がある。優先度は英単語のボリューム拡充より低い
-4. **対戦結果の保存 →「直近の対戦」表示**:対戦タブに順位・正答数を出す
-5. **習熟度の可視化(v1.1)**:`visibleCount`を `AnswerRecord` へ保存し、学習タブに苦手順の一覧を出す
-6. **英単語JSON更新の自動検知(保留)**:開発第一段階は `QuestionSeeder.dataVersion` を手動で増やす現方式を継続する。単語更新が本格化して運用負担になった段階で、JSONのハッシュ比較による自動再投入を検討する
+4. **単語詳細画面(保留)**:単語帳のように1単語を詳しく見る画面で、複数品詞の意味を並べて説明できるようにしたい(たけるの発案、2026年8月25日)。今のmeaningは1文字列のみで品詞別に分かれていないため、着手する場合はデータ構造(Excel列・JSONスキーマ)とSwiftUI画面の両方を設計し直す必要がある。優先度は英単語のボリューム拡充より低い
+5. **対戦結果の保存 →「直近の対戦」表示**:対戦タブに順位・正答数を出す
+6. **習熟度の可視化(v1.1)**:`visibleCount`を `AnswerRecord` へ保存し、学習タブに苦手順の一覧を出す
+7. **英単語JSON更新の自動検知(保留)**:開発第一段階は `QuestionSeeder.dataVersion` を手動で増やす現方式を継続する。単語更新が本格化して運用負担になった段階で、JSONのハッシュ比較による自動再投入を検討する
 
 ### 担当:TOKIYA-YAMAMOTO — テスト・バグ改善・オンライン本番対応
 
