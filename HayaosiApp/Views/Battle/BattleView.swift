@@ -6,6 +6,8 @@ struct BattleView: View {
     /// 文字送りの更新間隔
     private static let tickInterval: TimeInterval = 0.1
     private static let answerFeedbackDuration: TimeInterval = 1.2
+    /// 問題が変わったことを分かるように入れ替える
+    private static let questionTransition: AnyTransition = .opacity.combined(with: .move(edge: .top))
 
     let session: any BattleSession
 
@@ -27,25 +29,7 @@ struct BattleView: View {
                let question = session.currentQuestion {
                 progressHeader(state: state, game: game)
 
-                Spacer()
-
-                VStack(spacing: 12) {
-                    QuestionTextView(
-                        text: question.text,
-                        mode: revealMode(game: game),
-                        isSingleWord: genre.usesProgressiveReveal,
-                        format: format(for: question)
-                    )
-
-                    if let table = table(for: question) {
-                        QuestionTableView(table: table)
-                    }
-                }
-                // 問題が変わったことを分かるように入れ替える
-                .id(game.questionIndex)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-
-                Spacer()
+                questionArea(game: game, question: question)
 
                 interactionArea(game: game, question: question)
                     .animation(BattleAnimation.reveal, value: game.phase)
@@ -143,6 +127,43 @@ struct BattleView: View {
         return .progressing(
             startedAtMS: session.localTimeMS(forBattleTimeMS: game.effectiveStartedAtMS)
         )
+    }
+
+    // MARK: - 問題文
+
+    /// 英単語は上下の余白で中央に置く。SPIは長い問題文が選択肢に押されて切れるため、
+    /// 問題文の枠だけをスクロールさせる(選択肢は常に見せておく)
+    @ViewBuilder
+    private func questionArea(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
+        if genre.usesProgressiveReveal {
+            Spacer()
+            questionContent(game: game, question: question)
+                .id(game.questionIndex)
+                .transition(Self.questionTransition)
+            Spacer()
+        } else {
+            BattleQuestionScrollArea {
+                questionContent(game: game, question: question)
+            }
+            // 枠ごと入れ替えて、スクロール位置も次の問題の先頭へ戻す
+            .id(game.questionIndex)
+            .transition(Self.questionTransition)
+        }
+    }
+
+    private func questionContent(game: RoomState.Game, question: RoomState.QuestionPayload) -> some View {
+        VStack(spacing: 12) {
+            QuestionTextView(
+                text: question.text,
+                mode: revealMode(game: game),
+                isSingleWord: genre.usesProgressiveReveal,
+                format: format(for: question)
+            )
+
+            if let table = table(for: question) {
+                QuestionTableView(table: table)
+            }
+        }
     }
 
     // MARK: - スコア・進行表示
