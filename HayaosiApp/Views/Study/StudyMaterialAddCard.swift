@@ -2,7 +2,6 @@ import SwiftUI
 
 /// 追加シートに表示する実装済み教材カード。カード全体を押すたびに追加・解除が切り替わる
 struct AvailableStudyMaterialCard: View {
-    private static let minimumHeight: CGFloat = 104
     private static let cornerRadius: CGFloat = 16
     private static let pinnedBorderWidth: CGFloat = 2
 
@@ -32,7 +31,7 @@ struct AvailableStudyMaterialCard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
-            .frame(maxWidth: .infinity, minHeight: Self.minimumHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: StudyMaterialCardMetrics.minimumHeight, alignment: .topLeading)
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: Self.cornerRadius)
@@ -61,7 +60,6 @@ struct AvailableStudyMaterialCard: View {
 
 /// 追加シートに表示する近日実装教材カード。操作可能な要素は持たない
 struct UpcomingStudyMaterialCard: View {
-    private static let minimumHeight: CGFloat = 104
 
     let material: UpcomingMaterial
 
@@ -95,7 +93,7 @@ struct UpcomingStudyMaterialCard: View {
                 .lineLimit(2)
 
         }
-        .frame(maxWidth: .infinity, minHeight: Self.minimumHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: StudyMaterialCardMetrics.minimumHeight, alignment: .topLeading)
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16)

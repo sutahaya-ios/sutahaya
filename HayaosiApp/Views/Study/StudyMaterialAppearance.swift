@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// 教材カードの共通寸法。マイボードと追加シートのカードを同じ大きさに揃える
+enum StudyMaterialCardMetrics {
+    static let minimumHeight: CGFloat = 104
+}
+
 extension StudyCategory {
     var studyDescription: String {
         switch self {

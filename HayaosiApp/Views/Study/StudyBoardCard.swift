@@ -2,16 +2,21 @@ import SwiftUI
 
 /// マイボードに表示するピン留め済み教材カード
 struct StudyBoardCard: View {
-    private static let minimumHeight: CGFloat = 188
-
     let category: StudyCategory
     let proficiencyRate: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: category.studySystemImage)
-                .font(.system(size: 24))
-                .foregroundStyle(category.studyAccentColor)
+            // 追加シートのカードと同じ高さに収めるため、習得率の数字は右上へ置く
+            HStack(alignment: .top) {
+                Image(systemName: category.studySystemImage)
+                    .font(.system(size: 24))
+                    .foregroundStyle(category.studyAccentColor)
+
+                Spacer()
+
+                rateLabel
+            }
 
             Text(category.displayName)
                 .font(.system(size: 16, weight: .semibold))
@@ -23,27 +28,12 @@ struct StudyBoardCard: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
 
             ProgressView(value: progress)
                 .tint(category.studyAccentColor)
-
-            HStack {
-                Text("習得率")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                if let rateText {
-                    Text(rateText)
-                        .font(.caption.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(.primary)
-                }
-            }
         }
-        .frame(maxWidth: .infinity, minHeight: Self.minimumHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: StudyMaterialCardMetrics.minimumHeight, alignment: .topLeading)
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -51,6 +41,21 @@ struct StudyBoardCard: View {
         )
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .combine)
+    }
+
+    private var rateLabel: some View {
+        HStack(spacing: 4) {
+            Text("習得率")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            if let rateText {
+                Text(rateText)
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
+            }
+        }
     }
 
     private var progress: Double {
