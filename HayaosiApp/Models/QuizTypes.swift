@@ -45,7 +45,7 @@ enum Genre: String, Codable, CaseIterable, Identifiable {
     }
 
     var categories: [StudyCategory] {
-        StudyCategory.allCases.filter { $0.genre == self }
+        StudyCategory.selectableCases.filter { $0.genre == self }
     }
 }
 

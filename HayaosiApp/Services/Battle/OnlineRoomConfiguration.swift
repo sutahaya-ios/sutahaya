@@ -45,7 +45,7 @@ struct OnlineRoomConfiguration: Equatable {
 
     init(defaults: UserDefaults = .standard) {
         let fallback = Self.default
-        let storedCategory = StudyCategory(
+        let storedCategory = StudyCategory.selectable(
             rawValue: defaults.string(forKey: Self.categoryKey) ?? ""
         ) ?? fallback.category
         // 保存済みのジャンルとカテゴリが食い違っていたら、カテゴリ側を正とする

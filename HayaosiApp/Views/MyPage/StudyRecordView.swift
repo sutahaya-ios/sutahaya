@@ -17,7 +17,7 @@ struct StudyRecordView: View {
                 totalCard
 
                 VStack(spacing: 10) {
-                    ForEach(StudyCategory.allCases) { category in
+                    ForEach(StudyCategory.selectableCases) { category in
                         categoryCard(for: category)
                     }
                 }

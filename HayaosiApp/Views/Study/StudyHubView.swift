@@ -87,7 +87,7 @@ struct StudyHubView: View {
                 guard includedRawValues.insert(rawValue).inserted else {
                     return nil
                 }
-                return StudyCategory(rawValue: rawValue)
+                return StudyCategory.selectable(rawValue: rawValue)
             }
         } catch {
             print("ピン留め教材の読み込みに失敗: \(error)")

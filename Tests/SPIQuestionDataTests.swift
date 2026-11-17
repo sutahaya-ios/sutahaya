@@ -18,11 +18,10 @@ final class SPIQuestionDataTests: XCTestCase {
         }
     }
 
-    func test_SPI非言語は形式未指定のまま読み込める() {
-        for question in questions where question.category == .spiNonVerbal {
-            XCTAssertNil(question.formatRaw)
-            XCTAssertNil(question.format)
-        }
+    func test_選べないSPI非言語の問題は読み込まない() {
+        XCTAssertFalse(StudyCategory.spiNonVerbal.isSelectable)
+        XCTAssertFalse(Genre.spi.categories.contains(.spiNonVerbal))
+        XCTAssertTrue(questions.filter { $0.category == .spiNonVerbal }.isEmpty)
     }
 
     func test_SPIの各カテゴリに問題がある() {

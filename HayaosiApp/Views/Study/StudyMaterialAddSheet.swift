@@ -15,7 +15,7 @@ struct StudyMaterialAddSheet: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: Self.columns, spacing: Self.gridSpacing) {
-                    ForEach(StudyCategory.allCases) { category in
+                    ForEach(StudyCategory.selectableCases) { category in
                         AvailableStudyMaterialCard(
                             category: category,
                             isPinned: pinnedCategories.contains(category),

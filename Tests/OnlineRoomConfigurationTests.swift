@@ -116,7 +116,10 @@ final class OnlineRoomConfigurationTests: XCTestCase {
 
         defaults.set(StudyCategory.spiNonVerbal.rawValue, forKey: OnlineRoomConfiguration.categoryKey)
         defaults.set(QuestionFormat.wordMeaning.rawValue, forKey: OnlineRoomConfiguration.formatKey)
-        XCTAssertNil(OnlineRoomConfiguration(defaults: defaults).format)
+        let restored = OnlineRoomConfiguration(defaults: defaults)
+        XCTAssertNil(restored.format)
+        // 選べないカテゴリが保存されていたら、既定のカテゴリへ戻す
+        XCTAssertEqual(restored.category, OnlineRoomConfiguration.default.category)
     }
 
     func testFormatPassesThroughRoomSettingsAndEditor() {

@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// 未実装教材の表示定義。実装済みになった教材はここから削除する
+/// 未実装教材の表示定義。実装済みになった教材はここから削除する。
+/// SPI非言語は枠組みだけ実装済みで、問題がそろうまで `StudyCategory.isSelectable` と対でここへ置く
 enum UpcomingMaterial: String, CaseIterable, Identifiable {
     case eiken
     case mathematics
     case kanjiKentei
-    case spi
+    case spiNonVerbal
 
     var id: String { rawValue }
 
@@ -14,7 +15,7 @@ enum UpcomingMaterial: String, CaseIterable, Identifiable {
         case .eiken: return "英検対策"
         case .mathematics: return "数学"
         case .kanjiKentei: return "漢検"
-        case .spi: return "SPI対策"
+        case .spiNonVerbal: return "SPI 非言語"
         }
     }
 
@@ -23,7 +24,7 @@ enum UpcomingMaterial: String, CaseIterable, Identifiable {
         case .eiken: return "級別の英語力を強化"
         case .mathematics: return "計算と公式をトレーニング"
         case .kanjiKentei: return "読み書きと語彙を学習"
-        case .spi: return "就職試験の基礎を対策"
+        case .spiNonVerbal: return "推論と計算を鍛える"
         }
     }
 
@@ -32,7 +33,7 @@ enum UpcomingMaterial: String, CaseIterable, Identifiable {
         case .eiken: return "character.book.closed.fill"
         case .mathematics: return "function"
         case .kanjiKentei: return "textformat.characters"
-        case .spi: return "person.text.rectangle.fill"
+        case .spiNonVerbal: return "person.text.rectangle.fill"
         }
     }
 
@@ -41,7 +42,7 @@ enum UpcomingMaterial: String, CaseIterable, Identifiable {
         case .eiken: return .purple
         case .mathematics: return .red
         case .kanjiKentei: return .brown
-        case .spi: return .teal
+        case .spiNonVerbal: return .teal
         }
     }
 }

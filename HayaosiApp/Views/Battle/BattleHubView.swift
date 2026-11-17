@@ -281,7 +281,7 @@ struct BattleHubView: View {
     }
 
     private var configuration: OnlineRoomConfiguration {
-        let category = StudyCategory(rawValue: savedCategoryRaw) ?? .juniorHigh
+        let category = StudyCategory.selectable(rawValue: savedCategoryRaw) ?? .juniorHigh
         return OnlineRoomConfiguration(
             genre: category.genre,
             category: category,

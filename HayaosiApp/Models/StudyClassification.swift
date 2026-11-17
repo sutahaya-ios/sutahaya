@@ -36,6 +36,21 @@ enum StudyCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// 学習・対戦で選べるか。SPI非言語は問題がそろうまで近日カード(UpcomingMaterial)で案内し、選ばせない
+    var isSelectable: Bool {
+        self != .spiNonVerbal
+    }
+
+    /// 選べるカテゴリだけの一覧。画面の選択肢と問題の読み込みはここから作る
+    static var selectableCases: [StudyCategory] {
+        allCases.filter(\.isSelectable)
+    }
+
+    /// 保存済みの値から復元する。選べなくなったカテゴリは保存されていなかったものとして扱う
+    static func selectable(rawValue: String) -> StudyCategory? {
+        StudyCategory(rawValue: rawValue).flatMap { $0.isSelectable ? $0 : nil }
+    }
+
     /// 選択できる出題形式。形式が未定のカテゴリでは選択UIを出さない
     var formats: [QuestionFormat] {
         self == .spiVerbal ? QuestionFormat.allCases : []
